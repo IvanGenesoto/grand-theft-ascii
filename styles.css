@@ -1,0 +1,42 @@
+body {
+  position: relative;
+}
+
+h1 {
+  font-family: sans-serif;
+}
+
+h3 {
+  text-align: center;
+  font-family: sans-serif;
+  font-weight: lighter;
+}
+
+#car {
+  position: absolute;
+  font-size: 40px;
+}
+
+#truck {
+  position: absolute;
+  font-size: 40px;
+}
+
+#bus {
+  position: absolute;
+  font-size: 40px;
+}
+
+#walk {
+  position: absolute;
+  font-size: 40px;
+}
+
+#bugatti {
+  position: absolute;
+  font-size: 40px;
+}
+
+.hidden {
+  display: none;
+}
