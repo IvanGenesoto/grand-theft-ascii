@@ -2,39 +2,25 @@ body {
   position: relative;
 }
 
-h1 {
-  font-family: sans-serif;
-}
-
 h3 {
   text-align: center;
   font-family: sans-serif;
   font-weight: lighter;
 }
 
-#car {
+#container {
   position: absolute;
-  font-size: 40px;
+  width: 701px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-#truck {
+.vehicle {
   position: absolute;
   font-size: 40px;
-}
-
-#bus {
-  position: absolute;
-  font-size: 40px;
-}
-
-#walk {
-  position: absolute;
-  font-size: 40px;
-}
-
-#bugatti {
-  position: absolute;
-  font-size: 40px;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 .hidden {
