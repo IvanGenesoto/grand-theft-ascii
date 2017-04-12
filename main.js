@@ -87,7 +87,27 @@ class Vehicle {
     }
   }
   updateLocation(filteredVehicles) {
+    function getTop(line) {
+      for (var i = 0; i < line.style.top.length; i++) {
+        if (line.style.top[i] === 'p') {
+          return +line.style.top.substring(0, i)
+        }
+      }
+    }
+    function getLeft(line) {
+      for (var i = 0; i < line.style.left.length; i++) {
+        if (line.style.left[i] === 'p') {
+          return +line.style.left.substring(0, i)
+        }
+      }
+    }
     if (this.direction === 'north') {
+      lines.forEach(line => {
+        var top = getTop(line)
+        top += currentVehicle.speed
+        if (top >= 700) top -= 700
+        line.style.top = top + 'px'
+      })
       filteredVehicles.forEach(function (vehicle) {
         vehicle.location.top += currentVehicle.speed
         vehicle.markerEast.style.top = vehicle.location.top + 'px'
@@ -95,6 +115,12 @@ class Vehicle {
       })
     }
     if (this.direction === 'south') {
+      lines.forEach(line => {
+        var top = getTop(line)
+        top -= currentVehicle.speed
+        if (top <= 0) top += 700
+        line.style.top = top + 'px'
+      })
       filteredVehicles.forEach(function (vehicle) {
         vehicle.location.top -= currentVehicle.speed
         vehicle.markerEast.style.top = vehicle.location.top + 'px'
@@ -102,6 +128,12 @@ class Vehicle {
       })
     }
     if (this.direction === 'east') {
+      lines.forEach(line => {
+        var left = getLeft(line)
+        left -= currentVehicle.speed
+        if (left <= -350) left += 700
+        line.style.left = left + 'px'
+      })
       this.markerEast.classList.remove('hidden')
       this.markerWest.classList.add('hidden')
       filteredVehicles.forEach(function (vehicle) {
@@ -111,6 +143,12 @@ class Vehicle {
       })
     }
     if (this.direction === 'west') {
+      lines.forEach(line => {
+        var left = getLeft(line)
+        left += currentVehicle.speed
+        if (left >= 350) left -= 700
+        line.style.left = left + 'px'
+      })
       this.markerEast.classList.add('hidden')
       this.markerWest.classList.remove('hidden')
       filteredVehicles.forEach(function (vehicle) {
