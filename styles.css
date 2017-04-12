@@ -15,6 +15,32 @@ h3 {
   transform: translateX(-50%);
 }
 
+#graph {
+  position: absolute;
+  height: 699px;
+  width: 699px;
+}
+
+.horizontal-line {
+  position: absolute;
+  z-index: -10;
+  width: 698px;
+  color: gray;
+  margin: 0;
+  padding: 0;
+}
+
+.vertical-line {
+  position: absolute;
+  transform: rotate(90deg);
+  z-index: -10;
+  top: 350px;
+  width: 698px;
+  color: gray;
+  margin: 0;
+  padding: 0;
+}
+
 .vehicle {
   position: absolute;
   font-size: 40px;

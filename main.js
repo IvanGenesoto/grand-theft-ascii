@@ -1,6 +1,25 @@
 var accelerating = false
 var decelerating = false
-var container = document.querySelector('#container')
+var lines = []
+var horizontalLinePositions = [50, 150, 250, 350, 450, 550, 650]
+var verticalLinePositions = [-300, -200, -100, 0, 100, 200, 300]
+var graph = document.querySelector('#graph')
+
+horizontalLinePositions.forEach(position => {
+  var line = document.createElement('hr')
+  line.classList.add('horizontal-line')
+  line.style.top = position + 'px'
+  graph.appendChild(line)
+  lines.push(line)
+})
+
+verticalLinePositions.forEach(position => {
+  var line = document.createElement('hr')
+  line.classList.add('vertical-line')
+  line.style.left = position + 'px'
+  graph.appendChild(line)
+  lines.push(line)
+})
 
 class Vehicle {
   constructor(name, ascii, location, direction, speed) {
@@ -12,14 +31,14 @@ class Vehicle {
     this.markerEast.textContent = ascii.east
     var idEast = name + '-east'
     this.markerEast.setAttribute('id', idEast)
-    container.appendChild(this.markerEast)
+    graph.appendChild(this.markerEast)
     this.markerEast.classList.add('vehicle')
     this.markerWest = document.createElement('h1')
     this.markerWest.textContent = ascii.west
     var idWest = name + '-west'
     this.markerWest.setAttribute('id', idWest)
     this.markerWest.classList.add('vehicle')
-    container.appendChild(this.markerWest)
+    graph.appendChild(this.markerWest)
     if (direction === 'east') {
       this.markerWest.classList.add('hidden')
     }
