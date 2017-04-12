@@ -22,7 +22,7 @@ verticalLinePositions.forEach(position => {
 })
 
 class Vehicle {
-  constructor(name, ascii, location, direction, speed) {
+  constructor(name, ascii, location, direction, speed, color) {
     this.direction = direction
     this.speed = speed
     this.location = location
@@ -47,6 +47,8 @@ class Vehicle {
     this.markerWest.style.left = this.location.left + 'px'
     this.markerEast.style.top = this.location.top + 'px'
     this.markerWest.style.top = this.location.top + 'px'
+    this.markerEast.style.color = color
+    this.markerWest.style.color = color
   }
   getDirection() {
     return this.direction
@@ -199,10 +201,10 @@ function filterVehicles() {
 }
 
 var car = new Vehicle('car', {east: 'o=o.', west: '.o=o'}, {left: 250, top: 400}, 'east', 3)
-var truck = new Vehicle('truck', {east: '=o=[]o', west: 'o[]=o='}, {left: 500, top: 500}, 'south', 2)
-var bus = new Vehicle('bus', {east: '[o===o].', west: '.[o===o]'}, {left: 400, top: 200}, 'west', 1)
+var truck = new Vehicle('truck', {east: '=o=[]o', west: 'o[]=o='}, {left: 500, top: 500}, 'south', 2, 'blue')
+var bus = new Vehicle('bus', {east: '[o===o].', west: '.[o===o]'}, {left: 400, top: 200}, 'west', 1, 'gray')
 var walk = new Vehicle('walk', {east: 'i', west: 'i'}, {left: 345, top: 327}, 'east', 0)
-var bugatti = new SuperCar('bugatti', {east: '\'O=o.', west: '.o=O\''}, {left: 100, top: 100}, 'east', 5)
+var bugatti = new SuperCar('bugatti', {east: '\'O=o.', west: '.o=O\''}, {left: 100, top: 100}, 'east', 5, 'red')
 
 var vehicles = [car, bus, truck, bugatti]
 
