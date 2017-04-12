@@ -1,6 +1,25 @@
 var accelerating = false
 var decelerating = false
-var container = document.querySelector('#container')
+var lines = []
+var horizontalLinePositions = [50, 150, 250, 350, 450, 550, 650]
+var verticalLinePositions = [-300, -200, -100, 0, 100, 200, 300]
+var graph = document.querySelector('#graph')
+
+horizontalLinePositions.forEach(position => {
+  var line = document.createElement('hr')
+  line.classList.add('horizontal-line')
+  line.style.top = position + 'px'
+  graph.appendChild(line)
+  lines.push(line)
+})
+
+verticalLinePositions.forEach(position => {
+  var line = document.createElement('hr')
+  line.classList.add('vertical-line')
+  line.style.left = position + 'px'
+  graph.appendChild(line)
+  lines.push(line)
+})
 
 class Vehicle {
   constructor(name, ascii, location, direction, speed) {
@@ -12,14 +31,14 @@ class Vehicle {
     this.markerEast.textContent = ascii.east
     var idEast = name + '-east'
     this.markerEast.setAttribute('id', idEast)
-    container.appendChild(this.markerEast)
+    graph.appendChild(this.markerEast)
     this.markerEast.classList.add('vehicle')
     this.markerWest = document.createElement('h1')
     this.markerWest.textContent = ascii.west
     var idWest = name + '-west'
     this.markerWest.setAttribute('id', idWest)
     this.markerWest.classList.add('vehicle')
-    container.appendChild(this.markerWest)
+    graph.appendChild(this.markerWest)
     if (direction === 'east') {
       this.markerWest.classList.add('hidden')
     }
@@ -68,7 +87,27 @@ class Vehicle {
     }
   }
   updateLocation(filteredVehicles) {
+    function getTop(line) {
+      for (var i = 0; i < line.style.top.length; i++) {
+        if (line.style.top[i] === 'p') {
+          return +line.style.top.substring(0, i)
+        }
+      }
+    }
+    function getLeft(line) {
+      for (var i = 0; i < line.style.left.length; i++) {
+        if (line.style.left[i] === 'p') {
+          return +line.style.left.substring(0, i)
+        }
+      }
+    }
     if (this.direction === 'north') {
+      lines.forEach(line => {
+        var top = getTop(line)
+        top += currentVehicle.speed
+        if (top >= 700) top -= 700
+        line.style.top = top + 'px'
+      })
       filteredVehicles.forEach(function (vehicle) {
         vehicle.location.top += currentVehicle.speed
         vehicle.markerEast.style.top = vehicle.location.top + 'px'
@@ -76,6 +115,12 @@ class Vehicle {
       })
     }
     if (this.direction === 'south') {
+      lines.forEach(line => {
+        var top = getTop(line)
+        top -= currentVehicle.speed
+        if (top <= 0) top += 700
+        line.style.top = top + 'px'
+      })
       filteredVehicles.forEach(function (vehicle) {
         vehicle.location.top -= currentVehicle.speed
         vehicle.markerEast.style.top = vehicle.location.top + 'px'
@@ -83,6 +128,12 @@ class Vehicle {
       })
     }
     if (this.direction === 'east') {
+      lines.forEach(line => {
+        var left = getLeft(line)
+        left -= currentVehicle.speed
+        if (left <= -350) left += 700
+        line.style.left = left + 'px'
+      })
       this.markerEast.classList.remove('hidden')
       this.markerWest.classList.add('hidden')
       filteredVehicles.forEach(function (vehicle) {
@@ -92,6 +143,12 @@ class Vehicle {
       })
     }
     if (this.direction === 'west') {
+      lines.forEach(line => {
+        var left = getLeft(line)
+        left += currentVehicle.speed
+        if (left >= 350) left -= 700
+        line.style.left = left + 'px'
+      })
       this.markerEast.classList.add('hidden')
       this.markerWest.classList.remove('hidden')
       filteredVehicles.forEach(function (vehicle) {
