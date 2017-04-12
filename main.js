@@ -27,13 +27,13 @@ class Vehicle {
     this.speed = speed
     this.location = location
     this.width = ascii.east.length * 20
-    this.markerEast = document.createElement('h1')
+    this.markerEast = document.createElement('h2')
     this.markerEast.textContent = ascii.east
     var idEast = name + '-east'
     this.markerEast.setAttribute('id', idEast)
     graph.appendChild(this.markerEast)
     this.markerEast.classList.add('vehicle')
-    this.markerWest = document.createElement('h1')
+    this.markerWest = document.createElement('h2')
     this.markerWest.textContent = ascii.west
     var idWest = name + '-west'
     this.markerWest.setAttribute('id', idWest)
