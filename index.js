@@ -9,7 +9,9 @@ var id = 0
 var playerID = 0
 // var stopBroadcasting = false
 
-var broadcasts = {}
+var broadcasts = {
+  '1': {}
+}
 
 var players = {}
 
@@ -244,23 +246,6 @@ var areas = {
       }
     },
     characters: {
-      '1': {
-        id: 1,
-        name: '',
-        vehicle: 0,
-        room: 0,
-        keys: [],
-        x: 250,
-        y: 7832,
-        width: 105,
-        height: 155,
-        direction: 'east',
-        speed: 0,
-        maxSpeed: 0,
-        acceleration: 0,
-        element: 'img',
-        src: 'images/characters/man.png'
-      }
     },
     aiCharacters: {
       '1': {
@@ -363,6 +348,51 @@ function createPlayer(playerID) {
   player.token = playerID
   player.character = playerID
   return player
+}
+
+function createCharacter(player) {
+  var characterID = player.character
+  var areaID = player.area
+  var area = areas[areaID]
+  area.characters[characterID] = {
+    id: 0,
+    name: '',
+    vehicle: 0,
+    room: 0,
+    keys: [],
+    x: 250,
+    y: 7832,
+    width: 105,
+    height: 155,
+    direction: 'east',
+    speed: 0,
+    maxSpeed: 0,
+    acceleration: 0,
+    elementID: 0,
+    element: 'img',
+    src: 'images/characters/man.png',
+    load: true
+  }
+  var character = area.characters[characterID]
+  character.id = characterID
+  id += 1
+  character.elementID = 'id' + id
+  var x = Math.floor(Math.random() * area.width)
+  character.x = x
+  return character
+}
+
+function broadcastCharacter(player, character) {
+  for (var areaID in broadcasts) {
+    var broadcast = broadcasts[areaID]
+    for (var playerID in broadcast) {
+      console.log('here');
+      var socket = broadcast[playerID]
+      console.log('emitting character');
+      socket.emit('character', character)
+      console.log('now!');
+    }
+  }
 }
 
 /* Use for persistent online world:
@@ -502,6 +532,8 @@ function keepCharacterInArea(value, min, max) {
 io.on('connection', socket => {
   playerID += 1
   var player = createPlayer(playerID)
+  var character = createCharacter(player)
+  broadcastCharacter(player, character)
   associatePlayerWithSocket(player, socket)
   socket.emit('player', player)
 

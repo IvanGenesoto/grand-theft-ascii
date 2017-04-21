@@ -32,7 +32,7 @@ var area = {}
 
 function checkAreaPopulated() {
   if (area.characters) {
-    createElements(camera, false)
+    createElements(camera)
     createElements(area, true)
     checkImagesLoaded()
   }
@@ -80,6 +80,16 @@ function checkImagesLoaded() {
   }
   else {
     setTimeout(checkImagesLoaded, 50)
+  }
+}
+
+function checkNewImagesLoaded(object) {
+  console.log('checking');
+  if (imagesLoaded === imagesTotal) {
+    object.load = false
+  }
+  else {
+    setTimeout(checkNewImagesLoaded, 50)
   }
 }
 
@@ -173,6 +183,7 @@ function refreshGame() {
   renderArea()
   loopThrough(area.vehicles, render)
   loopThrough(area.characters, render)
+  loopThrough(area.characters, checkForNewCharacters)
 }
 
 function updateArea() {
@@ -214,7 +225,7 @@ function control(key, action) {
 }
 
 function sendInput() {
-  socket.emit('player', player)
+  socket.emit('input', player.input)
 }
 
 function updateInputBuffer () {
@@ -288,18 +299,25 @@ function renderArea() {
 }
 
 function render(object) {
-  var $object = document.getElementById(object.elementID)
-  var $camera = document.getElementById(camera.elementID)
-  var context = $camera.getContext('2d')
-  var xInCamera = object.x - camera.x
-  var yInCamera = object.y - camera.y
-  if (object.direction) {
-    if (object.direction === 'left') {
-      xInCamera = -object.x + camera.x
-      context.scale(-1, 1)
+  if (!object.load) {
+    var $object = document.getElementById(object.elementID)
+    var $camera = document.getElementById(camera.elementID)
+    var context = $camera.getContext('2d')
+    var xInCamera = object.x - camera.x
+    var yInCamera = object.y - camera.y
+    if (object.direction) {
+      if (object.direction === 'left') {
+        xInCamera = -object.x + camera.x
+        context.scale(-1, 1)
+      }
     }
+    context.drawImage($object, xInCamera, yInCamera)
   }
-  context.drawImage($object, xInCamera, yInCamera)
+}
+
+function checkForNewCharacters(character) {
+  if (character.load) createElements(character)
+  character.load = false
 }
 
 window.addEventListener('resize', () => {
@@ -322,7 +340,13 @@ window.addEventListener('keyup', event => {
 
 socket.on('player', receivedPlayer => {
   player = receivedPlayer
-  camera.follow = player.id
+  camera.following = receivedPlayer.id
+})
+
+socket.on('character', character => {
+  console.log('got character');
+  createElements(character)
+  checkNewImagesLoaded(character)
 })
 
 socket.on('request-token', () => {
