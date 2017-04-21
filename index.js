@@ -1,7 +1,9 @@
 var express = require('express')
 var app = express()
-var server = require('http').Server(app)
-var io = require('socket.io')(server)
+var http = require('http')
+var server = http.Server(app)
+var socket = require('socket.io')
+var io = socket(server)
 
 var id = 0
 var stopBroadcasting = false
@@ -461,7 +463,8 @@ io.on('connection', socket => {
 assignElementIDs(state)
 
 app.use(express.static('public'))
-server.listen(3000)
+var port = process.env.PORT || 3000
+server.listen(port)
 
 setInterval(() => {
   if (!stopBroadcasting) {
