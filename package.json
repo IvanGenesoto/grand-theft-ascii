@@ -1,0 +1,28 @@
+{
+  "name": "socket-io-test",
+  "version": "1.0.0",
+  "description": "A massively multiplayer persistent online world for people who want to experience a simulated anarchic society.",
+  "main": "index.js",
+  "dependencies": {
+    "express": "^4.15.2",
+    "socket.io": "^1.7.3"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "watch": "nodemon ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IvanGenesoto/neon-city-anarchy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/IvanGenesoto/neon-city-anarchy/issues"
+  },
+  "homepage": "https://github.com/IvanGenesoto/neon-city-anarchy#readme"
+}
