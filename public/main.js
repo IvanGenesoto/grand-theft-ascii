@@ -1,6 +1,6 @@
 /* global io */
 
-var socket = io('http://localhost:3000')
+var socket = io()
 
 var imagesTotal = 0
 var imagesLoaded = 0
