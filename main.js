@@ -574,6 +574,16 @@ function render(object) {
   context.drawImage($object, xInCamera, yInCamera)
 }
 
+window.addEventListener('resize', () => {
+  if (document.getElementById(camera.elementID)) {
+    var $camera = document.getElementById(camera.elementID)
+    camera.width = window.innerWidth
+    camera.height = window.innerHeight
+    $camera.width = window.innerWidth
+    $camera.height = window.innerHeight
+  }
+}, false)
+
 window.addEventListener('keydown', event => {
   control(event.key, 'down')
 })
@@ -581,6 +591,9 @@ window.addEventListener('keydown', event => {
 window.addEventListener('keyup', event => {
   control(event.key, 'up')
 })
+
+camera.width = window.innerWidth
+camera.height = window.innerHeight
 
 createElements(camera, false)
 createElements(area, true)
