@@ -8,7 +8,15 @@
     "socket.io": "^1.7.3"
   },
   "devDependencies": {
-    "nodemon": "^1.11.0"
+    "eslint": "^3.19.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-react": "^6.10.3",
+    "eslint-plugin-standard": "^3.0.1",
+    "htmlhint": "^0.9.13",
+    "nodemon": "^1.11.0",
+    "stylelint": "^7.10.1",
+    "stylelint-config-standard": "^16.0.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

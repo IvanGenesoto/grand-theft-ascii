@@ -6,31 +6,17 @@ var imagesTotal = 0
 var imagesLoaded = 0
 var backgroundY = 0
 var upToDate = false
-var stopUpdtatingArea = false
+// var stopUpdtatingArea = false
 
 var timestamp = 1 // eslint-disable-line no-unused-vars
 var tick = 1 // eslint-disable-line no-unused-vars
 
 var inputBuffer = []
 
-var player = {
-  id: 1,
-  token: '3l9fj39wjfl',
-  area: 1,
-  character: 1,
-  input: {
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-    accelerate: false,
-    decelerate: false,
-    shoot: false
-  }
-}
+var player = {}
 
 var camera = {
-  following: 1,
+  following: 0,
   room: 0,
   x: 0,
   y: 0,
@@ -80,8 +66,7 @@ function createElements(object, loop) {
       loop &&
       typeof object[property] !== 'string' &&
       typeof object[property] !== 'number' &&
-      typeof object[property] !== 'boolean' &&
-      typeof object[property] !== undefined
+      typeof object[property] !== 'boolean'
     ) {
       var nestedObject = object[property]
       createElements(nestedObject, true)
@@ -180,11 +165,10 @@ function startGame() {
 }
 
 function refreshGame() {
-  if (!stopUpdtatingArea && !upToDate) updateArea()
+  if (/* !stopUpdtatingArea && */ !upToDate) updateArea()
   sendInput()
   updateInputBuffer()
-  updateCharacterMovement()
-  updateCharacterLocation()
+  updateCharacter()
   updateCamera()
   renderArea()
   loopThrough(area.vehicles, render)
@@ -202,7 +186,7 @@ function updateArea() {
     }
     inputBuffer = []
     upToDate = true
-    stopUpdtatingArea = true
+    // stopUpdtatingArea = true
   }
 }
 
@@ -237,7 +221,7 @@ function updateInputBuffer () {
   inputBuffer.push(player.input)
 }
 
-function updateCharacterMovement() {
+function updateCharacter() {
   var input = player.input
   var characterID = player.character
   var character = area.characters[characterID]
@@ -250,11 +234,6 @@ function updateCharacterMovement() {
     character.speed = 12
   }
   else character.speed = 0
-}
-
-function updateCharacterLocation() {
-  var characterID = player.id
-  var character = area.characters[characterID]
   if (character.speed > 0) {
     if (character.direction === 'left') {
       character.x -= character.speed
@@ -339,6 +318,11 @@ window.addEventListener('keydown', event => {
 
 window.addEventListener('keyup', event => {
   control(event.key, 'up')
+})
+
+socket.on('player', receivedPlayer => {
+  player = receivedPlayer
+  camera.follow = player.id
 })
 
 socket.on('request-token', () => {
