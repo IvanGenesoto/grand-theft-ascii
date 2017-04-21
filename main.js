@@ -1,481 +1,587 @@
-var accelerating = false
-var decelerating = false
-var distanceTraveledTop = 0
-var distanceTraveledLeft = 0
-var horizontalLines = []
-var verticalLines = []
-var vehicles = []
+var imagesTotal = 0
+var imagesLoaded = 0
+var backgroundY = 0
+var id = 0
 
-function createLines() {
-  var horizontalLinePositions = [21700, 21800, 21900, 22000, 22100, 22200, 22300]
-  var verticalLinePositions = [21350, 21450, 21550, 21650, 21750, 21850, 21950]
-  var graph = document.querySelector('#graph')
-  horizontalLinePositions.forEach(position => {
-    var line = document.createElement('hr')
-    line.classList.add('horizontal-line')
-    line.style.top = position + 'px'
-    line.style.left = 21650 + 'px'
-    graph.appendChild(line)
-    horizontalLines.push(line)
-  })
-  verticalLinePositions.forEach(position => {
-    var line = document.createElement('hr')
-    line.classList.add('vertical-line')
-    line.style.left = position + 'px'
-    line.style.top = 22000 + 'px'
-    graph.appendChild(line)
-    verticalLines.push(line)
-  })
-}
-
-class Vehicle {
-  constructor(ascii, location, direction, speed, maxSpeed, acceleration, deceleration, color) {
-    this.ascii = ascii
-    this.location = location
-    this.direction = direction
-    this.speed = speed
-    this.maxSpeed = maxSpeed
-    this.acceleration = acceleration
-    this.deceleration = deceleration
-    this.color = color
-    this.$element = document.createElement('h2')
-    this.$element.classList.add('vehicle')
-    this.$element.textContent = ascii
-    var graph = document.querySelector('#graph')
-    graph.appendChild(this.$element)
-    this.$element.style.left = this.location.left + 'px'
-    this.$element.style.top = this.location.top + 'px'
-    this.$element.style.color = color
-
-    var canvas = document.createElement('canvas')
-    canvas.classList.add('vehicle')
-    var context = canvas.getContext('2d')
-    var text = context.measureText(ascii)
-    this.width = text.width * 4
-
-    if (direction === 'west') {
-      this.$element.classList.add('flip')
-    }
-    else if (direction === 'north') {
-      var east = Math.floor(Math.random() * 2)
-      if (east) {
-        this.$element.classList.add('counter-clockwise')
-      }
-      else {
-        this.$element.classList.add('flip')
-        this.$element.classList.add('clockwise')
-      }
-    }
-    else {
-      east = Math.floor(Math.random() * 2)
-      if (east) {
-        this.$element.classList.add('clockwise')
-      }
-      else {
-        this.$element.classList.add('flip')
-        this.$element.classList.add('counter-clockwise')
-      }
-    }
-  }
-  setDirection(newDirection) {
-    this.direction = newDirection
-  }
-  setSpeed(newSpeed) {
-    this.speed = newSpeed
-  }
-  accelerate() {
-    var accelerationPercentage = this.acceleration / 10000
-    if (this.speed <= this.maxSpeed - this.maxSpeed * accelerationPercentage) {
-      this.speed += this.maxSpeed * accelerationPercentage
-    }
-    else this.speed = this.maxSpeed
-  }
-  decelerate() {
-    var decelerationPercentage = this.deceleration / 3333.3333
-    if (this.speed >= this.maxSpeed * decelerationPercentage) {
-      this.speed -= this.maxSpeed * decelerationPercentage
-    }
-    else this.speed = 0
-  }
-  updateLocation(filteredVehicles, stepped) {
-    if (stepped === 'out') var step = 16
-    else step = 0
-    if (this.direction === 'north') {
-      distanceTraveledTop -= this.speed
-      if (distanceTraveledTop <= -11000) this.direction = 'south'
-      horizontalLines.forEach(line => {
-        var top = removePXFromTop(line)
-        top += currentVehicle.speed
-        if (top >= 22350) top -= 700
-        line.style.top = top + 'px'
-      })
-      if (this.$element.classList.contains('flip')) {
-        this.$element.classList.add('clockwise')
-        this.$element.classList.remove('counter-clockwise')
-      }
-      else {
-        this.$element.classList.add('counter-clockwise')
-        this.$element.classList.remove('clockwise')
-      }
-      filteredVehicles.forEach(function (vehicle) {
-        vehicle.location.top += currentVehicle.speed
-        vehicle.$element.style.top = vehicle.location.top + 'px'
-      })
-    }
-    if (this.direction === 'south') {
-      distanceTraveledTop += this.speed + step
-      if (distanceTraveledTop >= 11000) this.direction = 'north'
-      horizontalLines.forEach(line => {
-        var top = removePXFromTop(line)
-        top -= currentVehicle.speed + step
-        if (top <= 21650) top += 700
-        line.style.top = top + 'px'
-      })
-      if (this.$element.classList.contains('flip')) {
-        this.$element.classList.add('counter-clockwise')
-        this.$element.classList.remove('clockwise')
-      }
-      else {
-        this.$element.classList.add('clockwise')
-        this.$element.classList.remove('counter-clockwise')
-      }
-      filteredVehicles.forEach(function (vehicle) {
-        vehicle.location.top -= currentVehicle.speed + step
-        vehicle.$element.style.top = vehicle.location.top + 'px'
-      })
-    }
-    if (this.direction === 'east') {
-      distanceTraveledLeft += this.speed
-      if (distanceTraveledLeft >= 11000) this.direction = 'west'
-      verticalLines.forEach(line => {
-        var left = removePXFromLeft(line)
-        left -= currentVehicle.speed
-        if (left <= 21300) left += 700
-        line.style.left = left + 'px'
-      })
-      this.$element.classList.remove('clockwise', 'counter-clockwise', 'flip')
-      filteredVehicles.forEach(function (vehicle) {
-        vehicle.location.left -= currentVehicle.speed
-        vehicle.$element.style.left = vehicle.location.left + 'px'
-      })
-    }
-    if (this.direction === 'west') {
-      distanceTraveledLeft -= this.speed
-      if (distanceTraveledLeft <= -11000) this.direction = 'east'
-      verticalLines.forEach(line => {
-        var left = removePXFromLeft(line)
-        left += currentVehicle.speed
-        if (left >= 22000) left -= 700
-        line.style.left = left + 'px'
-      })
-      this.$element.classList.remove('clockwise', 'counter-clockwise')
-      this.$element.classList.add('flip')
-      filteredVehicles.forEach(function (vehicle) {
-        vehicle.location.left += currentVehicle.speed
-        vehicle.$element.style.left = vehicle.location.left + 'px'
-      })
-    }
+var player = {
+  id: 1,
+  area: 1,
+  character: 1,
+  input: {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    accelerate: false,
+    decelerate: false,
+    shoot: false
   }
 }
 
-class Person extends Vehicle {
-  straighten() {
-    this.$element.classList.remove('clockwise', 'counter-clockwise')
-  }
-  decelerate() {
-    this.speed = 0
-  }
-  accelerate() {
-    if (this.speed === 0) this.speed = 3
-    if (this.speed === 3) this.speed = 6
-  }
+var camera = {
+  following: 1,
+  room: 0,
+  x: 0,
+  y: 0,
+  element: 'canvas',
+  width: 1920,
+  height: 1080
 }
 
-class SuperCar extends Vehicle { // eslint-disable-line no-unused-vars
-  accelerate() {
-    this.speed += 3
-  }
-}
-
-function removePXFromTop(line) {
-  for (var i = 0; i < line.style.top.length; i++) {
-    if (line.style.top[i] === 'p') {
-      return +line.style.top.substring(0, i)
-    }
-  }
-}
-function removePXFromLeft(line) {
-  for (var i = 0; i < line.style.left.length; i++) {
-    if (line.style.left[i] === 'p') {
-      return +line.style.left.substring(0, i)
-    }
-  }
-}
-
-function move(filteredVehicles) {
-  filteredVehicles.forEach(vehicle => {
-    if (vehicle.direction === 'north') {
-      if (vehicle.location.top <= 11000 - distanceTraveledTop) {
-        vehicle.direction = 'south'
-      }
-      if (vehicle.$element.classList.contains('flip')) {
-        vehicle.$element.classList.add('clockwise')
-        vehicle.$element.classList.remove('counter-clockwise')
-      }
-      else {
-        vehicle.$element.classList.add('counter-clockwise')
-        vehicle.$element.classList.remove('clockwise')
-      }
-      vehicle.location.top -= vehicle.speed
-      vehicle.$element.style.top = vehicle.location.top + 'px'
-    }
-    if (vehicle.direction === 'south') {
-      if (vehicle.location.top >= 33000 - distanceTraveledTop) {
-        vehicle.direction = 'north'
-      }
-      if (vehicle.$element.classList.contains('flip')) {
-        vehicle.$element.classList.add('counter-clockwise')
-        vehicle.$element.classList.remove('clockwise')
-      }
-      else {
-        vehicle.$element.classList.add('clockwise')
-        vehicle.$element.classList.remove('counter-clockwise')
-      }
-      vehicle.location.top += vehicle.speed
-      vehicle.$element.style.top = vehicle.location.top + 'px'
-    }
-    if (vehicle.direction === 'east') {
-      if (vehicle.location.left >= 33000 - distanceTraveledLeft) {
-        vehicle.direction = 'west'
-      }
-      vehicle.$element.classList.remove('clockwise', 'counter-clockwise', 'flip')
-      vehicle.location.left += vehicle.speed
-      vehicle.$element.style.left = vehicle.location.left + 'px'
-    }
-    if (vehicle.direction === 'west') {
-      if (vehicle.location.left <= 11000 - distanceTraveledLeft) {
-        vehicle.direction = 'east'
-      }
-      vehicle.$element.classList.remove('clockwise', 'counter-clockwise')
-      vehicle.$element.classList.add('flip')
-      vehicle.location.left -= vehicle.speed
-      vehicle.$element.style.left = vehicle.location.left + 'px'
-    }
-  })
-}
-
-function turn(filteredVehicles) {
-  filteredVehicles.forEach(vehicle => {
-    if (vehicle.speed > 0) {
-      var turn = Math.floor(Math.random() * 1.004)
-      if (turn) {
-        if (vehicle.direction === 'north' || vehicle.direction === 'south') {
-          var directions = ['east', 'west']
+var area = {
+  id: 1,
+  name: 'District 1',
+  width: 8000,
+  height: 8000,
+  element: 'canvas',
+  backgrounds: {
+    '1': {
+      x: 0,
+      y: 0,
+      element: 'canvas',
+      width: 8000,
+      height: 8000,
+      sections: {
+        '1': {
+          rows: 1,
+          options: {
+            '1': {
+              x: 0,
+              y: 0,
+              prevalence: 1,
+              element: 'img',
+              src: 'images/background/far/above-top.png',
+              width: 1024,
+              height: 367
+            }
+          }
+        },
+        '2': {
+          rows: 1,
+          options: {
+            '1': {
+              x: 0,
+              y: 0,
+              prevalence: 4,
+              element: 'img',
+              src: 'images/background/far/top/top.png',
+              width: 1024,
+              height: 260
+            },
+            '2': {
+              x: 0,
+              y: 0,
+              prevalence: 1,
+              element: 'img',
+              src: 'images/background/far/top/top-pink-jumbotron-left.png',
+              width: 1024,
+              height: 260
+            },
+            '3': {
+              x: 0,
+              y: 0,
+              prevalence: 2,
+              element: 'img',
+              src: 'images/background/far/top/top-pink-jumbotron-right.png',
+              width: 1024,
+              height: 260
+            }
+          }
+        },
+        section3: {
+          rows: 50,
+          options: {
+            '1': {
+              x: 0,
+              y: 0,
+              prevalence: 3,
+              element: 'img',
+              src: 'images/background/far/middle/middle.png',
+              width: 1024,
+              height: 134
+            },
+            '2': {
+              x: 0,
+              y: 0,
+              prevalence: 2,
+              element: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
+              width: 1024,
+              height: 134
+            },
+            '3': {
+              x: 0,
+              y: 0,
+              prevalence: 1,
+              element: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
+              width: 1024,
+              height: 134
+            },
+            '4': {
+              x: 0,
+              y: 0,
+              prevalence: 1,
+              element: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
+              width: 1024,
+              height: 134
+            },
+            '5': {
+              x: 0,
+              y: 0,
+              prevalence: 2,
+              element: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
+              width: 1024,
+              height: 134
+            },
+            '6': {
+              x: 0,
+              y: 0,
+              prevalence: 2,
+              element: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
+              width: 1024,
+              height: 134
+            },
+            '7': {
+              x: 0,
+              y: 0,
+              prevalence: 3,
+              element: 'img',
+              src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
+              width: 1024,
+              height: 134
+            },
+            '8': {
+              x: 0,
+              y: 0,
+              prevalence: 2,
+              element: 'img',
+              src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
+              width: 1024,
+              height: 134
+            },
+            '9': {
+              x: 0,
+              y: 0,
+              prevalence: 3,
+              element: 'img',
+              src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
+              width: 1024,
+              height: 134
+            }
+          }
+        },
+        '4': {
+          rows: 1,
+          options: {
+            '1': {
+              x: 0,
+              y: 0,
+              prevalence: 1,
+              element: 'img',
+              src: 'images/background/far/bottom.png',
+              width: 1024,
+              height: 673
+            }
+          }
         }
-        else if (vehicle.direction === 'east' || vehicle.direction === 'west') {
-          directions = ['north', 'south']
+      }
+    },
+    '2': {
+      x: 0,
+      y: 7232,
+      element: 'canvas',
+      width: 16000,
+      height: 8000,
+      sections: {
+        '1': {
+          rows: 1,
+          options: {
+            '1': {
+              x: 0,
+              y: 0,
+              width: 1024,
+              height: 768,
+              prevalence: 1,
+              element: 'img',
+              src: 'images/background/middle.png'
+            }
+          }
         }
-        var directionIndex = Math.floor(Math.random() * directions.length)
-        vehicle.direction = directions[directionIndex]
+      }
+    },
+    '3': {
+      x: 0,
+      y: 7232,
+      element: 'canvas',
+      width: 32000,
+      height: 8000,
+      sections: {
+        '1': {
+          rows: 1,
+          options: {
+            '1': {
+              x: 0,
+              y: 0,
+              width: 1408,
+              height: 768,
+              prevalence: 1,
+              element: 'img',
+              src: 'images/background/near.png'
+            }
+          }
+        }
       }
     }
-  })
+  },
+  rooms: {
+    room1: {
+      id: 1,
+      key: '9xn2989n',
+      viewingKey: undefined,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      element: 'canvas',
+      background: undefined,
+      foreground: undefined,
+      scenery: {
+        background: undefined,
+        foreground: undefined
+      },
+      inventory: undefined
+    }
+  },
+  characters: {
+    '1': {
+      id: 1,
+      name: '',
+      room: 0,
+      x: 250,
+      y: 7832,
+      width: 105,
+      height: 155,
+      keys: [],
+      direction: 'east',
+      speed: 0,
+      maxSpeed: 0,
+      acceleration: 0,
+      element: 'img',
+      src: 'images/characters/man.png'
+    }
+  },
+  aiCharacters: {
+    '1': {
+      id: 1,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      keys: [],
+      direction: 'east',
+      speed: 0,
+      maxSpeed: 0,
+      acceleration: 0,
+      frames: {}
+    }
+  },
+  vehicles: {
+    '1': {
+      id: 1,
+      key: '93dufn23',
+      x: 450,
+      y: 7852,
+      width: 268,
+      height: 80,
+      direction: 'east',
+      speed: 0,
+      maxSpeed: 0,
+      acceleration: 0,
+      deceleration: 0,
+      armor: undefined,
+      weight: 0,
+      element: 'img',
+      src: 'images/vehicles/delorean.png'
+    }
+  },
+  projectiles: {
+    '1': {
+      x: 0,
+      y: 0,
+      classes: [],
+      speed: 0,
+      type: undefined,
+      level: undefined
+    }
+  },
+  scenery: {
+    background: {
+      '1': {
+        x: 0,
+        y: 0
+      }
+    },
+    foreground: {
+      '1': {
+        x: 0,
+        y: 0
+      }
+    }
+  }
 }
 
-function hijack(filteredVehicles) {
-  var hijacked = false
-  vehicles.forEach(function (vehicle) {
-    if (
-      currentVehicle === walk &&
-      walk.location.left > vehicle.location.left + 22 &&
-      walk.location.left < vehicle.location.left + vehicle.width - 22 &&
-      walk.location.top > vehicle.location.top - 15 &&
-      walk.location.top < vehicle.location.top + 15
+function createElements(object, loop) {
+  for (var property in object) {
+    if (property === 'element') {
+      var $element = document.createElement(object.element)
+      id += 1
+      object.elementID = 'id' + id
+      $element.id = 'id' + id
+      document.body.appendChild($element)
+      if (loop) {
+        $element.classList.add('hidden')
+      }
+      if (object.width) {
+        $element.width = object.width
+        $element.height = object.height
+      }
+      if (object.src) {
+        $element.src = object.src
+        imagesTotal += 1
+        $element.onload = function () {
+          imagesLoaded += 1
+        }
+      }
+    }
+    else if (
+      loop &&
+      typeof object[property] !== 'string' &&
+      typeof object[property] !== 'number' &&
+      typeof object[property] !== 'boolean' &&
+      typeof object[property] !== undefined
     ) {
-      hijacked = true
-      currentVehicle = vehicle
-      walk.setSpeed(0)
-      walk.$element.classList.add('hidden')
-      var previousTop = currentVehicle.location.top
-      var previousLeft = currentVehicle.location.left
-      currentVehicle.location.top = 22000
-      currentVehicle.location.left = 22000 - currentVehicle.width / 2
-      currentVehicle.$element.style.top = currentVehicle.location.top + 'px'
-      currentVehicle.$element.style.left = currentVehicle.location.left + 'px'
-      var filteredVehicles = filterVehicles()
-      filteredVehicles.forEach(function (otherVehicle) {
-        if (previousTop > vehicle.location.top) {
-          otherVehicle.location.top -= previousTop - vehicle.location.top
-          otherVehicle.$element.style.top = otherVehicle.location.top + 'px'
-        }
-        if (previousTop < vehicle.location.top) {
-          otherVehicle.location.top += vehicle.location.top - previousTop
-          otherVehicle.$element.style.top = otherVehicle.location.top + 'px'
-        }
-        if (previousLeft > vehicle.location.left) {
-          otherVehicle.location.left -= previousLeft - vehicle.location.left
-          otherVehicle.$element.style.left = otherVehicle.location.left + 'px'
-        }
-        if (previousLeft < vehicle.location.left) {
-          otherVehicle.location.left += vehicle.location.left - previousLeft
-          otherVehicle.$element.style.left = otherVehicle.location.left + 'px'
-        }
-      })
+      var nestedObject = object[property]
+      createElements(nestedObject, true)
     }
-  })
-  return hijacked
-}
-
-function filterVehicles() {
-  var filteredVehicles = vehicles.filter(function (vehicle) {
-    return vehicle !== currentVehicle
-  })
-  return filteredVehicles
-}
-
-setInterval(function () {
-  var hijacked = false
-  hijacked = hijack()
-  if (hijacked === false) {
-    var filteredVehicles = filterVehicles()
-    currentVehicle.updateLocation(filteredVehicles)
   }
-  filteredVehicles = filterVehicles()
-  move(filteredVehicles)
-  var $mph = document.querySelector('#mph')
-  $mph.textContent = 'MPH: ' + Math.floor(currentVehicle.speed * 2)
-  turn(filteredVehicles)
-  walk.straighten()
-}, 42)
+}
 
-setInterval(function () {
-  if (accelerating) currentVehicle.accelerate()
-  if (decelerating) currentVehicle.decelerate()
-}, 42)
-
-function createVehicle() {
-  var colors = ['red', 'orange', 'green', 'blue', 'purple', 'black', 'gray', 'brown']
-  var colorIndex = Math.floor(Math.random() * colors.length)
-  var color = colors[colorIndex]
-
-  var top = Math.floor(Math.random() * (33000 - 11000) + 11000)
-  var left = Math.floor(Math.random() * (33000 - 11000) + 11000)
-
-  var directions = ['north', 'south', 'east', 'west']
-  var directionIndex = Math.floor(Math.random() * directions.length)
-  var direction = directions[directionIndex]
-
-  var Fast = Math.floor(Math.random() * (50 - 21)) + 4
-  var Medium = Math.floor(Math.random() * (20 - 11)) + 4
-  var Slow = Math.floor(Math.random() * (10 - 4)) + 4
-  var isMedium = Math.floor(Math.random() * 2)
-  if (isMedium) var maxSpeed = Medium
+function checkImagesLoaded() {
+  if (imagesLoaded === imagesTotal) {
+    composeBackgrounds()
+  }
   else {
-    var isFast = Math.floor(Math.random() * 2)
-    if (isFast) maxSpeed = Fast
-    else maxSpeed = Slow
+    setTimeout(checkImagesLoaded, 50)
   }
-  var speed = Math.floor(Math.random() * maxSpeed)
-
-  var asciiCharacters = ['=', '=', '=', '#', '#', '@', '[', ']', '(', ')', '{', '}', '|']
-  var numberOfASCII = Math.floor(Math.random() * (7 - 1)) + 1
-  var asciiCharacterIndexes = []
-  for (var i = 0; i < numberOfASCII; i++) {
-    var asciiCharacterIndex = Math.floor(Math.random() * asciiCharacters.length)
-    asciiCharacterIndexes.push(asciiCharacterIndex)
-  }
-  var ascii = 'o'
-  asciiCharacterIndexes.forEach(asciiCharacterIndex => {
-    ascii += asciiCharacters[asciiCharacterIndex]
-  })
-  ascii += 'o'
-
-  var acceleration = Math.floor(Math.random() * (101 - 30) + 30)
-  var deceleration = Math.floor(Math.random() * (101 - 30) + 30)
-
-  var vehicle = new Vehicle(ascii, {top: top, left: left}, direction, speed, maxSpeed, acceleration, deceleration, color)
-  vehicles.push(vehicle)
 }
 
-document.body.addEventListener('keydown', function (event) {
-  function controlVehicle() {
-    if (event.key === 'ArrowUp') {
-      currentVehicle.setDirection('north')
-    }
-    if (event.key === 'ArrowDown') {
-      currentVehicle.setDirection('south')
-    }
-    if (event.key === 'ArrowRight') {
-      currentVehicle.setDirection('east')
-    }
-    if (event.key === 'ArrowLeft') {
-      currentVehicle.setDirection('west')
-    }
-    if (event.key === 'a' || event.key === 'A') {
-      accelerating = true
-    }
-    if (event.key === 'd' || event.key === 'D') {
-      decelerating = true
-    }
-  }
-  function getOut(filteredVehicles) {
-    if (currentVehicle.speed === 0 && event.key === ' ') {
-      walk.location.top = 22000
-      walk.location.left = 22000
-      walk.direction = 'south'
-      var previousTop = currentVehicle.location.top
-      var previousLeft = currentVehicle.location.left
-      filteredVehicles.forEach(function (otherVehicle) {
-        if (previousTop > currentVehicle.location.top) {
-          otherVehicle.location.top -= previousTop - currentVehicle.location.top
-          otherVehicle.$element.style.top = otherVehicle.location.top + 'px'
-        }
-        if (previousTop < currentVehicle.location.top) {
-          otherVehicle.location.top += currentVehicle.location.top - previousTop
-          otherVehicle.$element.style.top = otherVehicle.location.top + 'px'
-        }
-        if (previousLeft > currentVehicle.location.left) {
-          otherVehicle.location.left -= previousLeft - currentVehicle.location.left
-          otherVehicle.$element.style.left = otherVehicle.location.left + 'px'
-        }
-        if (previousLeft < currentVehicle.location.left) {
-          otherVehicle.location.left += currentVehicle.location.left - previousLeft
-          otherVehicle.$element.style.left = otherVehicle.location.left + 'px'
-        }
-      })
-      currentVehicle.$element.style.top = currentVehicle.location.top + 'px'
-      currentVehicle.$element.style.left = currentVehicle.location.left + 'px'
-      walk.$element.style.left = walk.location.left + 'px'
-      walk.$element.style.top = walk.location.top + 'px'
-      walk.$element.classList.remove('hidden')
-      currentVehicle = walk
-      filteredVehicles = filterVehicles()
-      walk.updateLocation(filteredVehicles, 'out')
-    }
-  }
-  if (
-    event.key === 'ArrowUp' ||
-    event.key === 'ArrowDown' ||
-    event.key === 'ArrowRight' ||
-    event.key === 'ArrowLeft' ||
-    event.key === ' '
-  ) {
-    event.preventDefault()
-  }
-  var filteredVehicles = filterVehicles()
-  getOut(filteredVehicles)
-  controlVehicle()
-})
-
-document.body.addEventListener('keyup', function (event) {
-  if (event.key === 'a') accelerating = false
-  if (event.key === 'd') decelerating = false
-})
-
-var walk = new Person('i', {left: 22000, top: 22000}, 'east', 0, 6, 50, 100)
-new Person('i', {left: 44000, top: 44000}, 'east', 0, 0, 0, 0, 'white') // eslint-disable-line no-new
-var currentVehicle = walk
-createLines()
-for (var i = 0; i < 1000; i++) {
-  createVehicle()
+function composeBackgrounds() {
+  loopThrough(area.backgrounds, loopThroughSections)
+  loopThrough(area.backgrounds, drawToArea)
+  startGame()
 }
+
+function loopThrough(objects, callback) {
+  for (var property in objects) {
+    if (objects.hasOwnProperty(property)) {
+      var object = objects[property]
+      backgroundY = 0
+      callback(object, area)
+    }
+  }
+}
+
+function loopThroughSections(background) {
+  for (var property in background.sections) {
+    if (background.sections.hasOwnProperty(property)) {
+      var section = background.sections[property]
+      var rows = section.rows
+      createOptionsArray(section, rows, background)
+    }
+  }
+}
+
+function createOptionsArray(section, rows, background) {
+  var optionsArray = []
+  var options = section.options
+  for (var property in options) {
+    if (options.hasOwnProperty(property)) {
+      var option = options[property]
+      for (var i = 0; i < option.prevalence; i++) {
+        optionsArray.push(option)
+      }
+    }
+  }
+  chooseFromOptionsArray(optionsArray, rows, background)
+}
+
+function chooseFromOptionsArray(optionsArray, rows, background) {
+  var rowsDrawn = 0
+  function startRow() {
+    var x = 0
+    var rowY = 0
+    function chooseOption() {
+      if (x < background.width) {
+        var index = Math.floor(Math.random() * optionsArray.length)
+        var option = optionsArray[index]
+        option.x = x
+        option.y = backgroundY
+        x += option.width
+        rowY = option.height
+        drawToArea(option, background)
+        chooseOption()
+      }
+      else {
+        rowsDrawn += 1
+        backgroundY += rowY
+        startRow()
+      }
+    }
+    if (rowsDrawn < rows) {
+      chooseOption()
+    }
+  }
+  startRow()
+}
+
+function drawToArea(image, canvas) {
+  var $image = document.getElementById(image.elementID)
+  var $canvas = document.getElementById(canvas.elementID)
+  var context = $canvas.getContext('2d')
+  context.drawImage($image, 0, 0, image.width, image.height,
+    image.x, image.y, image.width, image.height)
+}
+
+function startGame() {
+  setInterval(refreshGame, 33)
+}
+
+function refreshGame() {
+  updateCharacterMovement()
+  updateCharacterLocation()
+  updateCamera()
+  renderArea()
+  loopThrough(area.vehicles, render)
+  loopThrough(area.characters, render)
+}
+
+function control(key, action) {
+  if (key === 'a' || key === 'A' || key === 'ArrowLeft') {
+    if (action === 'down') player.input.left = true
+    if (action === 'up') player.input.left = false
+  }
+  if (key === 'd' || key === 'D' || key === 'ArrowRight') {
+    if (action === 'down') player.input.right = true
+    if (action === 'up') player.input.right = false
+  }
+  if (key === 'e' || key === 'E' || key === 'ArrowUp') {
+    if (action === 'down') player.input.up = true
+    if (action === 'up') player.input.up = false
+  }
+  if (key === 's' || key === 'S' || key === 'ArrowDown') {
+    if (action === 'down') player.input.down = true
+    if (action === 'up') player.input.down = false
+  }
+}
+
+function updateCharacterMovement() {
+  var input = player.input
+  var characterID = player.id
+  var character = area.characters[characterID]
+  if (input.right === true) {
+    character.direction = 'right'
+    character.speed = 12
+  }
+  else if (input.left === true) {
+    character.direction = 'left'
+    character.speed = 12
+  }
+  else character.speed = 0
+}
+
+function updateCharacterLocation() {
+  var characterID = player.id
+  var character = area.characters[characterID]
+  if (character.speed > 0) {
+    if (character.direction === 'left') {
+      character.x -= character.speed
+    }
+    if (character.direction === 'right') {
+      character.x += character.speed
+    }
+    var value = character.x
+    var min = character.width
+    var max = area.width - character.width
+    character.x = keepCharacterInArea(value, min, max)
+  }
+}
+
+function keepCharacterInArea(value, min, max) {
+  if (value < min) return min
+  else if (value > max) return max
+  else return value
+}
+
+function updateCamera() {
+  if (camera.following) {
+    var characterID = camera.following
+    var character = area.characters[characterID]
+    var x = character.x
+    var y = character.y
+    var cameraX = x - camera.width / 2
+    var cameraY = y - camera.height / 2
+    var cameraMaxX = area.width - camera.width
+    var cameraMaxY = area.height - camera.height
+    var cameraMinX = 0
+    var cameraMinY = 0
+    camera.x = keepCameraInArea(cameraX, cameraMinX, cameraMaxX)
+    camera.y = keepCameraInArea(cameraY, cameraMinY, cameraMaxY)
+  }
+}
+
+function keepCameraInArea(value, min, max) {
+  if (value < min) return min
+  else if (value > max) return max
+  else return value
+}
+
+function renderArea() {
+  var $area = document.getElementById(area.elementID)
+  var $camera = document.getElementById(camera.elementID)
+  var context = $camera.getContext('2d')
+  context.setTransform(1, 0, 0, 1, 0, 0)
+  context.clearRect(0, 0, camera.width, camera.height)
+  context.drawImage($area, camera.x, camera.y, camera.width,
+    camera.height, 0, 0, camera.width, camera.height)
+}
+
+function render(object) {
+  var $object = document.getElementById(object.elementID)
+  var $camera = document.getElementById(camera.elementID)
+  var context = $camera.getContext('2d')
+  var xInCamera = object.x - camera.x
+  var yInCamera = object.y - camera.y
+  if (object.direction) {
+    if (object.direction === 'left') {
+      xInCamera = -object.x + camera.x
+      context.scale(-1, 1)
+    }
+  }
+  context.drawImage($object, xInCamera, yInCamera)
+}
+
+window.addEventListener('keydown', event => {
+  control(event.key, 'down')
+})
+
+window.addEventListener('keyup', event => {
+  control(event.key, 'up')
+})
+
+createElements(camera, false)
+createElements(area, true)
+checkImagesLoaded()
