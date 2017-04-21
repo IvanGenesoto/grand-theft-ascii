@@ -1,10 +1,21 @@
+/* global io */
+
+var socket = io('http://localhost:3000')
+
 var imagesTotal = 0
 var imagesLoaded = 0
 var backgroundY = 0
-var id = 0
+var upToDate = false
+var stopUpdtatingArea = false
+
+var timestamp = 1 // eslint-disable-line no-unused-vars
+var tick = 1 // eslint-disable-line no-unused-vars
+
+var inputBuffer = []
 
 var player = {
   id: 1,
+  token: '3l9fj39wjfl',
   area: 1,
   character: 1,
   input: {
@@ -24,313 +35,23 @@ var camera = {
   x: 0,
   y: 0,
   element: 'canvas',
+  elementID: 'id0',
   width: 1920,
   height: 1080
 }
 
-var area = {
-  id: 1,
-  name: 'District 1',
-  width: 8000,
-  height: 8000,
-  element: 'canvas',
-  backgrounds: {
-    '1': {
-      x: 0,
-      y: 0,
-      element: 'canvas',
-      width: 8000,
-      height: 8000,
-      sections: {
-        '1': {
-          rows: 1,
-          options: {
-            '1': {
-              x: 0,
-              y: 0,
-              prevalence: 1,
-              element: 'img',
-              src: 'images/background/far/above-top.png',
-              width: 1024,
-              height: 367
-            }
-          }
-        },
-        '2': {
-          rows: 1,
-          options: {
-            '1': {
-              x: 0,
-              y: 0,
-              prevalence: 4,
-              element: 'img',
-              src: 'images/background/far/top/top.png',
-              width: 1024,
-              height: 260
-            },
-            '2': {
-              x: 0,
-              y: 0,
-              prevalence: 1,
-              element: 'img',
-              src: 'images/background/far/top/top-pink-jumbotron-left.png',
-              width: 1024,
-              height: 260
-            },
-            '3': {
-              x: 0,
-              y: 0,
-              prevalence: 2,
-              element: 'img',
-              src: 'images/background/far/top/top-pink-jumbotron-right.png',
-              width: 1024,
-              height: 260
-            }
-          }
-        },
-        section3: {
-          rows: 50,
-          options: {
-            '1': {
-              x: 0,
-              y: 0,
-              prevalence: 3,
-              element: 'img',
-              src: 'images/background/far/middle/middle.png',
-              width: 1024,
-              height: 134
-            },
-            '2': {
-              x: 0,
-              y: 0,
-              prevalence: 2,
-              element: 'img',
-              src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
-              width: 1024,
-              height: 134
-            },
-            '3': {
-              x: 0,
-              y: 0,
-              prevalence: 1,
-              element: 'img',
-              src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
-              width: 1024,
-              height: 134
-            },
-            '4': {
-              x: 0,
-              y: 0,
-              prevalence: 1,
-              element: 'img',
-              src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
-              width: 1024,
-              height: 134
-            },
-            '5': {
-              x: 0,
-              y: 0,
-              prevalence: 2,
-              element: 'img',
-              src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
-              width: 1024,
-              height: 134
-            },
-            '6': {
-              x: 0,
-              y: 0,
-              prevalence: 2,
-              element: 'img',
-              src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
-              width: 1024,
-              height: 134
-            },
-            '7': {
-              x: 0,
-              y: 0,
-              prevalence: 3,
-              element: 'img',
-              src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
-              width: 1024,
-              height: 134
-            },
-            '8': {
-              x: 0,
-              y: 0,
-              prevalence: 2,
-              element: 'img',
-              src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
-              width: 1024,
-              height: 134
-            },
-            '9': {
-              x: 0,
-              y: 0,
-              prevalence: 3,
-              element: 'img',
-              src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
-              width: 1024,
-              height: 134
-            }
-          }
-        },
-        '4': {
-          rows: 1,
-          options: {
-            '1': {
-              x: 0,
-              y: 0,
-              prevalence: 1,
-              element: 'img',
-              src: 'images/background/far/bottom.png',
-              width: 1024,
-              height: 673
-            }
-          }
-        }
-      }
-    },
-    '2': {
-      x: 0,
-      y: 7232,
-      element: 'canvas',
-      width: 16000,
-      height: 8000,
-      sections: {
-        '1': {
-          rows: 1,
-          options: {
-            '1': {
-              x: 0,
-              y: 0,
-              width: 1024,
-              height: 768,
-              prevalence: 1,
-              element: 'img',
-              src: 'images/background/middle.png'
-            }
-          }
-        }
-      }
-    },
-    '3': {
-      x: 0,
-      y: 7232,
-      element: 'canvas',
-      width: 32000,
-      height: 8000,
-      sections: {
-        '1': {
-          rows: 1,
-          options: {
-            '1': {
-              x: 0,
-              y: 0,
-              width: 1408,
-              height: 768,
-              prevalence: 1,
-              element: 'img',
-              src: 'images/background/near.png'
-            }
-          }
-        }
-      }
-    }
-  },
-  rooms: {
-    room1: {
-      id: 1,
-      key: '9xn2989n',
-      viewingKey: undefined,
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      element: 'canvas',
-      background: undefined,
-      foreground: undefined,
-      scenery: {
-        background: undefined,
-        foreground: undefined
-      },
-      inventory: undefined
-    }
-  },
-  characters: {
-    '1': {
-      id: 1,
-      name: '',
-      room: 0,
-      x: 250,
-      y: 7832,
-      width: 105,
-      height: 155,
-      keys: [],
-      direction: 'east',
-      speed: 0,
-      maxSpeed: 0,
-      acceleration: 0,
-      element: 'img',
-      src: 'images/characters/man.png'
-    }
-  },
-  aiCharacters: {
-    '1': {
-      id: 1,
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      keys: [],
-      direction: 'east',
-      speed: 0,
-      maxSpeed: 0,
-      acceleration: 0,
-      frames: {}
-    }
-  },
-  vehicles: {
-    '1': {
-      id: 1,
-      key: '93dufn23',
-      x: 450,
-      y: 7852,
-      width: 268,
-      height: 80,
-      direction: 'east',
-      speed: 0,
-      maxSpeed: 0,
-      acceleration: 0,
-      deceleration: 0,
-      armor: undefined,
-      weight: 0,
-      element: 'img',
-      src: 'images/vehicles/delorean.png'
-    }
-  },
-  projectiles: {
-    '1': {
-      x: 0,
-      y: 0,
-      classes: [],
-      speed: 0,
-      type: undefined,
-      level: undefined
-    }
-  },
-  scenery: {
-    background: {
-      '1': {
-        x: 0,
-        y: 0
-      }
-    },
-    foreground: {
-      '1': {
-        x: 0,
-        y: 0
-      }
-    }
+var queuedArea = {}
+
+var area = {}
+
+function checkAreaPopulated() {
+  if (area.characters) {
+    createElements(camera, false)
+    createElements(area, true)
+    checkImagesLoaded()
+  }
+  else {
+    setTimeout(checkAreaPopulated, 50)
   }
 }
 
@@ -338,9 +59,7 @@ function createElements(object, loop) {
   for (var property in object) {
     if (property === 'element') {
       var $element = document.createElement(object.element)
-      id += 1
-      object.elementID = 'id' + id
-      $element.id = 'id' + id
+      $element.id = object.elementID
       document.body.appendChild($element)
       if (loop) {
         $element.classList.add('hidden')
@@ -461,12 +180,34 @@ function startGame() {
 }
 
 function refreshGame() {
+  if (!stopUpdtatingArea && !upToDate) updateArea()
+  sendInput()
+  updateInputBuffer()
   updateCharacterMovement()
   updateCharacterLocation()
   updateCamera()
   renderArea()
   loopThrough(area.vehicles, render)
   loopThrough(area.characters, render)
+}
+
+function updateArea() {
+  var characterID = player.character
+  if (area.characters) {
+    var character = area.characters[characterID]
+    var clientCharacter = Object.assign({}, character)
+    area = queuedArea
+    if (clientCharacter !== character) {
+      reconcileCharacter()
+    }
+    inputBuffer = []
+    upToDate = true
+    stopUpdtatingArea = true
+  }
+}
+
+function reconcileCharacter() {
+  // Reconcile character.
 }
 
 function control(key, action) {
@@ -488,9 +229,17 @@ function control(key, action) {
   }
 }
 
+function sendInput() {
+  socket.emit('player', player)
+}
+
+function updateInputBuffer () {
+  inputBuffer.push(player.input)
+}
+
 function updateCharacterMovement() {
   var input = player.input
-  var characterID = player.id
+  var characterID = player.character
   var character = area.characters[characterID]
   if (input.right === true) {
     character.direction = 'right'
@@ -592,9 +341,25 @@ window.addEventListener('keyup', event => {
   control(event.key, 'up')
 })
 
+socket.on('request-token', () => {
+  var token = player.token
+  socket.emit('token', token)
+})
+
+socket.on('area', function (receivedArea) {
+  var timestamp = receivedArea.timestamp
+  socket.emit('timestamp', timestamp)
+  if (area.characters) {
+    queuedArea = receivedArea
+    upToDate = false
+  }
+  else {
+    area = receivedArea
+    upToDate = true
+  }
+})
+
 camera.width = window.innerWidth
 camera.height = window.innerHeight
 
-createElements(camera, false)
-createElements(area, true)
-checkImagesLoaded()
+checkAreaPopulated()
