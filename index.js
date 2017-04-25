@@ -15,7 +15,7 @@ var broadcasts = {
 
 var players = {}
 
-var areas = {
+var districts = {
   '1': {
     timestamp: 0,
     id: 1,
@@ -331,7 +331,7 @@ function createPlayer(playerID) {
     id: 0,
     token: 0,
     character: 0,
-    area: 1,
+    district: 1,
     latencies: [],
     input: {
       up: false,
@@ -352,9 +352,9 @@ function createPlayer(playerID) {
 
 function createCharacter(player) {
   var characterID = player.character
-  var areaID = player.area
-  var area = areas[areaID]
-  area.characters[characterID] = {
+  var districtID = player.district
+  var district = districts[districtID]
+  district.characters[characterID] = {
     id: 0,
     name: '',
     vehicle: 0,
@@ -370,27 +370,25 @@ function createCharacter(player) {
     acceleration: 0,
     elementID: 0,
     element: 'img',
-    src: 'images/characters/man.png',
-    load: true
+    src: 'images/characters/man.png' // ,
+    // load: true
   }
-  var character = area.characters[characterID]
+  var character = district.characters[characterID]
   character.id = characterID
   id += 1
   character.elementID = 'id' + id
-  var x = Math.floor(Math.random() * area.width)
+  var x = Math.floor(Math.random() * district.width)
   character.x = x
   return character
 }
 
 function broadcastCharacter(player, character) {
-  for (var areaID in broadcasts) {
-    var broadcast = broadcasts[areaID]
+  for (var districtID in broadcasts) {
+    var broadcast = broadcasts[districtID]
     for (var playerID in broadcast) {
-      console.log('here');
       var socket = broadcast[playerID]
       console.log('emitting character');
       socket.emit('character', character)
-      console.log('now!');
     }
   }
 }
@@ -398,11 +396,9 @@ function broadcastCharacter(player, character) {
 /* Use for persistent online world:
 function getPlayerByToken(token) {
   for (var playerID in players) {
-    if (players.hasOwnProperty(playerID)) {
-      var player = players[playerID]
-      if (player.token === token) {
-        return player
-      }
+    var player = players[playerID]
+    if (player.token === token) {
+      return player
     }
   }
 }
@@ -410,33 +406,29 @@ function getPlayerByToken(token) {
 
 function associatePlayerWithSocket(player, socket) {
   var playerID = player.id
-  var areaID = player.area
-  var broadcast = broadcasts[areaID]
+  var districtID = player.district
+  var broadcast = broadcasts[districtID]
   broadcast[playerID] = socket
 }
 
 /* Use for persistent online world:
 function associatePlayerWithSocket(player, socket) {
   var playerID = player.id
-  var areaID = player.area
-  var broadcast = broadcasts[areaID]
+  var districtID = player.district
+  var broadcast = broadcasts[districtID]
   broadcast[playerID] = socket
 }
 */
 
 function broadcast() {
-  for (var areaID in broadcasts) {
-    if (broadcasts.hasOwnProperty(areaID)) {
-      var broadcast = broadcasts[areaID]
-      for (var playerID in broadcast) {
-        if (broadcast.hasOwnProperty(playerID)) {
-          var socket = broadcast[playerID]
-          var area = areas[areaID]
-          var timestamp = getTimestamp()
-          area.timestamp = timestamp
-          socket.emit('area', area)
-        }
-      }
+  for (var districtID in broadcasts) {
+    var broadcast = broadcasts[districtID]
+    for (var playerID in broadcast) {
+      var socket = broadcast[playerID]
+      var district = districts[districtID]
+      var timestamp = getTimestamp()
+      district.timestamp = timestamp
+      socket.emit('district', district)
     }
   }
 }
@@ -448,15 +440,11 @@ function getTimestamp() {
 
 function getPlayerBySocket(socket) {
   for (var broadcastID in broadcasts) {
-    if (broadcasts.hasOwnProperty(broadcastID)) {
-      var broadcast = broadcasts[broadcastID]
-      for (var playerID in broadcast) {
-        if (broadcast.hasOwnProperty(playerID)) {
-          var playerSocket = broadcast[playerID]
-          if (playerSocket === socket) {
-            return playerID
-          }
-        }
+    var broadcast = broadcasts[broadcastID]
+    for (var playerID in broadcast) {
+      var playerSocket = broadcast[playerID]
+      if (playerSocket === socket) {
+        return playerID
       }
     }
   }
@@ -475,21 +463,17 @@ function updatePlayerLatency(playerID, timestamp) {
 
 function loopThrough(objects, callback) {
   for (var property in objects) {
-    if (objects.hasOwnProperty(property)) {
-      var object = objects[property]
-      callback(object)
-    }
+    var object = objects[property]
+    callback(object)
   }
 }
 
 function updatePlayerInput(id, input) {
   for (var playerID in players) {
-    if (players.hasOwnProperty(playerID)) {
-      var player = players[playerID]
-      if (playerID === id) {
-        player.input = input
-        return player
-      }
+    var player = players[playerID]
+    if (playerID === id) {
+      player.input = input
+      return player
     }
   }
 }
@@ -497,9 +481,9 @@ function updatePlayerInput(id, input) {
 function updateCharacter(player) {
   var input = player.input
   var characterID = player.character
-  var areaID = player.area
-  var area = areas[areaID]
-  var character = area.characters[characterID]
+  var districtID = player.district
+  var district = districts[districtID]
+  var character = district.characters[characterID]
   if (input.right === true) {
     character.direction = 'right'
     character.speed = 12
@@ -518,12 +502,12 @@ function updateCharacter(player) {
     }
     var value = character.x
     var min = character.width
-    var max = area.width - character.width
-    character.x = keepCharacterInArea(value, min, max)
+    var max = district.width - character.width
+    character.x = keepCharacterInDistrict(value, min, max)
   }
 }
 
-function keepCharacterInArea(value, min, max) {
+function keepCharacterInDistrict(value, min, max) {
   if (value < min) return min
   else if (value > max) return max
   else return value
@@ -532,9 +516,9 @@ function keepCharacterInArea(value, min, max) {
 io.on('connection', socket => {
   playerID += 1
   var player = createPlayer(playerID)
+  associatePlayerWithSocket(player, socket)
   var character = createCharacter(player)
   broadcastCharacter(player, character)
-  associatePlayerWithSocket(player, socket)
   socket.emit('player', player)
 
   /* Use for persistent online world:
@@ -559,7 +543,7 @@ io.on('connection', socket => {
   })
 })
 
-assignElementIDs(areas)
+assignElementIDs(districts)
 
 app.use(express.static('public'))
 var port = process.env.PORT || 3000
@@ -568,7 +552,7 @@ server.listen(port)
 setInterval(() => {
   loopThrough(players, updateCharacter)
   broadcast()
-}, 33)
+}, 50)
 
 /* Use for testing a single boadcast
 setInterval(() => {

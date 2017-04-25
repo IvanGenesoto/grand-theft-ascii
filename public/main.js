@@ -6,7 +6,8 @@ var imagesTotal = 0
 var imagesLoaded = 0
 var backgroundY = 0
 var upToDate = false
-// var stopUpdtatingArea = false
+var load = {}
+// var stopUpdtatingDistrict = false
 
 var timestamp = 1 // eslint-disable-line no-unused-vars
 var tick = 1 // eslint-disable-line no-unused-vars
@@ -26,18 +27,18 @@ var camera = {
   height: 1080
 }
 
-var queuedArea = {}
+var queuedDistrict = {}
 
-var area = {}
+var district = {}
 
-function checkAreaPopulated() {
-  if (area.characters) {
+function checkDistrictPopulated() {
+  if (district.characters) {
     createElements(camera)
-    createElements(area, true)
+    createElements(district, true)
     checkImagesLoaded()
   }
   else {
-    setTimeout(checkAreaPopulated, 50)
+    setTimeout(checkDistrictPopulated, 50)
   }
 }
 
@@ -47,7 +48,7 @@ function createElements(object, loop) {
       var $element = document.createElement(object.element)
       $element.id = object.elementID
       document.body.appendChild($element)
-      if (loop) {
+      if (object !== camera) {
         $element.classList.add('hidden')
       }
       if (object.width) {
@@ -86,36 +87,34 @@ function checkImagesLoaded() {
 function checkNewImagesLoaded(object) {
   console.log('checking');
   if (imagesLoaded === imagesTotal) {
-    object.load = false
+    // object.load = false
   }
   else {
-    setTimeout(checkNewImagesLoaded, 50)
+    setTimeout(() => {
+      checkNewImagesLoaded(object)
+    }, 50)
   }
 }
 
 function composeBackgrounds() {
-  loopThrough(area.backgrounds, loopThroughSections)
-  loopThrough(area.backgrounds, drawToArea)
+  loopThrough(district.backgrounds, loopThroughSections)
+  loopThrough(district.backgrounds, drawToDistrict)
   startGame()
 }
 
 function loopThrough(objects, callback) {
   for (var property in objects) {
-    if (objects.hasOwnProperty(property)) {
-      var object = objects[property]
-      backgroundY = 0
-      callback(object, area)
-    }
+    var object = objects[property]
+    backgroundY = 0
+    callback(object, district)
   }
 }
 
 function loopThroughSections(background) {
   for (var property in background.sections) {
-    if (background.sections.hasOwnProperty(property)) {
-      var section = background.sections[property]
-      var rows = section.rows
-      createOptionsArray(section, rows, background)
-    }
+    var section = background.sections[property]
+    var rows = section.rows
+    createOptionsArray(section, rows, background)
   }
 }
 
@@ -123,11 +122,9 @@ function createOptionsArray(section, rows, background) {
   var optionsArray = []
   var options = section.options
   for (var property in options) {
-    if (options.hasOwnProperty(property)) {
-      var option = options[property]
-      for (var i = 0; i < option.prevalence; i++) {
-        optionsArray.push(option)
-      }
+    var option = options[property]
+    for (var i = 0; i < option.prevalence; i++) {
+      optionsArray.push(option)
     }
   }
   chooseFromOptionsArray(optionsArray, rows, background)
@@ -146,7 +143,7 @@ function chooseFromOptionsArray(optionsArray, rows, background) {
         option.y = backgroundY
         x += option.width
         rowY = option.height
-        drawToArea(option, background)
+        drawToDistrict(option, background)
         chooseOption()
       }
       else {
@@ -162,7 +159,7 @@ function chooseFromOptionsArray(optionsArray, rows, background) {
   startRow()
 }
 
-function drawToArea(image, canvas) {
+function drawToDistrict(image, canvas) {
   var $image = document.getElementById(image.elementID)
   var $canvas = document.getElementById(canvas.elementID)
   var context = $canvas.getContext('2d')
@@ -175,34 +172,40 @@ function startGame() {
 }
 
 function refreshGame() {
-  if (/* !stopUpdtatingArea && */ !upToDate) updateArea()
+  if (/* !stopUpdtatingDistrict && */ !upToDate) { updateDistrict()
+    // var queuedCharacter = queuedDistrict.characters['1']
+    // var character = district.characters['1']
+    // character.x = queuedCharacter.x
+    // character.y = queuedCharacter.y
+    // updateDistrict()
+  }
   sendInput()
   updateInputBuffer()
   updateCharacter()
   updateCamera()
-  renderArea()
-  loopThrough(area.vehicles, render)
-  loopThrough(area.characters, render)
-  loopThrough(area.characters, checkForNewCharacters)
+  renderDistrict()
+  loopThrough(district.vehicles, render)
+  loopThrough(district.characters, render)
+  // loopThrough(district.characters, checkForNewCharacters)
 }
 
-function updateArea() {
+function updateDistrict() {
   var characterID = player.character
-  if (area.characters) {
-    var character = area.characters[characterID]
+  if (district.characters) {
+    var character = district.characters[characterID]
     var clientCharacter = Object.assign({}, character)
-    area = queuedArea
-    if (clientCharacter !== character) {
+    district = queuedDistrict
+    if (clientCharacter.x !== character.x) {
       reconcileCharacter()
     }
     inputBuffer = []
     upToDate = true
-    // stopUpdtatingArea = true
+    // stopUpdtatingDistrict = true
   }
 }
 
 function reconcileCharacter() {
-  // Reconcile character.
+  console.log('Reconcile character.')
 }
 
 function control(key, action) {
@@ -235,7 +238,7 @@ function updateInputBuffer () {
 function updateCharacter() {
   var input = player.input
   var characterID = player.character
-  var character = area.characters[characterID]
+  var character = district.characters[characterID]
   if (input.right === true) {
     character.direction = 'right'
     character.speed = 12
@@ -254,12 +257,12 @@ function updateCharacter() {
     }
     var value = character.x
     var min = character.width
-    var max = area.width - character.width
-    character.x = keepCharacterInArea(value, min, max)
+    var max = district.width - character.width
+    character.x = keepCharacterInDistrict(value, min, max)
   }
 }
 
-function keepCharacterInArea(value, min, max) {
+function keepCharacterInDistrict(value, min, max) {
   if (value < min) return min
   else if (value > max) return max
   else return value
@@ -268,51 +271,52 @@ function keepCharacterInArea(value, min, max) {
 function updateCamera() {
   if (camera.following) {
     var characterID = camera.following
-    var character = area.characters[characterID]
+    var character = district.characters[characterID]
     var x = character.x
     var y = character.y
     var cameraX = x - camera.width / 2
     var cameraY = y - camera.height / 2
-    var cameraMaxX = area.width - camera.width
-    var cameraMaxY = area.height - camera.height
+    var cameraMaxX = district.width - camera.width
+    var cameraMaxY = district.height - camera.height
     var cameraMinX = 0
     var cameraMinY = 0
-    camera.x = keepCameraInArea(cameraX, cameraMinX, cameraMaxX)
-    camera.y = keepCameraInArea(cameraY, cameraMinY, cameraMaxY)
+    camera.x = keepCameraInDistrict(cameraX, cameraMinX, cameraMaxX)
+    camera.y = keepCameraInDistrict(cameraY, cameraMinY, cameraMaxY)
   }
 }
 
-function keepCameraInArea(value, min, max) {
+function keepCameraInDistrict(value, min, max) {
   if (value < min) return min
   else if (value > max) return max
   else return value
 }
 
-function renderArea() {
-  var $area = document.getElementById(area.elementID)
+function renderDistrict() {
+  var $district = document.getElementById(district.elementID)
   var $camera = document.getElementById(camera.elementID)
   var context = $camera.getContext('2d')
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, camera.width, camera.height)
-  context.drawImage($area, camera.x, camera.y, camera.width,
+  context.drawImage($district, camera.x, camera.y, camera.width,
     camera.height, 0, 0, camera.width, camera.height)
 }
 
 function render(object) {
-  if (!object.load) {
+  // if (!object.load) {
     var $object = document.getElementById(object.elementID)
     var $camera = document.getElementById(camera.elementID)
     var context = $camera.getContext('2d')
+    context.setTransform(1, 0, 0, 1, 0, 0)
     var xInCamera = object.x - camera.x
     var yInCamera = object.y - camera.y
     if (object.direction) {
       if (object.direction === 'left') {
-        xInCamera = -object.x + camera.x
+        xInCamera = -object.x + camera.x - object.width / 2
         context.scale(-1, 1)
       }
     }
     context.drawImage($object, xInCamera, yInCamera)
-  }
+  // }
 }
 
 function checkForNewCharacters(character) {
@@ -346,7 +350,7 @@ socket.on('player', receivedPlayer => {
 socket.on('character', character => {
   console.log('got character');
   createElements(character)
-  checkNewImagesLoaded(character)
+  // checkNewImagesLoaded(character)
 })
 
 socket.on('request-token', () => {
@@ -354,15 +358,15 @@ socket.on('request-token', () => {
   socket.emit('token', token)
 })
 
-socket.on('area', function (receivedArea) {
-  var timestamp = receivedArea.timestamp
+socket.on('district', receivedDistrict => {
+  var timestamp = receivedDistrict.timestamp
   socket.emit('timestamp', timestamp)
-  if (area.characters) {
-    queuedArea = receivedArea
+  if (district.characters) {
+    queuedDistrict = receivedDistrict
     upToDate = false
   }
   else {
-    area = receivedArea
+    district = receivedDistrict
     upToDate = true
   }
 })
@@ -370,4 +374,4 @@ socket.on('area', function (receivedArea) {
 camera.width = window.innerWidth
 camera.height = window.innerHeight
 
-checkAreaPopulated()
+checkDistrictPopulated()
