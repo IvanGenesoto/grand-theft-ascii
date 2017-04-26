@@ -1,20 +1,15 @@
 /* global io */
 
-var socket = io()
-
-var imagesTotal = 0
-var imagesLoaded = 0
-var backgroundY = 0
-var upToDate = false
-var load = {}
-// var stopUpdtatingDistrict = false
-
-var timestamp = 1 // eslint-disable-line no-unused-vars
-var tick = 1 // eslint-disable-line no-unused-vars
-
-var inputBuffer = []
-
-var player = {}
+var client = {
+  socket: io(),
+  imagesTotal: 0,
+  imagesLoaded: undefined,
+  backgroundY: 0,
+  upToDate: false,
+  timestamp: 1,
+  tick: 1,
+  inputBuffer: []
+}
 
 var camera = {
   following: 0,
@@ -27,6 +22,8 @@ var camera = {
   height: 1080
 }
 
+var player = {}
+
 var queuedDistrict = {}
 
 var district = {}
@@ -35,7 +32,6 @@ function checkDistrictPopulated() {
   if (district.characters) {
     createElements(camera)
     createElements(district, true)
-    checkImagesLoaded()
   }
   else {
     setTimeout(checkDistrictPopulated, 50)
@@ -56,10 +52,11 @@ function createElements(object, loop) {
         $element.height = object.height
       }
       if (object.src) {
+        client.imagesTotal += 1
         $element.src = object.src
-        imagesTotal += 1
         $element.onload = function () {
-          imagesLoaded += 1
+          if (!client.imagesLoaded) client.imagesLoaded = 0
+          client.imagesLoaded += 1
         }
       }
     }
@@ -76,23 +73,11 @@ function createElements(object, loop) {
 }
 
 function checkImagesLoaded() {
-  if (imagesLoaded === imagesTotal) {
+  if (client.imagesLoaded === client.imagesTotal) {
     composeBackgrounds()
   }
   else {
     setTimeout(checkImagesLoaded, 50)
-  }
-}
-
-function checkNewImagesLoaded(object) {
-  console.log('checking');
-  if (imagesLoaded === imagesTotal) {
-    // object.load = false
-  }
-  else {
-    setTimeout(() => {
-      checkNewImagesLoaded(object)
-    }, 50)
   }
 }
 
@@ -105,7 +90,7 @@ function composeBackgrounds() {
 function loopThrough(objects, callback) {
   for (var property in objects) {
     var object = objects[property]
-    backgroundY = 0
+    client.backgroundY = 0
     callback(object, district)
   }
 }
@@ -140,7 +125,7 @@ function chooseFromOptionsArray(optionsArray, rows, background) {
         var index = Math.floor(Math.random() * optionsArray.length)
         var option = optionsArray[index]
         option.x = x
-        option.y = backgroundY
+        option.y = client.backgroundY
         x += option.width
         rowY = option.height
         drawToDistrict(option, background)
@@ -148,7 +133,7 @@ function chooseFromOptionsArray(optionsArray, rows, background) {
       }
       else {
         rowsDrawn += 1
-        backgroundY += rowY
+        client.backgroundY += rowY
         startRow()
       }
     }
@@ -172,17 +157,11 @@ function startGame() {
 }
 
 function refreshGame() {
-  if (/* !stopUpdtatingDistrict && */ !upToDate) { updateDistrict()
-    // var queuedCharacter = queuedDistrict.characters['1']
-    // var character = district.characters['1']
-    // character.x = queuedCharacter.x
-    // character.y = queuedCharacter.y
-    // updateDistrict()
-  }
-  sendInput()
+  if (!client.upToDate) updateDistrict()
+  if (player.input) sendInput()
   updateInputBuffer()
-  updateCharacter()
-  updateCamera()
+  if (player.character) updateCharacter()
+  if (document.getElementById(camera.elementID)) updateCamera()
   renderDistrict()
   loopThrough(district.vehicles, render)
   loopThrough(district.characters, render)
@@ -190,22 +169,25 @@ function refreshGame() {
 }
 
 function updateDistrict() {
-  var characterID = player.character
   if (district.characters) {
-    var character = district.characters[characterID]
-    var clientCharacter = Object.assign({}, character)
-    district = queuedDistrict
-    if (clientCharacter.x !== character.x) {
-      reconcileCharacter()
+    for (var characterID in district.characters) {
+      var character = district.characters[characterID]
+      for (var queuedCharacterID in queuedDistrict.characters) {
+        var queuedCharacter = queuedDistrict.characters[queuedCharacterID]
+        if (characterID === queuedCharacterID) {
+          if (character.x !== queuedCharacter.x) {
+            reconcileCharacter(characterID)
+          }
+        }
+      }
     }
-    inputBuffer = []
-    upToDate = true
-    // stopUpdtatingDistrict = true
+    district = queuedDistrict
+    client.inputBuffer = []
+    client.upToDate = true
   }
 }
 
-function reconcileCharacter() {
-  console.log('Reconcile character.')
+function reconcileCharacter(characterID) {
 }
 
 function control(key, action) {
@@ -228,11 +210,11 @@ function control(key, action) {
 }
 
 function sendInput() {
-  socket.emit('input', player.input)
+  client.socket.emit('input', player.input)
 }
 
 function updateInputBuffer () {
-  inputBuffer.push(player.input)
+  client.inputBuffer.push(player.input)
 }
 
 function updateCharacter() {
@@ -302,26 +284,19 @@ function renderDistrict() {
 }
 
 function render(object) {
-  // if (!object.load) {
-    var $object = document.getElementById(object.elementID)
-    var $camera = document.getElementById(camera.elementID)
-    var context = $camera.getContext('2d')
-    context.setTransform(1, 0, 0, 1, 0, 0)
-    var xInCamera = object.x - camera.x
-    var yInCamera = object.y - camera.y
-    if (object.direction) {
-      if (object.direction === 'left') {
-        xInCamera = -object.x + camera.x - object.width / 2
-        context.scale(-1, 1)
-      }
+  var $object = document.getElementById(object.elementID)
+  var $camera = document.getElementById(camera.elementID)
+  var context = $camera.getContext('2d')
+  context.setTransform(1, 0, 0, 1, 0, 0)
+  var xInCamera = object.x - camera.x
+  var yInCamera = object.y - camera.y
+  if (object.direction) {
+    if (object.direction === 'left') {
+      xInCamera = -object.x + camera.x - object.width / 2
+      context.scale(-1, 1)
     }
-    context.drawImage($object, xInCamera, yInCamera)
-  // }
-}
-
-function checkForNewCharacters(character) {
-  if (character.load) createElements(character)
-  character.load = false
+  }
+  context.drawImage($object, xInCamera, yInCamera)
 }
 
 window.addEventListener('resize', () => {
@@ -342,32 +317,30 @@ window.addEventListener('keyup', event => {
   control(event.key, 'up')
 })
 
-socket.on('player', receivedPlayer => {
+client.socket.on('player', receivedPlayer => {
   player = receivedPlayer
   camera.following = receivedPlayer.id
 })
 
-socket.on('character', character => {
-  console.log('got character');
+client.socket.on('character', character => {
   createElements(character)
-  // checkNewImagesLoaded(character)
 })
 
-socket.on('request-token', () => {
+client.socket.on('request-token', () => {
   var token = player.token
-  socket.emit('token', token)
+  client.socket.emit('token', token)
 })
 
-socket.on('district', receivedDistrict => {
+client.socket.on('district', receivedDistrict => {
   var timestamp = receivedDistrict.timestamp
-  socket.emit('timestamp', timestamp)
+  client.socket.emit('timestamp', timestamp)
   if (district.characters) {
     queuedDistrict = receivedDistrict
-    upToDate = false
+    client.upToDate = false
   }
   else {
     district = receivedDistrict
-    upToDate = true
+    client.upToDate = true
   }
 })
 
@@ -375,3 +348,4 @@ camera.width = window.innerWidth
 camera.height = window.innerHeight
 
 checkDistrictPopulated()
+checkImagesLoaded()
