@@ -4,10 +4,8 @@ var http = require('http')
 var server = http.Server(app)
 var socket = require('socket.io')
 var io = socket(server)
-
-var id = 0
 var playerID = 0
-// var stopBroadcasting = false
+var id = 0
 
 var broadcasts = {
   '1': {}
@@ -245,8 +243,7 @@ var districts = {
         inventory: undefined
       }
     },
-    characters: {
-    },
+    characters: {},
     aiCharacters: {
       '1': {
         id: 1,
@@ -326,11 +323,12 @@ function assignElementIDs(object) {
   }
 }
 
-function createPlayer(playerID) {
+function createPlayer() {
+  playerID += 1
   players[playerID] = {
-    id: 0,
-    token: 0,
-    character: 0,
+    id: playerID,
+    token: playerID,
+    character: playerID,
     district: 1,
     latencies: [],
     input: {
@@ -343,24 +341,23 @@ function createPlayer(playerID) {
       shoot: false
     }
   }
-  var player = players[playerID]
-  player.id = playerID
-  player.token = playerID
-  player.character = playerID
-  return player
+  return players[playerID]
 }
 
 function createCharacter(player) {
   var characterID = player.character
   var districtID = player.district
   var district = districts[districtID]
+  var x = Math.floor(Math.random() * district.width)
+  id += 1
+  var elementID = 'id' + id
   district.characters[characterID] = {
-    id: 0,
+    id: characterID,
     name: '',
     vehicle: 0,
     room: 0,
     keys: [],
-    x: 250,
+    x: x,
     y: 7832,
     width: 105,
     height: 155,
@@ -368,18 +365,11 @@ function createCharacter(player) {
     speed: 0,
     maxSpeed: 0,
     acceleration: 0,
-    elementID: 0,
+    elementID: elementID,
     element: 'img',
-    src: 'images/characters/man.png' // ,
-    // load: true
+    src: 'images/characters/man.png'
   }
-  var character = district.characters[characterID]
-  character.id = characterID
-  id += 1
-  character.elementID = 'id' + id
-  var x = Math.floor(Math.random() * district.width)
-  character.x = x
-  return character
+  return district.characters[characterID]
 }
 
 function broadcastCharacter(player, character) {
@@ -387,7 +377,6 @@ function broadcastCharacter(player, character) {
     var broadcast = broadcasts[districtID]
     for (var playerID in broadcast) {
       var socket = broadcast[playerID]
-      console.log('emitting character');
       socket.emit('character', character)
     }
   }
@@ -410,15 +399,6 @@ function associatePlayerWithSocket(player, socket) {
   var broadcast = broadcasts[districtID]
   broadcast[playerID] = socket
 }
-
-/* Use for persistent online world:
-function associatePlayerWithSocket(player, socket) {
-  var playerID = player.id
-  var districtID = player.district
-  var broadcast = broadcasts[districtID]
-  broadcast[playerID] = socket
-}
-*/
 
 function broadcast() {
   for (var districtID in broadcasts) {
@@ -514,8 +494,7 @@ function keepCharacterInDistrict(value, min, max) {
 }
 
 io.on('connection', socket => {
-  playerID += 1
-  var player = createPlayer(playerID)
+  var player = createPlayer()
   associatePlayerWithSocket(player, socket)
   var character = createCharacter(player)
   broadcastCharacter(player, character)
@@ -531,7 +510,6 @@ io.on('connection', socket => {
   */
 
   socket.on('timestamp', timestamp => {
-    // stopBroadcasting = true
     var playerID = getPlayerBySocket(socket)
     updatePlayerLatency(playerID, timestamp)
   })
@@ -553,11 +531,3 @@ setInterval(() => {
   loopThrough(players, updateCharacter)
   broadcast()
 }, 50)
-
-/* Use for testing a single boadcast
-setInterval(() => {
-  if (!stopBroadcasting) {
-    broadcast()
-  }
-}, 33)
-*/
