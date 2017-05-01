@@ -244,6 +244,7 @@ function render(object) {
   var $object = document.getElementById(object.elementID)
   var $camera = document.getElementById(camera.elementID)
   var context = $camera.getContext('2d')
+  context.setTransform(1, 0, 0, 1, 0, 0)
   var xInCamera = object.x - camera.x
   var yInCamera = object.y - camera.y
   if (object.direction) {
@@ -285,7 +286,7 @@ socket.on('character', character => {
 
 socket.on('request-token', () => {
   var token = player.token
-  socket.emit('token', token)
+  client.socket.emit('token', token)
 })
 
 socket.on('district', receivedDistrict => {
