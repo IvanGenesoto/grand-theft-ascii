@@ -508,10 +508,6 @@ function updatePlayerInput(id, input) {
       player.input = input
       return player
     }
-    var value = character.x
-    var min = character.width
-    var max = district.width - character.width
-    character.x = keepCharacterInDistrict(value, min, max)
   }
 }
 
