@@ -4,8 +4,13 @@ var http = require('http')
 var server = http.Server(app)
 var socket = require('socket.io')
 var io = socket(server)
-var playerID = 0
-var id = 0
+
+var backgroundY
+
+var id = {
+  player: 0,
+  element: 0
+}
 
 var broadcasts = {
   '1': {}
@@ -16,25 +21,27 @@ var players = {}
 var districts = {
   '1': {
     timestamp: 0,
+    tick: 1,
     id: 1,
     name: 'District 1',
-    width: 8000,
+    width: 32000,
     height: 8000,
     element: 'canvas',
     backgrounds: {
       '1': {
-        x: 0,
-        y: 0,
+        id: 1,
+        blueprints: [],
         element: 'canvas',
-        width: 8000,
+        width: 16000,
         height: 8000,
+        depth: 4,
         sections: {
           '1': {
+            id: 1,
             rows: 1,
-            options: {
+            variations: {
               '1': {
-                x: 0,
-                y: 0,
+                id: 1,
                 prevalence: 1,
                 element: 'img',
                 src: 'images/background/far/above-top.png',
@@ -44,11 +51,11 @@ var districts = {
             }
           },
           '2': {
+            id: 2,
             rows: 1,
-            options: {
+            variations: {
               '1': {
-                x: 0,
-                y: 0,
+                id: 1,
                 prevalence: 4,
                 element: 'img',
                 src: 'images/background/far/top/top.png',
@@ -56,8 +63,7 @@ var districts = {
                 height: 260
               },
               '2': {
-                x: 0,
-                y: 0,
+                id: 2,
                 prevalence: 1,
                 element: 'img',
                 src: 'images/background/far/top/top-pink-jumbotron-left.png',
@@ -65,8 +71,7 @@ var districts = {
                 height: 260
               },
               '3': {
-                x: 0,
-                y: 0,
+                id: 3,
                 prevalence: 2,
                 element: 'img',
                 src: 'images/background/far/top/top-pink-jumbotron-right.png',
@@ -75,12 +80,12 @@ var districts = {
               }
             }
           },
-          section3: {
+          '3': {
+            id: 3,
             rows: 50,
-            options: {
+            variations: {
               '1': {
-                x: 0,
-                y: 0,
+                id: 1,
                 prevalence: 3,
                 element: 'img',
                 src: 'images/background/far/middle/middle.png',
@@ -88,8 +93,7 @@ var districts = {
                 height: 134
               },
               '2': {
-                x: 0,
-                y: 0,
+                id: 2,
                 prevalence: 2,
                 element: 'img',
                 src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
@@ -97,8 +101,7 @@ var districts = {
                 height: 134
               },
               '3': {
-                x: 0,
-                y: 0,
+                id: 3,
                 prevalence: 1,
                 element: 'img',
                 src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
@@ -106,8 +109,7 @@ var districts = {
                 height: 134
               },
               '4': {
-                x: 0,
-                y: 0,
+                id: 4,
                 prevalence: 1,
                 element: 'img',
                 src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
@@ -115,8 +117,7 @@ var districts = {
                 height: 134
               },
               '5': {
-                x: 0,
-                y: 0,
+                id: 5,
                 prevalence: 2,
                 element: 'img',
                 src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
@@ -124,8 +125,7 @@ var districts = {
                 height: 134
               },
               '6': {
-                x: 0,
-                y: 0,
+                id: 6,
                 prevalence: 2,
                 element: 'img',
                 src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
@@ -133,8 +133,7 @@ var districts = {
                 height: 134
               },
               '7': {
-                x: 0,
-                y: 0,
+                id: 7,
                 prevalence: 3,
                 element: 'img',
                 src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
@@ -142,8 +141,7 @@ var districts = {
                 height: 134
               },
               '8': {
-                x: 0,
-                y: 0,
+                id: 8,
                 prevalence: 2,
                 element: 'img',
                 src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
@@ -151,8 +149,7 @@ var districts = {
                 height: 134
               },
               '9': {
-                x: 0,
-                y: 0,
+                id: 9,
                 prevalence: 3,
                 element: 'img',
                 src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
@@ -162,11 +159,11 @@ var districts = {
             }
           },
           '4': {
+            id: 4,
             rows: 1,
-            options: {
+            variations: {
               '1': {
-                x: 0,
-                y: 0,
+                id: 1,
                 prevalence: 1,
                 element: 'img',
                 src: 'images/background/far/bottom.png',
@@ -178,18 +175,21 @@ var districts = {
         }
       },
       '2': {
+        id: 2,
+        blueprints: [],
         x: 0,
-        y: 7232,
+        y: 7050,
         element: 'canvas',
-        width: 16000,
+        width: 24000,
         height: 8000,
+        depth: 2,
         sections: {
           '1': {
+            id: 1,
             rows: 1,
-            options: {
+            variations: {
               '1': {
-                x: 0,
-                y: 0,
+                id: 1,
                 width: 1024,
                 height: 768,
                 prevalence: 1,
@@ -201,18 +201,21 @@ var districts = {
         }
       },
       '3': {
+        id: 3,
+        blueprints: [],
         x: 0,
         y: 7232,
         element: 'canvas',
         width: 32000,
         height: 8000,
+        depth: 1,
         sections: {
           '1': {
+            id: 1,
             rows: 1,
-            options: {
+            variations: {
               '1': {
-                x: 0,
-                y: 0,
+                id: 1,
                 width: 1408,
                 height: 768,
                 prevalence: 1,
@@ -309,8 +312,8 @@ var districts = {
 function assignElementIDs(object) {
   for (var property in object) {
     if (property === 'element') {
-      id += 1
-      object.elementID = 'id' + id
+      id.element += 1
+      object.elementID = '_' + id.element
     }
     else if (
       typeof object[property] !== 'string' &&
@@ -323,12 +326,62 @@ function assignElementIDs(object) {
   }
 }
 
+function composeBackgrounds() {
+  for (var districtID in districts) {
+    var district = districts[districtID]
+    backgroundY = 0
+    for (var backgroundID in district.backgrounds) {
+      var background = district.backgrounds[backgroundID]
+      for (var sectionID in background.sections) {
+        var section = background.sections[sectionID]
+        var rows = section.rows
+        var variationsArray = []
+        for (var variationID in section.variations) {
+          var variation = section.variations[variationID]
+          for (var i = 0; i < variation.prevalence; i++) {
+            variationsArray.push(variation)
+          }
+        }
+        createBlueprints(background, section, rows, variationsArray)
+      }
+    }
+  }
+}
+
+function createBlueprints(background, section, rows, variationsArray) {
+  var rowsDrawn = 0
+  function startRow() {
+    var x = 0
+    var rowY = 0
+    function createBlueprint() {
+      if (x < background.width) {
+        var index = Math.floor(Math.random() * variationsArray.length)
+        var variation = variationsArray[index]
+        if (background.y) backgroundY = background.y
+        var blueprint = {section: section.id, variation: variation.id, x, y: backgroundY}
+        background.blueprints.push(blueprint)
+        x += variation.width
+        rowY = variation.height
+        createBlueprint()
+      }
+      else {
+        rowsDrawn += 1
+        backgroundY += rowY
+        startRow()
+      }
+    }
+    if (rowsDrawn < rows) {
+      createBlueprint()
+    }
+  }
+  startRow()
+}
 function createPlayer() {
-  playerID += 1
-  players[playerID] = {
-    id: playerID,
-    token: playerID,
-    character: playerID,
+  id.player += 1
+  players[id.player] = {
+    id: id.player,
+    token: id.player,
+    character: id.player,
     district: 1,
     latencies: [],
     input: {
@@ -341,7 +394,7 @@ function createPlayer() {
       shoot: false
     }
   }
-  return players[playerID]
+  return players[id.player]
 }
 
 function createCharacter(player) {
@@ -349,8 +402,8 @@ function createCharacter(player) {
   var districtID = player.district
   var district = districts[districtID]
   var x = Math.floor(Math.random() * district.width)
-  id += 1
-  var elementID = 'id' + id
+  id.element += 1
+  var elementID = '_' + id.element
   district.characters[characterID] = {
     id: characterID,
     name: '',
@@ -455,6 +508,10 @@ function updatePlayerInput(id, input) {
       player.input = input
       return player
     }
+    var value = character.x
+    var min = character.width
+    var max = district.width - character.width
+    character.x = keepCharacterInDistrict(value, min, max)
   }
 }
 
@@ -522,6 +579,7 @@ io.on('connection', socket => {
 })
 
 assignElementIDs(districts)
+composeBackgrounds()
 
 app.use(express.static('public'))
 var port = process.env.PORT || 3000
@@ -530,4 +588,4 @@ server.listen(port)
 setInterval(() => {
   loopThrough(players, updateCharacter)
   broadcast()
-}, 50)
+}, 33)
