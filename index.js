@@ -4,6 +4,7 @@ var http = require('http')
 var server = http.Server(app)
 var socket = require('socket.io')
 var io = socket(server)
+
 var backgroundY
 
 var id = {
@@ -507,6 +508,10 @@ function updatePlayerInput(id, input) {
       player.input = input
       return player
     }
+    var value = character.x
+    var min = character.width
+    var max = district.width - character.width
+    character.x = keepCharacterInDistrict(value, min, max)
   }
 }
 
