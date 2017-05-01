@@ -1,14 +1,13 @@
 /* global io */
 
+var socket = io()
+
 var client = {
-  socket: io(),
   imagesTotal: 0,
   imagesLoaded: undefined,
-  backgroundY: 0,
   upToDate: false,
   timestamp: 1,
-  tick: 1,
-  inputBuffer: []
+  tick: 1
 }
 
 var camera = {
@@ -17,7 +16,7 @@ var camera = {
   x: 0,
   y: 0,
   element: 'canvas',
-  elementID: 'id0',
+  elementID: '_0',
   width: 1920,
   height: 1080
 }
@@ -74,95 +73,48 @@ function createElements(object, loop) {
 
 function checkImagesLoaded() {
   if (client.imagesLoaded === client.imagesTotal) {
-    composeBackgrounds()
+    loopThrough(district.backgrounds, drawToBackground)
+    start()
   }
   else {
     setTimeout(checkImagesLoaded, 50)
   }
 }
 
-function composeBackgrounds() {
-  loopThrough(district.backgrounds, loopThroughSections)
-  loopThrough(district.backgrounds, drawToDistrict)
-  startGame()
-}
-
 function loopThrough(objects, callback) {
   for (var property in objects) {
     var object = objects[property]
-    client.backgroundY = 0
-    callback(object, district)
+    callback(object)
   }
 }
 
-function loopThroughSections(background) {
-  for (var property in background.sections) {
-    var section = background.sections[property]
-    var rows = section.rows
-    createOptionsArray(section, rows, background)
-  }
+function drawToBackground(background) {
+  var blueprints = background.blueprints
+  blueprints.forEach(blueprint => {
+    var sectionID = blueprint.section
+    var variationID = blueprint.variation
+    var variation = background.sections[sectionID].variations[variationID]
+    var $variation = document.getElementById(variation.elementID)
+    var $background = document.getElementById(background.elementID)
+    var context = $background.getContext('2d')
+    context.drawImage($variation, 0, 0, variation.width, variation.height,
+      blueprint.x, blueprint.y, variation.width, variation.height)
+  })
 }
 
-function createOptionsArray(section, rows, background) {
-  var optionsArray = []
-  var options = section.options
-  for (var property in options) {
-    var option = options[property]
-    for (var i = 0; i < option.prevalence; i++) {
-      optionsArray.push(option)
-    }
-  }
-  chooseFromOptionsArray(optionsArray, rows, background)
+function start() {
+  setInterval(refresh, 33)
 }
 
-function chooseFromOptionsArray(optionsArray, rows, background) {
-  var rowsDrawn = 0
-  function startRow() {
-    var x = 0
-    var rowY = 0
-    function chooseOption() {
-      if (x < background.width) {
-        var index = Math.floor(Math.random() * optionsArray.length)
-        var option = optionsArray[index]
-        option.x = x
-        option.y = client.backgroundY
-        x += option.width
-        rowY = option.height
-        drawToDistrict(option, background)
-        chooseOption()
-      }
-      else {
-        rowsDrawn += 1
-        client.backgroundY += rowY
-        startRow()
-      }
-    }
-    if (rowsDrawn < rows) {
-      chooseOption()
-    }
-  }
-  startRow()
-}
-
-function drawToDistrict(image, canvas) {
-  var $image = document.getElementById(image.elementID)
-  var $canvas = document.getElementById(canvas.elementID)
-  var context = $canvas.getContext('2d')
-  context.drawImage($image, 0, 0, image.width, image.height,
-    image.x, image.y, image.width, image.height)
-}
-
-function startGame() {
-  setInterval(refreshGame, 33)
-}
-
-function refreshGame() {
+function refresh() {
   if (!client.upToDate) updateDistrict()
-  if (player.input) sendInput()
+  sendInput()
   updateInputBuffer()
-  if (player.character) updateCharacter()
-  if (document.getElementById(camera.elementID)) updateCamera()
-  renderDistrict()
+  updatePlayerCharacter()
+  loopThrough(district.characters, updateLocation)
+  updateCamera()
+  clearCanvas()
+  loopThrough(district.backgrounds, renderBackground)
   loopThrough(district.vehicles, render)
   loopThrough(district.characters, render)
   // loopThrough(district.characters, checkForNewCharacters)
@@ -182,7 +134,7 @@ function updateDistrict() {
       }
     }
     district = queuedDistrict
-    client.inputBuffer = []
+    player.inputBuffer = []
     client.upToDate = true
   }
 }
@@ -210,14 +162,14 @@ function control(key, action) {
 }
 
 function sendInput() {
-  client.socket.emit('input', player.input)
+  socket.emit('input', player.input)
 }
 
 function updateInputBuffer () {
-  client.inputBuffer.push(player.input)
+  player.inputBuffer.push(player.input)
 }
 
-function updateCharacter() {
+function updatePlayerCharacter() {
   var input = player.input
   var characterID = player.character
   var character = district.characters[characterID]
@@ -230,21 +182,24 @@ function updateCharacter() {
     character.speed = 12
   }
   else character.speed = 0
-  if (character.speed > 0) {
-    if (character.direction === 'left') {
-      character.x -= character.speed
+}
+
+function updateLocation(object) {
+  if (object.speed > 0) {
+    if (object.direction === 'left') {
+      object.x -= object.speed
     }
-    if (character.direction === 'right') {
-      character.x += character.speed
+    if (object.direction === 'right') {
+      object.x += object.speed
     }
-    var value = character.x
-    var min = character.width
-    var max = district.width - character.width
-    character.x = keepCharacterInDistrict(value, min, max)
+    var value = object.x
+    var min = object.width
+    var max = district.width - object.width
+    object.x = keepInDistrict(value, min, max)
   }
 }
 
-function keepCharacterInDistrict(value, min, max) {
+function keepInDistrict(value, min, max) {
   if (value < min) return min
   else if (value > max) return max
   else return value
@@ -254,32 +209,34 @@ function updateCamera() {
   if (camera.following) {
     var characterID = camera.following
     var character = district.characters[characterID]
-    var x = character.x
-    var y = character.y
-    var cameraX = x - camera.width / 2
-    var cameraY = y - camera.height / 2
+    var cameraX = Math.round(character.x - camera.width / 2)
+    var cameraY = Math.round(character.y - camera.height / 2)
     var cameraMaxX = district.width - camera.width
     var cameraMaxY = district.height - camera.height
     var cameraMinX = 0
     var cameraMinY = 0
-    camera.x = keepCameraInDistrict(cameraX, cameraMinX, cameraMaxX)
-    camera.y = keepCameraInDistrict(cameraY, cameraMinY, cameraMaxY)
+    camera.x = keepInDistrict(cameraX, cameraMinX, cameraMaxX)
+    camera.y = keepInDistrict(cameraY, cameraMinY, cameraMaxY)
   }
 }
 
-function keepCameraInDistrict(value, min, max) {
-  if (value < min) return min
-  else if (value > max) return max
-  else return value
-}
-
-function renderDistrict() {
-  var $district = document.getElementById(district.elementID)
+function clearCanvas() {
   var $camera = document.getElementById(camera.elementID)
   var context = $camera.getContext('2d')
-  context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, camera.width, camera.height)
-  context.drawImage($district, camera.x, camera.y, camera.width,
+}
+
+function renderBackground(background) {
+  var characterID = camera.following
+  var character = district.characters[characterID]
+  var $background = document.getElementById(background.elementID)
+  var $camera = document.getElementById(camera.elementID)
+  var context = $camera.getContext('2d')
+  var cameraX = Math.round(character.x / background.depth - camera.width / 2 / background.depth)
+  var cameraMinX = 0
+  var cameraMaxX = Math.round(district.width / background.depth - camera.width / background.depth)
+  cameraX = keepInDistrict(cameraX, cameraMinX, cameraMaxX)
+  context.drawImage($background, cameraX, camera.y, camera.width,
     camera.height, 0, 0, camera.width, camera.height)
 }
 
@@ -292,11 +249,12 @@ function render(object) {
   var yInCamera = object.y - camera.y
   if (object.direction) {
     if (object.direction === 'left') {
-      xInCamera = -object.x + camera.x - object.width / 2
+      xInCamera = Math.round(-object.x + camera.x - object.width / 2)
       context.scale(-1, 1)
     }
   }
   context.drawImage($object, xInCamera, yInCamera)
+  context.setTransform(1, 0, 0, 1, 0, 0)
 }
 
 window.addEventListener('resize', () => {
@@ -317,23 +275,23 @@ window.addEventListener('keyup', event => {
   control(event.key, 'up')
 })
 
-client.socket.on('player', receivedPlayer => {
+socket.on('player', receivedPlayer => {
   player = receivedPlayer
   camera.following = receivedPlayer.id
 })
 
-client.socket.on('character', character => {
+socket.on('character', character => {
   createElements(character)
 })
 
-client.socket.on('request-token', () => {
+socket.on('request-token', () => {
   var token = player.token
   client.socket.emit('token', token)
 })
 
-client.socket.on('district', receivedDistrict => {
+socket.on('district', receivedDistrict => {
   var timestamp = receivedDistrict.timestamp
-  client.socket.emit('timestamp', timestamp)
+  socket.emit('timestamp', timestamp)
   if (district.characters) {
     queuedDistrict = receivedDistrict
     client.upToDate = false
