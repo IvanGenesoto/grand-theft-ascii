@@ -5,7 +5,7 @@ var server = http.Server(app)
 var socket = require('socket.io')
 var io = socket(server)
 
-var backgroundY
+var layerY
 
 var id = {
   player: 0,
@@ -177,7 +177,6 @@ var districts = {
       '2': {
         id: 2,
         blueprints: [],
-        x: 0,
         y: 7050,
         element: 'canvas',
         width: 24000,
@@ -203,7 +202,6 @@ var districts = {
       '3': {
         id: 3,
         blueprints: [],
-        x: 0,
         y: 7232,
         element: 'canvas',
         width: 32000,
@@ -221,6 +219,410 @@ var districts = {
                 prevalence: 1,
                 element: 'img',
                 src: 'images/background/near.png'
+              }
+            }
+          }
+        }
+      }
+    },
+    foregrounds: {
+      '1': {
+        id: 1,
+        blueprints: [],
+        x: 0,
+        y: 7456,
+        width: 32000,
+        height: 8000,
+        depth: 0.5,
+        element: 'canvas',
+        scale: 16,
+        sections: {
+          '1': {
+            id: 1,
+            rows: 1,
+            variations: {
+              '1': {
+                id: 1,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/lamp/left.png',
+                width: 144,
+                height: 544
+              },
+              '2': {
+                id: 2,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/lamp/right.png',
+                width: 144,
+                height: 544
+              }
+            }
+          }
+        }
+      },
+      '2': {
+        id: 2,
+        blueprints: [],
+        x: 32000,
+        y: 7456,
+        width: 32000,
+        height: 8000,
+        depth: 0.5,
+        element: 'canvas',
+        scale: 16,
+        sections: {
+          '1': {
+            id: 1,
+            rows: 1,
+            variations: {
+              '1': {
+                id: 1,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/lamp/left.png',
+                width: 144,
+                height: 544
+              },
+              '2': {
+                id: 2,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/lamp/right.png',
+                width: 144,
+                height: 544
+              }
+            }
+          }
+        }
+      },
+      '3': {
+        id: 3,
+        blueprints: [],
+        x: 0,
+        y: 6800,
+        width: 32000,
+        height: 8000,
+        depth: 0.25,
+        element: 'canvas',
+        scale: 16,
+        sections: {
+          '1': {
+            id: 1,
+            rows: 1,
+            variations: {
+              '1': {
+                id: 1,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/up-left.png',
+                width: 448,
+                height: 1248
+              },
+              '2': {
+                id: 2,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/up-right.png',
+                width: 448,
+                height: 1248
+              },
+              '3': {
+                id: 3,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/down-left.png',
+                width: 448,
+                height: 1248
+              },
+              '4': {
+                id: 4,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/down-right.png',
+                width: 448,
+                height: 1248
+              },
+              '5': {
+                id: 5,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/left-up.png',
+                width: 1248,
+                height: 448
+              },
+              '6': {
+                id: 6,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/left-down.png',
+                width: 1248,
+                height: 448
+              },
+              '7': {
+                id: 7,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/right-up.png',
+                width: 1248,
+                height: 448
+              },
+              '8': {
+                id: 8,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/right-down.png',
+                width: 1248,
+                height: 448
+              }
+            }
+          }
+        }
+      },
+      '4': {
+        id: 4,
+        blueprints: [],
+        x: 32000,
+        y: 6800,
+        width: 32000,
+        height: 8000,
+        depth: 0.25,
+        element: 'canvas',
+        scale: 448,
+        sections: {
+          '1': {
+            id: 1,
+            rows: 1,
+            variations: {
+              '1': {
+                id: 1,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/up-left.png',
+                width: 448,
+                height: 1248
+              },
+              '2': {
+                id: 2,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/up-right.png',
+                width: 448,
+                height: 1248
+              },
+              '3': {
+                id: 3,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/down-left.png',
+                width: 448,
+                height: 1248
+              },
+              '4': {
+                id: 4,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/down-right.png',
+                width: 448,
+                height: 1248
+              },
+              '5': {
+                id: 5,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/left-up.png',
+                width: 1248,
+                height: 448
+              },
+              '6': {
+                id: 6,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/left-down.png',
+                width: 1248,
+                height: 448
+              },
+              '7': {
+                id: 7,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/right-up.png',
+                width: 1248,
+                height: 448
+              },
+              '8': {
+                id: 8,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/right-down.png',
+                width: 1248,
+                height: 448
+              }
+            }
+          }
+        }
+      },
+      '5': {
+        id: 5,
+        blueprints: [],
+        x: 64000,
+        y: 6800,
+        width: 32000,
+        height: 8000,
+        depth: 0.25,
+        element: 'canvas',
+        scale: 448,
+        sections: {
+          '1': {
+            id: 1,
+            rows: 1,
+            variations: {
+              '1': {
+                id: 1,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/up-left.png',
+                width: 448,
+                height: 1248
+              },
+              '2': {
+                id: 2,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/up-right.png',
+                width: 448,
+                height: 1248
+              },
+              '3': {
+                id: 3,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/down-left.png',
+                width: 448,
+                height: 1248
+              },
+              '4': {
+                id: 4,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/down-right.png',
+                width: 448,
+                height: 1248
+              },
+              '5': {
+                id: 5,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/left-up.png',
+                width: 1248,
+                height: 448
+              },
+              '6': {
+                id: 6,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/left-down.png',
+                width: 1248,
+                height: 448
+              },
+              '7': {
+                id: 7,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/right-up.png',
+                width: 1248,
+                height: 448
+              },
+              '8': {
+                id: 8,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/right-down.png',
+                width: 1248,
+                height: 448
+              }
+            }
+          }
+        }
+      },
+      '6': {
+        id: 6,
+        blueprints: [],
+        x: 96000,
+        y: 6800,
+        width: 32000,
+        height: 8000,
+        depth: 0.25,
+        element: 'canvas',
+        scale: 448,
+        sections: {
+          '1': {
+            id: 1,
+            rows: 1,
+            variations: {
+              '1': {
+                id: 1,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/up-left.png',
+                width: 448,
+                height: 1248
+              },
+              '2': {
+                id: 2,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/up-right.png',
+                width: 448,
+                height: 1248
+              },
+              '3': {
+                id: 3,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/down-left.png',
+                width: 448,
+                height: 1248
+              },
+              '4': {
+                id: 4,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/down-right.png',
+                width: 448,
+                height: 1248
+              },
+              '5': {
+                id: 5,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/left-up.png',
+                width: 1248,
+                height: 448
+              },
+              '6': {
+                id: 6,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/left-down.png',
+                width: 1248,
+                height: 448
+              },
+              '7': {
+                id: 7,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/right-up.png',
+                width: 1248,
+                height: 448
+              },
+              '8': {
+                id: 8,
+                prevalence: 1,
+                element: 'img',
+                src: 'images/foreground/arrow/right-down.png',
+                width: 1248,
+                height: 448
               }
             }
           }
@@ -326,14 +728,15 @@ function assignElementIDs(object) {
   }
 }
 
-function composeBackgrounds() {
+function compose(layersType) {
   for (var districtID in districts) {
     var district = districts[districtID]
-    backgroundY = 0
-    for (var backgroundID in district.backgrounds) {
-      var background = district.backgrounds[backgroundID]
-      for (var sectionID in background.sections) {
-        var section = background.sections[sectionID]
+    layerY = 0
+    for (var layerID in district[layersType]) {
+      var layers = district[layersType]
+      var layer = layers[layerID]
+      for (var sectionID in layer.sections) {
+        var section = layer.sections[sectionID]
         var rows = section.rows
         var variationsArray = []
         for (var variationID in section.variations) {
@@ -342,40 +745,48 @@ function composeBackgrounds() {
             variationsArray.push(variation)
           }
         }
-        createBlueprints(background, section, rows, variationsArray)
+        createBlueprints(layersType, layer, section, rows, variationsArray)
       }
     }
   }
 }
 
-function createBlueprints(background, section, rows, variationsArray) {
+function createBlueprints(layersType, layer, section, rows, variationsArray) {
   var rowsDrawn = 0
   function startRow() {
     var x = 0
     var rowY = 0
     function createBlueprint() {
-      if (x < background.width) {
+      if (x < layer.width) {
         var index = Math.floor(Math.random() * variationsArray.length)
         var variation = variationsArray[index]
-        if (background.y) backgroundY = background.y
-        var blueprint = {section: section.id, variation: variation.id, x, y: backgroundY}
-        background.blueprints.push(blueprint)
+        if (layer.y) layerY = layer.y
+        var blueprint = {section: section.id, variation: variation.id, x, y: layerY}
+        layer.blueprints.push(blueprint)
+        if (layersType === 'foregrounds') {
+          if (layer.id < 3) {
+            x += 2000
+          }
+          else {
+            var gap = Math.floor(Math.random() * (3000 - 1000) + 1000)
+            x += gap + variation.width
+          }
+        }
         x += variation.width
         rowY = variation.height
         createBlueprint()
       }
       else {
         rowsDrawn += 1
-        backgroundY += rowY
+        layerY += rowY
         startRow()
       }
     }
-    if (rowsDrawn < rows) {
-      createBlueprint()
-    }
+    if (rowsDrawn < rows) createBlueprint()
   }
   startRow()
 }
+
 function createPlayer() {
   id.player += 1
   players[id.player] = {
@@ -519,11 +930,11 @@ function updateCharacter(player) {
   var character = district.characters[characterID]
   if (input.right === true) {
     character.direction = 'right'
-    character.speed = 12
+    character.speed = 13
   }
   else if (input.left === true) {
     character.direction = 'left'
-    character.speed = 12
+    character.speed = 13
   }
   else character.speed = 0
   if (character.speed > 0) {
@@ -575,7 +986,8 @@ io.on('connection', socket => {
 })
 
 assignElementIDs(districts)
-composeBackgrounds()
+compose('backgrounds')
+compose('foregrounds')
 
 app.use(express.static('public'))
 var port = process.env.PORT || 3000
