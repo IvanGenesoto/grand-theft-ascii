@@ -73,7 +73,8 @@ function createElements(object, loop) {
 
 function checkImagesLoaded() {
   if (client.imagesLoaded === client.imagesTotal) {
-    loopThrough(district.backgrounds, drawToBackground)
+    loopThrough(district.backgrounds, drawToLayer)
+    loopThrough(district.foregrounds, drawToLayer)
     start()
   }
   else {
@@ -88,17 +89,18 @@ function loopThrough(objects, callback) {
   }
 }
 
-function drawToBackground(background) {
-  var blueprints = background.blueprints
+function drawToLayer(layer) {
+  var blueprints = layer.blueprints
   blueprints.forEach(blueprint => {
     var sectionID = blueprint.section
     var variationID = blueprint.variation
-    var variation = background.sections[sectionID].variations[variationID]
+    var variation = layer.sections[sectionID].variations[variationID]
     var $variation = document.getElementById(variation.elementID)
-    var $background = document.getElementById(background.elementID)
-    var context = $background.getContext('2d')
+    var $layer = document.getElementById(layer.elementID)
+    var context = $layer.getContext('2d')
     context.drawImage($variation, 0, 0, variation.width, variation.height,
       blueprint.x, blueprint.y, variation.width, variation.height)
+    context.setTransform(1, 0, 0, 1, 0, 0)
   })
 }
 
@@ -114,10 +116,10 @@ function refresh() {
   loopThrough(district.characters, updateLocation)
   updateCamera()
   clearCanvas()
-  loopThrough(district.backgrounds, renderBackground)
+  loopThrough(district.backgrounds, renderLayer)
   loopThrough(district.vehicles, render)
   loopThrough(district.characters, render)
-  // loopThrough(district.characters, checkForNewCharacters)
+  loopThrough(district.foregrounds, renderLayer)
 }
 
 function updateDistrict() {
@@ -175,11 +177,11 @@ function updatePlayerCharacter() {
   var character = district.characters[characterID]
   if (input.right === true) {
     character.direction = 'right'
-    character.speed = 12
+    character.speed = 13
   }
   else if (input.left === true) {
     character.direction = 'left'
-    character.speed = 12
+    character.speed = 13
   }
   else character.speed = 0
 }
@@ -226,25 +228,32 @@ function clearCanvas() {
   context.clearRect(0, 0, camera.width, camera.height)
 }
 
-function renderBackground(background) {
+function renderLayer(layer) {
   var characterID = camera.following
   var character = district.characters[characterID]
-  var $background = document.getElementById(background.elementID)
+  var $layer = document.getElementById(layer.elementID)
   var $camera = document.getElementById(camera.elementID)
   var context = $camera.getContext('2d')
-  var cameraX = Math.round(character.x / background.depth - camera.width / 2 / background.depth)
+  if (layer.x) var layerX = layer.x
+  else layerX = 0
+  var cameraX = Math.round(character.x / layer.depth - camera.width / 2 / layer.depth - layerX)
   var cameraMinX = 0
-  var cameraMaxX = Math.round(district.width / background.depth - camera.width / background.depth)
-  cameraX = keepInDistrict(cameraX, cameraMinX, cameraMaxX)
-  context.drawImage($background, cameraX, camera.y, camera.width,
+  var cameraMaxX = Math.round(district.width / layer.depth - camera.width / layer.depth - layerX)
+  if (!layer.x) cameraX = keepInDistrict(cameraX, cameraMinX, cameraMaxX)
+  if (layer.x) {
+    if ((layer.x && layer.id === 2) || (layer.x && layer.id === 6)) {
+      if (cameraX > cameraMaxX) cameraX = cameraMaxX
+    }
+  }
+  context.drawImage($layer, cameraX, camera.y, camera.width,
     camera.height, 0, 0, camera.width, camera.height)
+  context.setTransform(1, 0, 0, 1, 0, 0)
 }
 
 function render(object) {
   var $object = document.getElementById(object.elementID)
   var $camera = document.getElementById(camera.elementID)
   var context = $camera.getContext('2d')
-  context.setTransform(1, 0, 0, 1, 0, 0)
   var xInCamera = object.x - camera.x
   var yInCamera = object.y - camera.y
   if (object.direction) {
