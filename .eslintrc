@@ -1,0 +1,13 @@
+{
+  "env": {
+    "browser": true
+  },
+  "extends": ["standard", "plugin:react/recommended"],
+  "rules": {
+    "space-before-function-paren": 0,
+    "padded-blocks": 0,
+    "curly": ["error", "multi-line"],
+    "brace-style": ["error", "stroustrup"],
+    "react/prop-types": 0
+  }
+}
