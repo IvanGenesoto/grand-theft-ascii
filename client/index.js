@@ -1,5 +1,4 @@
-/* global io */
-
+var io = require('socket.io-client')
 var socket = io()
 
 var client = {
@@ -98,8 +97,17 @@ function drawToLayer(layer) {
     var $variation = document.getElementById(variation.elementID)
     var $layer = document.getElementById(layer.elementID)
     var context = $layer.getContext('2d')
+    if (layer.scale) {
+      context.scale(layer.scale, layer.scale)
+      var x = blueprint.x / layer.scale
+      var y = blueprint.y / layer.scale
+    }
+    else {
+      x = blueprint.x
+      y = blueprint.y
+    }
     context.drawImage($variation, 0, 0, variation.width, variation.height,
-      blueprint.x, blueprint.y, variation.width, variation.height)
+      x, y, variation.width, variation.height)
     context.setTransform(1, 0, 0, 1, 0, 0)
   })
 }

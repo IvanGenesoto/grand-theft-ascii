@@ -4,6 +4,9 @@ var http = require('http')
 var server = http.Server(app)
 var socket = require('socket.io')
 var io = socket(server)
+var path = require('path')
+
+app.use(express.static(path.join(__dirname, 'public')))
 
 var layerY
 
@@ -82,7 +85,7 @@ var districts = {
           },
           '3': {
             id: 3,
-            rows: 50,
+            rows: 48,
             variations: {
               '1': {
                 id: 1,
@@ -305,7 +308,7 @@ var districts = {
         height: 8000,
         depth: 0.25,
         element: 'canvas',
-        scale: 16,
+        scale: 64,
         sections: {
           '1': {
             id: 1,
@@ -388,7 +391,7 @@ var districts = {
         height: 8000,
         depth: 0.25,
         element: 'canvas',
-        scale: 448,
+        scale: 64,
         sections: {
           '1': {
             id: 1,
@@ -471,7 +474,7 @@ var districts = {
         height: 8000,
         depth: 0.25,
         element: 'canvas',
-        scale: 448,
+        scale: 64,
         sections: {
           '1': {
             id: 1,
@@ -554,7 +557,7 @@ var districts = {
         height: 8000,
         depth: 0.25,
         element: 'canvas',
-        scale: 448,
+        scale: 64,
         sections: {
           '1': {
             id: 1,
@@ -991,7 +994,9 @@ compose('foregrounds')
 
 app.use(express.static('public'))
 var port = process.env.PORT || 3000
-server.listen(port)
+server.listen(port, () => {
+  console.log('Listening on port 3000.')
+})
 
 setInterval(() => {
   loopThrough(players, updateCharacter)
