@@ -5,14 +5,17 @@ var server = http.Server(app)
 var socket = require('socket.io')
 var io = socket(server)
 var path = require('path')
-
-app.use(express.static(path.join(__dirname, 'public')))
+var port = process.env.PORT || 3000
 
 var layerY
+var tick = 0
 
 var id = {
+  vehicle: 0,
+  key: 0,
+  element: 0,
   player: 0,
-  element: 0
+  character: 0
 }
 
 var broadcasts = {
@@ -24,9 +27,11 @@ var players = {}
 var districts = {
   '1': {
     timestamp: 0,
-    tick: 1,
+    tick: 0,
     id: 1,
     name: 'District 1',
+    characterCount: 0,
+    vehicleCount: 0,
     width: 32000,
     height: 8000,
     element: 'canvas',
@@ -670,25 +675,7 @@ var districts = {
         frames: {}
       }
     },
-    vehicles: {
-      '1': {
-        id: 1,
-        key: '',
-        x: 450,
-        y: 7852,
-        width: 268,
-        height: 80,
-        direction: 'east',
-        speed: 0,
-        maxSpeed: 0,
-        acceleration: 0,
-        deceleration: 0,
-        armor: undefined,
-        weight: 0,
-        element: 'img',
-        src: 'images/vehicles/delorean.png'
-      }
-    },
+    vehicles: {},
     projectiles: {
       '1': {
         x: 0,
@@ -714,11 +701,82 @@ var districts = {
   }
 }
 
+function populateDistrict(districtID) {
+  populateWithCharacters(districtID)
+  populateWithVehicles(districtID)
+}
+
+function populateWithCharacters(districtID) {
+  var district = districts[districtID]
+  if (district.characterCount < 200) {
+    district.characterCount += 1
+    var character = createAICharacter(districtID)
+    district.characters[character.id] = character
+    populateWithCharacters(districtID)
+  }
+}
+
+function createAICharacter(districtID) {
+  var directions = ['left', 'right', 'left', 'right', 'left', 'right']
+  var directionIndex = Math.floor(Math.random() * directions.length)
+  var character = {
+    id: id.character += 1,
+    name: '',
+    room: 0,
+    keys: [],
+    y: 7832,
+    width: 105,
+    height: 155,
+    direction: directions[directionIndex],
+    speed: Math.floor(Math.random() * 15),
+    maxSpeed: 0,
+    acceleration: 0,
+    element: 'img',
+    src: 'images/characters/man.png'
+  }
+  character.x = Math.floor(Math.random() * (districts[districtID].width - character.width))
+  return character
+}
+
+function populateWithVehicles(districtID) {
+  var district = districts[districtID]
+  if (district.vehicleCount < 500) {
+    district.vehicleCount += 1
+    var vehicle = createVehicle(districtID)
+    district.vehicles[vehicle.id] = vehicle
+    populateWithVehicles(districtID)
+  }
+}
+
+function createVehicle(districtID) {
+  var directions = ['left', 'right', 'left', 'right', 'left', 'right']
+  var directionIndex = Math.floor(Math.random() * directions.length)
+  var vehicle = {
+    id: id.vehicle += 1,
+    key: id.key += 1,
+    width: 268,
+    height: 80,
+    direction: directions[directionIndex],
+    speed: Math.floor(Math.random() * 151),
+    maxSpeed: 0,
+    acceleration: 0,
+    deceleration: 0,
+    armor: undefined,
+    weight: 0,
+    element: 'img',
+    src: 'images/vehicles/delorean.png'
+  }
+  vehicle.x = Math.floor(Math.random() * (districts[districtID].width - vehicle.width))
+  vehicle.y = Math.floor(Math.random() * (districts[districtID].height -
+    districts[districtID].height / 2 - 168) + districts[districtID].height / 2)
+  return vehicle
+}
+
 function assignElementIDs(object) {
   for (var property in object) {
     if (property === 'element') {
-      id.element += 1
-      object.elementID = '_' + id.element
+      var element = {id: id.element += 1}
+      object.elementID = '_' + element.id
     }
     else if (
       typeof object[property] !== 'string' &&
@@ -790,13 +848,23 @@ function createBlueprints(layersType, layer, section, rows, variationsArray) {
   startRow()
 }
 
+function initiatePlayer(socket) {
+  var player = createPlayer()
+  var character = createCharacter()
+  var districtID = incrementDistrictCharacterCount()
+  player.character = character.id
+  player.district = districtID
+  character.district = districtID
+  players[player.id] = player
+  socket.emit('player', player)
+  associatePlayerWithSocket(player.id, socket, districtID)
+  districts[districtID].characters[character.id] = character
+  broadcastCharacterToDistrict(character, districtID)
+}
+
 function createPlayer() {
-  id.player += 1
-  players[id.player] = {
-    id: id.player,
-    token: id.player,
-    character: id.player,
-    district: 1,
+  var player = {
+    id: id.player += 1,
     latencies: [],
     input: {
       up: false,
@@ -808,44 +876,52 @@ function createPlayer() {
       shoot: false
     }
   }
-  return players[id.player]
+  return player
 }
 
-function createCharacter(player) {
-  var characterID = player.character
-  var districtID = player.district
-  var district = districts[districtID]
-  var x = Math.floor(Math.random() * district.width)
-  id.element += 1
-  var elementID = '_' + id.element
-  district.characters[characterID] = {
-    id: characterID,
-    name: '',
+function createCharacter(name = 'Sam') {
+  var elementID = id.element += 1
+  var character = {
+    id: id.character += 1,
+    name,
     vehicle: 0,
     room: 0,
     keys: [],
-    x: x,
+    x: 200,
     y: 7832,
     width: 105,
     height: 155,
-    direction: 'east',
+    direction: 'right',
     speed: 0,
     maxSpeed: 0,
     acceleration: 0,
-    elementID: elementID,
+    elementID: '_' + elementID,
     element: 'img',
     src: 'images/characters/man.png'
   }
-  return district.characters[characterID]
+  return character
 }
 
-function broadcastCharacter(player, character) {
-  for (var districtID in broadcasts) {
-    var broadcast = broadcasts[districtID]
-    for (var playerID in broadcast) {
-      var socket = broadcast[playerID]
-      socket.emit('character', character)
+function incrementDistrictCharacterCount() {
+  for (var districtID in districts) {
+    var district = districts[districtID]
+    if (district.characterCount < 1000) {
+      district.characterCount += 1
+      return districtID
     }
+  }
+}
+
+function associatePlayerWithSocket(playerID, socket, districtID) {
+  var broadcast = broadcasts[districtID]
+  broadcast[playerID] = socket
+}
+
+function broadcastCharacterToDistrict(character, districtID) {
+  var broadcast = broadcasts[districtID]
+  for (var playerID in broadcast) {
+    var socket = broadcast[playerID]
+    socket.emit('character', character)
   }
 }
 
@@ -860,11 +936,75 @@ function getPlayerByToken(token) {
 }
 */
 
-function associatePlayerWithSocket(player, socket) {
-  var playerID = player.id
-  var districtID = player.district
-  var broadcast = broadcasts[districtID]
-  broadcast[playerID] = socket
+function refresh() {
+  loopThrough(players, updatePlayerCharacter)
+  loopThrough(districts['1'].characters, updateLocation)
+  loopThrough(districts['1'].vehicles, updateVehicleLocation)
+  broadcast()
+}
+
+function loopThrough(objects, callback) {
+  for (var property in objects) {
+    var object = objects[property]
+    callback(object)
+  }
+}
+
+function updatePlayerCharacter(player) {
+  var input = player.input
+  var characterID = player.character
+  var character = districts['1'].characters[characterID]
+  if (input.right === true) {
+    character.direction = 'right'
+    character.speed = 13
+  }
+  else if (input.left === true) {
+    character.direction = 'left'
+    character.speed = 13
+  }
+  else character.speed = 0
+}
+
+function updateLocation(object) {
+  if (object.speed > 0) {
+    if (object.direction === 'left') {
+      object.x -= object.speed
+      var nextX = object.x - object.speed
+    }
+    if (object.direction === 'right') {
+      object.x += object.speed
+      nextX = object.x + object.speed
+    }
+    var min = 0
+    var max = districts['1'].width - object.width
+    if (nextX < min) {
+      object.direction = 'right'
+    }
+    if (nextX > max) {
+      object.direction = 'left'
+    }
+  }
+}
+
+function updateVehicleLocation(vehicle) {
+  if (vehicle.speed > 0) {
+    if (vehicle.direction === 'left') {
+      vehicle.x -= vehicle.speed
+      var nextX = vehicle.x - vehicle.speed
+    }
+    else if (vehicle.direction === 'right') {
+      vehicle.x += vehicle.speed
+      nextX = vehicle.x + vehicle.speed
+    }
+    var min = 0
+    var max = districts['1'].width - vehicle.width
+    if (nextX < min) {
+      vehicle.direction = 'right'
+    }
+    if (nextX > max) {
+      vehicle.direction = 'left'
+    }
+  }
 }
 
 function broadcast() {
@@ -873,6 +1013,7 @@ function broadcast() {
     for (var playerID in broadcast) {
       var socket = broadcast[playerID]
       var district = districts[districtID]
+      district.tick = tick
       var timestamp = getTimestamp()
       district.timestamp = timestamp
       socket.emit('district', district)
@@ -885,7 +1026,7 @@ function getTimestamp() {
   return timestamp
 }
 
-function getPlayerBySocket(socket) {
+function getPlayerIDBySocket(socket) {
   for (var broadcastID in broadcasts) {
     var broadcast = broadcasts[broadcastID]
     for (var playerID in broadcast) {
@@ -908,64 +1049,8 @@ function updatePlayerLatency(playerID, timestamp) {
   }
 }
 
-function loopThrough(objects, callback) {
-  for (var property in objects) {
-    var object = objects[property]
-    callback(object)
-  }
-}
-
-function updatePlayerInput(id, input) {
-  for (var playerID in players) {
-    var player = players[playerID]
-    if (playerID === id) {
-      player.input = input
-      return player
-    }
-  }
-}
-
-function updateCharacter(player) {
-  var input = player.input
-  var characterID = player.character
-  var districtID = player.district
-  var district = districts[districtID]
-  var character = district.characters[characterID]
-  if (input.right === true) {
-    character.direction = 'right'
-    character.speed = 13
-  }
-  else if (input.left === true) {
-    character.direction = 'left'
-    character.speed = 13
-  }
-  else character.speed = 0
-  if (character.speed > 0) {
-    if (character.direction === 'left') {
-      character.x -= character.speed
-    }
-    if (character.direction === 'right') {
-      character.x += character.speed
-    }
-    var value = character.x
-    var min = character.width
-    var max = district.width - character.width
-    character.x = keepCharacterInDistrict(value, min, max)
-  }
-}
-
-function keepCharacterInDistrict(value, min, max) {
-  if (value < min) return min
-  else if (value > max) return max
-  else return value
-}
-
 io.on('connection', socket => {
-  var player = createPlayer()
-  associatePlayerWithSocket(player, socket)
-  var character = createCharacter(player)
-  broadcastCharacter(player, character)
-  socket.emit('player', player)
+  initiatePlayer(socket)
 
   /* Use for persistent online world:
   socket.emit('request-token')
@@ -977,28 +1062,25 @@ io.on('connection', socket => {
   */
 
   socket.on('timestamp', timestamp => {
-    var playerID = getPlayerBySocket(socket)
+    var playerID = getPlayerIDBySocket(socket)
     updatePlayerLatency(playerID, timestamp)
   })
 
   socket.on('input', input => {
-    var playerID = getPlayerBySocket(socket)
-    var player = updatePlayerInput(playerID, input) // eslint-disable-line no-unused-vars
-    // checkForMissedEvents(player)
+    var playerID = getPlayerIDBySocket(socket)
+    players[playerID].input = input
+    // checkForMissedEvents(playerID)
   })
 })
 
+populateDistrict('1')
 assignElementIDs(districts)
 compose('backgrounds')
 compose('foregrounds')
 
-app.use(express.static('public'))
-var port = process.env.PORT || 3000
+app.use(express.static(path.join(__dirname, 'public')))
 server.listen(port, () => {
   console.log('Listening on port 3000.')
 })
 
-setInterval(() => {
-  loopThrough(players, updateCharacter)
-  broadcast()
-}, 33)
+setInterval(refresh, 33)
