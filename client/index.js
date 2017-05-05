@@ -122,11 +122,12 @@ function refresh() {
   updateInputBuffer()
   updatePlayerCharacter()
   loopThrough(district.characters, updateLocation)
+  loopThrough(district.vehicles, updateVehicleLocation)
   updateCamera()
   clearCanvas()
   loopThrough(district.backgrounds, renderLayer)
-  loopThrough(district.vehicles, render)
   loopThrough(district.characters, render)
+  loopThrough(district.vehicles, render)
   loopThrough(district.foregrounds, renderLayer)
 }
 
@@ -198,35 +199,56 @@ function updateLocation(object) {
   if (object.speed > 0) {
     if (object.direction === 'left') {
       object.x -= object.speed
+      var nextX = object.x - object.speed
     }
     if (object.direction === 'right') {
       object.x += object.speed
+      nextX = object.x + object.speed
     }
-    var value = object.x
-    var min = object.width
+    var min = 0
     var max = district.width - object.width
-    object.x = keepInDistrict(value, min, max)
+    if (nextX < min) {
+      object.direction = 'right'
+    }
+    if (nextX > max) {
+      object.direction = 'left'
+    }
   }
 }
 
-function keepInDistrict(value, min, max) {
-  if (value < min) return min
-  else if (value > max) return max
-  else return value
+function updateVehicleLocation(vehicle) {
+  if (vehicle.speed > 0) {
+    if (vehicle.direction === 'left') {
+      vehicle.x -= vehicle.speed
+      var nextX = vehicle.x - vehicle.speed
+    }
+    else if (vehicle.direction === 'right') {
+      vehicle.x += vehicle.speed
+      nextX = vehicle.x + vehicle.speed
+    }
+    var min = 0
+    var max = district.width - vehicle.width
+    if (nextX < min) {
+      vehicle.direction = 'right'
+    }
+    else if (nextX > max) {
+      vehicle.direction = 'left'
+    }
+  }
 }
 
 function updateCamera() {
   if (camera.following) {
     var characterID = camera.following
     var character = district.characters[characterID]
-    var cameraX = Math.round(character.x - camera.width / 2)
-    var cameraY = Math.round(character.y - camera.height / 2)
+    camera.x = Math.round(character.x - camera.width / 2)
+    camera.y = Math.round(character.y - camera.height / 2)
     var cameraMaxX = district.width - camera.width
     var cameraMaxY = district.height - camera.height
-    var cameraMinX = 0
-    var cameraMinY = 0
-    camera.x = keepInDistrict(cameraX, cameraMinX, cameraMaxX)
-    camera.y = keepInDistrict(cameraY, cameraMinY, cameraMaxY)
+    if (camera.x < 0) camera.x = 0
+    if (camera.x > cameraMaxX) camera.x = cameraMaxX
+    if (camera.y < 0) camera.y = 0
+    if (camera.y > cameraMaxY) camera.y = cameraMaxY
   }
 }
 
@@ -245,9 +267,11 @@ function renderLayer(layer) {
   if (layer.x) var layerX = layer.x
   else layerX = 0
   var cameraX = Math.round(character.x / layer.depth - camera.width / 2 / layer.depth - layerX)
-  var cameraMinX = 0
   var cameraMaxX = Math.round(district.width / layer.depth - camera.width / layer.depth - layerX)
-  if (!layer.x) cameraX = keepInDistrict(cameraX, cameraMinX, cameraMaxX)
+  if (!layer.x) {
+    if (cameraX < 0) cameraX = 0
+    if (cameraX > cameraMaxX) cameraX = cameraMaxX
+  }
   if (layer.x) {
     if ((layer.x && layer.id === 2) || (layer.x && layer.id === 6)) {
       if (cameraX > cameraMaxX) cameraX = cameraMaxX
@@ -264,6 +288,12 @@ function render(object) {
   var context = $camera.getContext('2d')
   var xInCamera = object.x - camera.x
   var yInCamera = object.y - camera.y
+  if (
+    xInCamera > camera.width ||
+    xInCamera < 0 ||
+    yInCamera > camera.height ||
+    yInCamera < 0
+  ) return
   if (object.direction) {
     if (object.direction === 'left') {
       xInCamera = Math.round(-object.x + camera.x - object.width / 2)
@@ -294,7 +324,7 @@ window.addEventListener('keyup', event => {
 
 socket.on('player', receivedPlayer => {
   player = receivedPlayer
-  camera.following = receivedPlayer.id
+  camera.following = receivedPlayer.character
 })
 
 socket.on('character', character => {
