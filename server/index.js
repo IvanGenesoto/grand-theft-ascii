@@ -25,8 +25,7 @@ var id = {
   key: 0,
   element: 0,
   player: 0,
-  character: 0,
-  queue: 0
+  character: 0
 }
 
 var players = {}
@@ -698,8 +697,6 @@ var districts = {
   }
 }
 
-var queuedDistricts = {}
-
 function populateDistricts(districtID) {
   populateWithAICharacters(districtID)
   populateWithVehicles(districtID)
@@ -941,36 +938,14 @@ function getPlayerIDBySocket(socket) {
   }
 }
 
-// function getPlayerIDBySocket(socket) {
-//   for (var broadcastID in broadcasts) {
-//     var broadcast = broadcasts[broadcastID]
-//     for (var playerID in broadcast) {
-//       var playerSocket = broadcast[playerID]
-//       if (playerSocket === socket) {
-//         return playerID
-//       }
-//     }
-//   }
-// }
-
-// function removePlayerFromBroadcast(playerID) {
-//   var districtID = players[playerID].district
-//   var broadcast = broadcasts[districtID]
-//   delete broadcast[playerID]
-// }
-
 function updatePlayerLatencyBuffer(playerID, timestamp) {
   var newTimestamp = now()
   var latency = (newTimestamp - timestamp) / 2
-  var player = players[playerID]
-  var districtID = player.district
-  var district = districts[districtID]
   var latencyBuffer = players[playerID].latencyBuffer
   latencyBuffer.push(latency)
   if (latencyBuffer.length >= 20) {
     latencyBuffer.shift()
   }
-  district.latencyBuffer = latencyBuffer
 }
 
 /* Use for persistent online world:
@@ -1047,30 +1022,10 @@ function updateLocation(type) {
 function broadcast() {
   for (var districtID in districts) {
     var district = districts[districtID]
-    district.tick = server.tick
     district.timestamp = now()
-    // id.queue += 1
-    // var queuedDistrict = queuedDistricts[id.queue]
-    // queuedDistrict = {...district}
-    // setTimeout(() => {
     io.to(districtID.toString()).volatile.emit('district', district)
-    // // // }, 3000)
   }
 }
-
-// function broadcast() {
-//   for (var districtID in broadcasts) {
-//     var broadcast = broadcasts[districtID]
-//     for (var playerID in broadcast) {
-//       var socket = broadcast[playerID]
-//       var district = districts[districtID]
-//       district.tick = server.tick
-//       var timestamp = now()
-//       district.timestamp = timestamp
-//       socket.volatile.emit('district', district)
-//     }
-//   }
-// }
 
 function setDelay() {
   var _ = server.setDelay
@@ -1119,7 +1074,7 @@ function setDelay() {
   }
 }
 
-function getAverage(value, bufferName, maxItems = 60, precision = 1000) {
+function getAverage(value, bufferName, maxItems = 60, precision = 1000) { // eslint-disable-line no-unused-vars
   if (!server.getAverage) server.getAverage = {}
   var _ = server.getAverage
   if (!_[bufferName]) _[bufferName] = []
@@ -1143,11 +1098,6 @@ io.on('connection', socket => {
     associatePlayerWithSocket(player, socket)
   })
   */
-
-  // socket.on('disconnect', socket => {
-  //   var playerID = getPlayerIDBySocket(socket)
-  //   removePlayerFromBroadcast(playerID)
-  // })
 
   socket.on('timestamp', timestamp => {
     var playerID = getPlayerIDBySocket(socket)
