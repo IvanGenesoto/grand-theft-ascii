@@ -25,7 +25,8 @@ var id = {
   key: 0,
   element: 0,
   player: 0,
-  character: 0
+  character: 0,
+  queue: 0
 }
 
 var players = {}
@@ -697,6 +698,8 @@ var districts = {
   }
 }
 
+var queuedDistricts = {}
+
 function populateDistricts(districtID) {
   populateWithAICharacters(districtID)
   populateWithVehicles(districtID)
@@ -1040,7 +1043,13 @@ function updateLocation(type) {
 function broadcast() {
   for (var districtID in districts) {
     var district = districts[districtID]
-    io.to(districtID.toString()).volatile.emit('district', district)
+    district.tick = server.tick
+    // id.queue += 1
+    // var queuedDistrict = queuedDistricts[id.queue]
+    // queuedDistrict = {...district}
+    // setTimeout(() => {
+      io.to(districtID.toString()).volatile.emit('district', district)
+    // }, 3000)
   }
 }
 

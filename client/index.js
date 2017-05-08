@@ -110,7 +110,9 @@ function refresh() {
   client.setDelay.refreshStartTime = performance.now()
   client.tick += 1
   if (queuedDistrict) updateDistrict()
-  socket.emit('input', player.input)
+  // setTimeout(() => {
+    socket.emit('input', player.input)
+  // }, 3000)
   player.inputBuffer.push(player.input)
   updatePlayerCharactersSpeedDirection()
   updateLocation('characters')
@@ -130,9 +132,13 @@ function refresh() {
 }
 
 function updateDistrict() {
+  var characterID = player.character
+  var character = district.characters[characterID]
+  console.log('client tick = ' + client.tick) + 'character direction = ' + character.direction + 'character x = ' + character.x;
   district = queuedDistrict
+  character = district.characters[characterID]
+  console.log('district tick = ' + district.tick) + 'character direction = ' + character.direction + 'character x = ' + character.x;
   queuedDistrict = null
-  client.tick = district.tick
   player.inputBuffer = []
 }
 
@@ -360,6 +366,10 @@ socket.on('district', receivedDistrict => {
   socket.emit('timestamp', timestamp)
   if (district) {
     queuedDistrict = receivedDistrict
+    if (!client.synced) {
+      client.tick = district.tick
+      client.synced = true
+    }
   }
   else {
     district = receivedDistrict
