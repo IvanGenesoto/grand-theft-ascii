@@ -962,11 +962,15 @@ function getPlayerIDBySocket(socket) {
 function updatePlayerLatencyBuffer(playerID, timestamp) {
   var newTimestamp = now()
   var latency = (newTimestamp - timestamp) / 2
+  var player = players[playerID]
+  var districtID = player.district
+  var district = districts[districtID]
   var latencyBuffer = players[playerID].latencyBuffer
   latencyBuffer.push(latency)
   if (latencyBuffer.length >= 20) {
     latencyBuffer.shift()
   }
+  district.latencyBuffer = latencyBuffer
 }
 
 /* Use for persistent online world:
@@ -1044,11 +1048,12 @@ function broadcast() {
   for (var districtID in districts) {
     var district = districts[districtID]
     district.tick = server.tick
+    district.timestamp = now()
     // id.queue += 1
     // var queuedDistrict = queuedDistricts[id.queue]
     // queuedDistrict = {...district}
     // setTimeout(() => {
-      io.to(districtID.toString()).volatile.emit('district', district)
+    io.to(districtID.toString()).volatile.emit('district', district)
     // // // }, 3000)
   }
 }
