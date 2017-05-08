@@ -359,8 +359,6 @@ socket.on('request-token', () => {
 socket.on('district', receivedDistrict => {
   var timestamp = receivedDistrict.timestamp
   socket.emit('timestamp', timestamp)
-  var playerID = player.id
-  console.log(receivedDistrict.latencyBuffer);
   if (district) {
     queuedDistrict = receivedDistrict
     if (!client.synced) {
