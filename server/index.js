@@ -1,14 +1,24 @@
 var express = require('express')
 var app = express()
 var http = require('http')
-var server = http.Server(app)
+var server_ = http.Server(app)
 var socket = require('socket.io')
-var io = socket(server)
+var io = socket(server_)
 var path = require('path')
 var port = process.env.PORT || 3000
+var now = require('performance-now')
 
-var layerY
-var tick = 0
+var server = {
+  layerY: 0,
+  timestamp: 0,
+  timeoutID: 0,
+  tick: 0,
+  setDelay: {
+    millisecondsAhead: 0,
+    totalStartTime: 0,
+    refreshStartTime: 0
+  }
+}
 
 var id = {
   vehicle: 0,
@@ -16,10 +26,6 @@ var id = {
   element: 0,
   player: 0,
   character: 0
-}
-
-var broadcasts = {
-  '1': {}
 }
 
 var players = {}
@@ -30,612 +36,12 @@ var districts = {
     tick: 0,
     id: 1,
     name: 'District 1',
-    characterCount: 0,
-    vehicleCount: 0,
     width: 32000,
     height: 8000,
-    element: 'canvas',
-    backgrounds: {
-      '1': {
-        id: 1,
-        blueprints: [],
-        element: 'canvas',
-        width: 16000,
-        height: 8000,
-        depth: 4,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/background/far/above-top.png',
-                width: 1024,
-                height: 367
-              }
-            }
-          },
-          '2': {
-            id: 2,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 4,
-                element: 'img',
-                src: 'images/background/far/top/top.png',
-                width: 1024,
-                height: 260
-              },
-              '2': {
-                id: 2,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/background/far/top/top-pink-jumbotron-left.png',
-                width: 1024,
-                height: 260
-              },
-              '3': {
-                id: 3,
-                prevalence: 2,
-                element: 'img',
-                src: 'images/background/far/top/top-pink-jumbotron-right.png',
-                width: 1024,
-                height: 260
-              }
-            }
-          },
-          '3': {
-            id: 3,
-            rows: 48,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 3,
-                element: 'img',
-                src: 'images/background/far/middle/middle.png',
-                width: 1024,
-                height: 134
-              },
-              '2': {
-                id: 2,
-                prevalence: 2,
-                element: 'img',
-                src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
-                width: 1024,
-                height: 134
-              },
-              '3': {
-                id: 3,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
-                width: 1024,
-                height: 134
-              },
-              '4': {
-                id: 4,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
-                width: 1024,
-                height: 134
-              },
-              '5': {
-                id: 5,
-                prevalence: 2,
-                element: 'img',
-                src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
-                width: 1024,
-                height: 134
-              },
-              '6': {
-                id: 6,
-                prevalence: 2,
-                element: 'img',
-                src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
-                width: 1024,
-                height: 134
-              },
-              '7': {
-                id: 7,
-                prevalence: 3,
-                element: 'img',
-                src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
-                width: 1024,
-                height: 134
-              },
-              '8': {
-                id: 8,
-                prevalence: 2,
-                element: 'img',
-                src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
-                width: 1024,
-                height: 134
-              },
-              '9': {
-                id: 9,
-                prevalence: 3,
-                element: 'img',
-                src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
-                width: 1024,
-                height: 134
-              }
-            }
-          },
-          '4': {
-            id: 4,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/background/far/bottom.png',
-                width: 1024,
-                height: 673
-              }
-            }
-          }
-        }
-      },
-      '2': {
-        id: 2,
-        blueprints: [],
-        y: 7050,
-        element: 'canvas',
-        width: 24000,
-        height: 8000,
-        depth: 2,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                width: 1024,
-                height: 768,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/background/middle.png'
-              }
-            }
-          }
-        }
-      },
-      '3': {
-        id: 3,
-        blueprints: [],
-        y: 7232,
-        element: 'canvas',
-        width: 32000,
-        height: 8000,
-        depth: 1,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                width: 1408,
-                height: 768,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/background/near.png'
-              }
-            }
-          }
-        }
-      }
-    },
-    foregrounds: {
-      '1': {
-        id: 1,
-        blueprints: [],
-        x: 0,
-        y: 7456,
-        width: 32000,
-        height: 8000,
-        depth: 0.5,
-        element: 'canvas',
-        scale: 16,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/lamp/left.png',
-                width: 144,
-                height: 544
-              },
-              '2': {
-                id: 2,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/lamp/right.png',
-                width: 144,
-                height: 544
-              }
-            }
-          }
-        }
-      },
-      '2': {
-        id: 2,
-        blueprints: [],
-        x: 32000,
-        y: 7456,
-        width: 32000,
-        height: 8000,
-        depth: 0.5,
-        element: 'canvas',
-        scale: 16,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/lamp/left.png',
-                width: 144,
-                height: 544
-              },
-              '2': {
-                id: 2,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/lamp/right.png',
-                width: 144,
-                height: 544
-              }
-            }
-          }
-        }
-      },
-      '3': {
-        id: 3,
-        blueprints: [],
-        x: 0,
-        y: 6800,
-        width: 32000,
-        height: 8000,
-        depth: 0.25,
-        element: 'canvas',
-        scale: 64,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/up-left.png',
-                width: 448,
-                height: 1248
-              },
-              '2': {
-                id: 2,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/up-right.png',
-                width: 448,
-                height: 1248
-              },
-              '3': {
-                id: 3,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/down-left.png',
-                width: 448,
-                height: 1248
-              },
-              '4': {
-                id: 4,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/down-right.png',
-                width: 448,
-                height: 1248
-              },
-              '5': {
-                id: 5,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/left-up.png',
-                width: 1248,
-                height: 448
-              },
-              '6': {
-                id: 6,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/left-down.png',
-                width: 1248,
-                height: 448
-              },
-              '7': {
-                id: 7,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/right-up.png',
-                width: 1248,
-                height: 448
-              },
-              '8': {
-                id: 8,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/right-down.png',
-                width: 1248,
-                height: 448
-              }
-            }
-          }
-        }
-      },
-      '4': {
-        id: 4,
-        blueprints: [],
-        x: 32000,
-        y: 6800,
-        width: 32000,
-        height: 8000,
-        depth: 0.25,
-        element: 'canvas',
-        scale: 64,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/up-left.png',
-                width: 448,
-                height: 1248
-              },
-              '2': {
-                id: 2,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/up-right.png',
-                width: 448,
-                height: 1248
-              },
-              '3': {
-                id: 3,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/down-left.png',
-                width: 448,
-                height: 1248
-              },
-              '4': {
-                id: 4,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/down-right.png',
-                width: 448,
-                height: 1248
-              },
-              '5': {
-                id: 5,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/left-up.png',
-                width: 1248,
-                height: 448
-              },
-              '6': {
-                id: 6,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/left-down.png',
-                width: 1248,
-                height: 448
-              },
-              '7': {
-                id: 7,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/right-up.png',
-                width: 1248,
-                height: 448
-              },
-              '8': {
-                id: 8,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/right-down.png',
-                width: 1248,
-                height: 448
-              }
-            }
-          }
-        }
-      },
-      '5': {
-        id: 5,
-        blueprints: [],
-        x: 64000,
-        y: 6800,
-        width: 32000,
-        height: 8000,
-        depth: 0.25,
-        element: 'canvas',
-        scale: 64,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/up-left.png',
-                width: 448,
-                height: 1248
-              },
-              '2': {
-                id: 2,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/up-right.png',
-                width: 448,
-                height: 1248
-              },
-              '3': {
-                id: 3,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/down-left.png',
-                width: 448,
-                height: 1248
-              },
-              '4': {
-                id: 4,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/down-right.png',
-                width: 448,
-                height: 1248
-              },
-              '5': {
-                id: 5,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/left-up.png',
-                width: 1248,
-                height: 448
-              },
-              '6': {
-                id: 6,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/left-down.png',
-                width: 1248,
-                height: 448
-              },
-              '7': {
-                id: 7,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/right-up.png',
-                width: 1248,
-                height: 448
-              },
-              '8': {
-                id: 8,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/right-down.png',
-                width: 1248,
-                height: 448
-              }
-            }
-          }
-        }
-      },
-      '6': {
-        id: 6,
-        blueprints: [],
-        x: 96000,
-        y: 6800,
-        width: 32000,
-        height: 8000,
-        depth: 0.25,
-        element: 'canvas',
-        scale: 64,
-        sections: {
-          '1': {
-            id: 1,
-            rows: 1,
-            variations: {
-              '1': {
-                id: 1,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/up-left.png',
-                width: 448,
-                height: 1248
-              },
-              '2': {
-                id: 2,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/up-right.png',
-                width: 448,
-                height: 1248
-              },
-              '3': {
-                id: 3,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/down-left.png',
-                width: 448,
-                height: 1248
-              },
-              '4': {
-                id: 4,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/down-right.png',
-                width: 448,
-                height: 1248
-              },
-              '5': {
-                id: 5,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/left-up.png',
-                width: 1248,
-                height: 448
-              },
-              '6': {
-                id: 6,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/left-down.png',
-                width: 1248,
-                height: 448
-              },
-              '7': {
-                id: 7,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/right-up.png',
-                width: 1248,
-                height: 448
-              },
-              '8': {
-                id: 8,
-                prevalence: 1,
-                element: 'img',
-                src: 'images/foreground/arrow/right-down.png',
-                width: 1248,
-                height: 448
-              }
-            }
-          }
-        }
-      }
+    population: {
+      characters: 0,
+      aiCharacters: 0,
+      vehicles: 0
     },
     rooms: {
       room1: {
@@ -685,41 +91,630 @@ var districts = {
       }
     },
     scenery: {
-      background: {
+      backgrounds: {
         '1': {
-          x: 0,
-          y: 0
+          id: 1,
+          blueprints: [],
+          element: 'canvas',
+          width: 16000,
+          height: 8000,
+          depth: 4,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/background/far/above-top.png',
+                  width: 1024,
+                  height: 367
+                }
+              }
+            },
+            '2': {
+              id: 2,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 4,
+                  element: 'img',
+                  src: 'images/background/far/top/top.png',
+                  width: 1024,
+                  height: 260
+                },
+                '2': {
+                  id: 2,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/background/far/top/top-pink-jumbotron-left.png',
+                  width: 1024,
+                  height: 260
+                },
+                '3': {
+                  id: 3,
+                  prevalence: 2,
+                  element: 'img',
+                  src: 'images/background/far/top/top-pink-jumbotron-right.png',
+                  width: 1024,
+                  height: 260
+                }
+              }
+            },
+            '3': {
+              id: 3,
+              rows: 48,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 3,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle.png',
+                  width: 1024,
+                  height: 134
+                },
+                '2': {
+                  id: 2,
+                  prevalence: 2,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
+                  width: 1024,
+                  height: 134
+                },
+                '3': {
+                  id: 3,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
+                  width: 1024,
+                  height: 134
+                },
+                '4': {
+                  id: 4,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
+                  width: 1024,
+                  height: 134
+                },
+                '5': {
+                  id: 5,
+                  prevalence: 2,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
+                  width: 1024,
+                  height: 134
+                },
+                '6': {
+                  id: 6,
+                  prevalence: 2,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
+                  width: 1024,
+                  height: 134
+                },
+                '7': {
+                  id: 7,
+                  prevalence: 3,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
+                  width: 1024,
+                  height: 134
+                },
+                '8': {
+                  id: 8,
+                  prevalence: 2,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
+                  width: 1024,
+                  height: 134
+                },
+                '9': {
+                  id: 9,
+                  prevalence: 3,
+                  element: 'img',
+                  src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
+                  width: 1024,
+                  height: 134
+                }
+              }
+            },
+            '4': {
+              id: 4,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/background/far/bottom.png',
+                  width: 1024,
+                  height: 673
+                }
+              }
+            }
+          }
+        },
+        '2': {
+          id: 2,
+          blueprints: [],
+          y: 7050,
+          element: 'canvas',
+          width: 24000,
+          height: 8000,
+          depth: 2,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  width: 1024,
+                  height: 768,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/background/middle.png'
+                }
+              }
+            }
+          }
+        },
+        '3': {
+          id: 3,
+          blueprints: [],
+          y: 7232,
+          element: 'canvas',
+          width: 32000,
+          height: 8000,
+          depth: 1,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  width: 1408,
+                  height: 768,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/background/near.png'
+                }
+              }
+            }
+          }
         }
       },
-      foreground: {
+      foregrounds: {
         '1': {
+          id: 1,
+          blueprints: [],
           x: 0,
-          y: 0
+          y: 7456,
+          width: 32000,
+          height: 8000,
+          depth: 0.5,
+          element: 'canvas',
+          scale: 16,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/lamp/left.png',
+                  width: 144,
+                  height: 544
+                },
+                '2': {
+                  id: 2,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/lamp/right.png',
+                  width: 144,
+                  height: 544
+                }
+              }
+            }
+          }
+        },
+        '2': {
+          id: 2,
+          blueprints: [],
+          x: 32000,
+          y: 7456,
+          width: 32000,
+          height: 8000,
+          depth: 0.5,
+          element: 'canvas',
+          scale: 16,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/lamp/left.png',
+                  width: 144,
+                  height: 544
+                },
+                '2': {
+                  id: 2,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/lamp/right.png',
+                  width: 144,
+                  height: 544
+                }
+              }
+            }
+          }
+        },
+        '3': {
+          id: 3,
+          blueprints: [],
+          x: 0,
+          y: 6800,
+          width: 32000,
+          height: 8000,
+          depth: 0.25,
+          element: 'canvas',
+          scale: 64,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/up-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                '2': {
+                  id: 2,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/up-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                '3': {
+                  id: 3,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/down-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                '4': {
+                  id: 4,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/down-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                '5': {
+                  id: 5,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/left-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                '6': {
+                  id: 6,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/left-down.png',
+                  width: 1248,
+                  height: 448
+                },
+                '7': {
+                  id: 7,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/right-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                '8': {
+                  id: 8,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/right-down.png',
+                  width: 1248,
+                  height: 448
+                }
+              }
+            }
+          }
+        },
+        '4': {
+          id: 4,
+          blueprints: [],
+          x: 32000,
+          y: 6800,
+          width: 32000,
+          height: 8000,
+          depth: 0.25,
+          element: 'canvas',
+          scale: 64,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/up-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                '2': {
+                  id: 2,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/up-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                '3': {
+                  id: 3,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/down-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                '4': {
+                  id: 4,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/down-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                '5': {
+                  id: 5,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/left-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                '6': {
+                  id: 6,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/left-down.png',
+                  width: 1248,
+                  height: 448
+                },
+                '7': {
+                  id: 7,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/right-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                '8': {
+                  id: 8,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/right-down.png',
+                  width: 1248,
+                  height: 448
+                }
+              }
+            }
+          }
+        },
+        '5': {
+          id: 5,
+          blueprints: [],
+          x: 64000,
+          y: 6800,
+          width: 32000,
+          height: 8000,
+          depth: 0.25,
+          element: 'canvas',
+          scale: 64,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/up-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                '2': {
+                  id: 2,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/up-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                '3': {
+                  id: 3,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/down-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                '4': {
+                  id: 4,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/down-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                '5': {
+                  id: 5,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/left-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                '6': {
+                  id: 6,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/left-down.png',
+                  width: 1248,
+                  height: 448
+                },
+                '7': {
+                  id: 7,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/right-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                '8': {
+                  id: 8,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/right-down.png',
+                  width: 1248,
+                  height: 448
+                }
+              }
+            }
+          }
+        },
+        '6': {
+          id: 6,
+          blueprints: [],
+          x: 96000,
+          y: 6800,
+          width: 32000,
+          height: 8000,
+          depth: 0.25,
+          element: 'canvas',
+          scale: 64,
+          sections: {
+            '1': {
+              id: 1,
+              rows: 1,
+              variations: {
+                '1': {
+                  id: 1,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/up-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                '2': {
+                  id: 2,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/up-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                '3': {
+                  id: 3,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/down-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                '4': {
+                  id: 4,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/down-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                '5': {
+                  id: 5,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/left-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                '6': {
+                  id: 6,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/left-down.png',
+                  width: 1248,
+                  height: 448
+                },
+                '7': {
+                  id: 7,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/right-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                '8': {
+                  id: 8,
+                  prevalence: 1,
+                  element: 'img',
+                  src: 'images/foreground/arrow/right-down.png',
+                  width: 1248,
+                  height: 448
+                }
+              }
+            }
+          }
         }
       }
     }
   }
 }
 
-function populateDistrict(districtID) {
-  populateWithCharacters(districtID)
+function populateDistricts(districtID) {
+  populateWithAICharacters(districtID)
   populateWithVehicles(districtID)
 }
 
-function populateWithCharacters(districtID) {
+function populateWithAICharacters(districtID) {
   var district = districts[districtID]
-  if (district.characterCount < 200) {
-    district.characterCount += 1
-    var character = createAICharacter(districtID)
-    district.characters[character.id] = character
-    populateWithCharacters(districtID)
+  while (district.population.aiCharacters < 200) {
+    district.population.aiCharacters += 1
+    var aiCharacter = createAICharacter(districtID)
+    district.aiCharacters[aiCharacter.id] = aiCharacter
   }
 }
 
 function createAICharacter(districtID) {
-  var directions = ['left', 'right', 'left', 'right', 'left', 'right']
+  var directions = ['left', 'right']
   var directionIndex = Math.floor(Math.random() * directions.length)
-  var character = {
+  var aiCharacter = {
     id: id.character += 1,
     name: '',
     room: 0,
@@ -728,20 +723,20 @@ function createAICharacter(districtID) {
     width: 105,
     height: 155,
     direction: directions[directionIndex],
-    speed: Math.floor(Math.random() * 15),
+    speed: Math.floor(Math.random() * 6),
     maxSpeed: 0,
     acceleration: 0,
     element: 'img',
     src: 'images/characters/man.png'
   }
-  character.x = Math.floor(Math.random() * (districts[districtID].width - character.width))
-  return character
+  aiCharacter.x = Math.floor(Math.random() * (districts[districtID].width - aiCharacter.width))
+  return aiCharacter
 }
 
 function populateWithVehicles(districtID) {
   var district = districts[districtID]
-  if (district.vehicleCount < 500) {
-    district.vehicleCount += 1
+  if (district.population.vehicles < 500) {
+    district.population.vehicles += 1
     var vehicle = createVehicle(districtID)
     district.vehicles[vehicle.id] = vehicle
     populateWithVehicles(districtID)
@@ -757,7 +752,7 @@ function createVehicle(districtID) {
     width: 268,
     height: 80,
     direction: directions[directionIndex],
-    speed: Math.floor(Math.random() * 151),
+    speed: Math.floor(Math.random() * 76),
     maxSpeed: 0,
     acceleration: 0,
     deceleration: 0,
@@ -789,30 +784,34 @@ function assignElementIDs(object) {
   }
 }
 
-function compose(layersType) {
+function composeScenery(type) {
   for (var districtID in districts) {
     var district = districts[districtID]
-    layerY = 0
-    for (var layerID in district[layersType]) {
-      var layers = district[layersType]
-      var layer = layers[layerID]
-      for (var sectionID in layer.sections) {
-        var section = layer.sections[sectionID]
-        var rows = section.rows
-        var variationsArray = []
-        for (var variationID in section.variations) {
-          var variation = section.variations[variationID]
-          for (var i = 0; i < variation.prevalence; i++) {
-            variationsArray.push(variation)
+    for (var sceneryType in district.scenery) {
+      if (sceneryType === type) {
+        var layers = district.scenery[sceneryType]
+        server.layerY = 0
+        for (var layerID in layers) {
+          var layer = layers[layerID]
+          for (var sectionID in layer.sections) {
+            var section = layer.sections[sectionID]
+            var rows = section.rows
+            var variationsArray = []
+            for (var variationID in section.variations) {
+              var variation = section.variations[variationID]
+              for (var i = 0; i < variation.prevalence; i++) {
+                variationsArray.push(variation)
+              }
+            }
+            createBlueprints(type, layer, section, rows, variationsArray)
           }
         }
-        createBlueprints(layersType, layer, section, rows, variationsArray)
       }
     }
   }
 }
 
-function createBlueprints(layersType, layer, section, rows, variationsArray) {
+function createBlueprints(type, layer, section, rows, variationsArray) {
   var rowsDrawn = 0
   function startRow() {
     var x = 0
@@ -821,10 +820,10 @@ function createBlueprints(layersType, layer, section, rows, variationsArray) {
       if (x < layer.width) {
         var index = Math.floor(Math.random() * variationsArray.length)
         var variation = variationsArray[index]
-        if (layer.y) layerY = layer.y
-        var blueprint = {section: section.id, variation: variation.id, x, y: layerY}
+        if (layer.y) server.layerY = layer.y
+        var blueprint = {section: section.id, variation: variation.id, x, y: server.layerY}
         layer.blueprints.push(blueprint)
-        if (layersType === 'foregrounds') {
+        if (type === 'foregrounds') {
           if (layer.id < 3) {
             x += 2000
           }
@@ -839,7 +838,7 @@ function createBlueprints(layersType, layer, section, rows, variationsArray) {
       }
       else {
         rowsDrawn += 1
-        layerY += rowY
+        server.layerY += rowY
         startRow()
       }
     }
@@ -851,13 +850,14 @@ function createBlueprints(layersType, layer, section, rows, variationsArray) {
 function initiatePlayer(socket) {
   var player = createPlayer()
   var character = createCharacter()
-  var districtID = incrementDistrictCharacterCount()
+  var districtID = getDistrictID()
   player.character = character.id
   player.district = districtID
   character.district = districtID
   players[player.id] = player
   socket.emit('player', player)
-  associatePlayerWithSocket(player.id, socket, districtID)
+  player.socket = socket
+  socket.join(districtID.toString())
   districts[districtID].characters[character.id] = character
   broadcastCharacterToDistrict(character, districtID)
 }
@@ -865,7 +865,8 @@ function initiatePlayer(socket) {
 function createPlayer() {
   var player = {
     id: id.player += 1,
-    latencies: [],
+    latencyBuffer: [],
+    inputBuffer: [],
     input: {
       up: false,
       down: false,
@@ -902,26 +903,66 @@ function createCharacter(name = 'Sam') {
   return character
 }
 
-function incrementDistrictCharacterCount() {
+function getDistrictID() {
   for (var districtID in districts) {
     var district = districts[districtID]
-    if (district.characterCount < 1000) {
-      district.characterCount += 1
+    if (district.population.characters < 500) {
+      district.population.characters += 1
       return districtID
     }
   }
 }
 
-function associatePlayerWithSocket(playerID, socket, districtID) {
-  var broadcast = broadcasts[districtID]
-  broadcast[playerID] = socket
-}
+// function associatePlayerWithSocket(playerID, socket, districtID) {
+//   var broadcast = broadcasts[districtID]
+//   broadcast[playerID] = socket
+// }
 
 function broadcastCharacterToDistrict(character, districtID) {
-  var broadcast = broadcasts[districtID]
-  for (var playerID in broadcast) {
-    var socket = broadcast[playerID]
-    socket.emit('character', character)
+  io.to(districtID.toString()).emit('character', character)
+}
+
+// function broadcastCharacterToDistrict(character, districtID) {
+//   var broadcast = broadcasts[districtID]
+//   for (var playerID in broadcast) {
+//     var socket = broadcast[playerID]
+//     socket.emit('character', character)
+//   }
+// }
+
+function getPlayerIDBySocket(socket) {
+  for (var playerID in players) {
+    if (players[playerID].socket === socket) {
+      return playerID
+    }
+  }
+}
+
+// function getPlayerIDBySocket(socket) {
+//   for (var broadcastID in broadcasts) {
+//     var broadcast = broadcasts[broadcastID]
+//     for (var playerID in broadcast) {
+//       var playerSocket = broadcast[playerID]
+//       if (playerSocket === socket) {
+//         return playerID
+//       }
+//     }
+//   }
+// }
+
+// function removePlayerFromBroadcast(playerID) {
+//   var districtID = players[playerID].district
+//   var broadcast = broadcasts[districtID]
+//   delete broadcast[playerID]
+// }
+
+function updatePlayerLatencyBuffer(playerID, timestamp) {
+  var newTimestamp = now()
+  var latency = (newTimestamp - timestamp) / 2
+  var latencyBuffer = players[playerID].latencyBuffer
+  latencyBuffer.push(latency)
+  if (latencyBuffer.length >= 20) {
+    latencyBuffer.shift()
   }
 }
 
@@ -937,116 +978,144 @@ function getPlayerByToken(token) {
 */
 
 function refresh() {
-  loopThrough(players, updatePlayerCharacter)
-  loopThrough(districts['1'].characters, updateLocation)
-  loopThrough(districts['1'].vehicles, updateVehicleLocation)
-  broadcast()
+  server.setDelay.refreshStartTime = now()
+  server.tick += 1
+  updatePlayerCharactersSpeedDirection()
+  updateLocation('characters')
+  updateLocation('aiCharacters')
+  updateLocation('vehicles')
+  if (!(server.tick % 3)) {
+    broadcast()
+  }
+  setDelay()
 }
 
-function loopThrough(objects, callback) {
-  for (var property in objects) {
-    var object = objects[property]
-    callback(object)
+function updatePlayerCharactersSpeedDirection() {
+  for (var playerID in players) {
+    var player = players[playerID]
+    var input = player.input
+    var characterID = player.character
+    var districtID = player.district
+    var character = districts[districtID].characters[characterID]
+    if (input.right === true) {
+      character.direction = 'right'
+      character.speed = 5
+    }
+    else if (input.left === true) {
+      character.direction = 'left'
+      character.speed = 5
+    }
+    else character.speed = 0
   }
 }
 
-function updatePlayerCharacter(player) {
-  var input = player.input
-  var characterID = player.character
-  var character = districts['1'].characters[characterID]
-  if (input.right === true) {
-    character.direction = 'right'
-    character.speed = 13
-  }
-  else if (input.left === true) {
-    character.direction = 'left'
-    character.speed = 13
-  }
-  else character.speed = 0
-}
-
-function updateLocation(object) {
-  if (object.speed > 0) {
-    if (object.direction === 'left') {
-      object.x -= object.speed
-      var nextX = object.x - object.speed
-    }
-    if (object.direction === 'right') {
-      object.x += object.speed
-      nextX = object.x + object.speed
-    }
-    var min = 0
-    var max = districts['1'].width - object.width
-    if (nextX < min) {
-      object.direction = 'right'
-    }
-    if (nextX > max) {
-      object.direction = 'left'
-    }
-  }
-}
-
-function updateVehicleLocation(vehicle) {
-  if (vehicle.speed > 0) {
-    if (vehicle.direction === 'left') {
-      vehicle.x -= vehicle.speed
-      var nextX = vehicle.x - vehicle.speed
-    }
-    else if (vehicle.direction === 'right') {
-      vehicle.x += vehicle.speed
-      nextX = vehicle.x + vehicle.speed
-    }
-    var min = 0
-    var max = districts['1'].width - vehicle.width
-    if (nextX < min) {
-      vehicle.direction = 'right'
-    }
-    if (nextX > max) {
-      vehicle.direction = 'left'
-    }
-  }
-}
-
-function broadcast() {
-  for (var districtID in broadcasts) {
-    var broadcast = broadcasts[districtID]
-    for (var playerID in broadcast) {
-      var socket = broadcast[playerID]
-      var district = districts[districtID]
-      district.tick = tick
-      var timestamp = getTimestamp()
-      district.timestamp = timestamp
-      socket.emit('district', district)
-    }
-  }
-}
-
-function getTimestamp() {
-  var timestamp = Date.now()
-  return timestamp
-}
-
-function getPlayerIDBySocket(socket) {
-  for (var broadcastID in broadcasts) {
-    var broadcast = broadcasts[broadcastID]
-    for (var playerID in broadcast) {
-      var playerSocket = broadcast[playerID]
-      if (playerSocket === socket) {
-        return playerID
+function updateLocation(type) {
+  for (var districtID in districts) {
+    var district = districts[districtID]
+    var objects = district[type]
+    for (var objectID in objects) {
+      var object = objects[objectID]
+      if (object.speed > 0) {
+        if (object.direction === 'left') {
+          object.x -= object.speed
+          var nextX = object.x - object.speed
+        }
+        else if (object.direction === 'right') {
+          object.x += object.speed
+          nextX = object.x + object.speed
+        }
+        var min = 0
+        var max = districts[1].width - object.width
+        if (nextX < min) {
+          object.direction = 'right'
+        }
+        if (nextX > max) {
+          object.direction = 'left'
+        }
       }
     }
   }
 }
 
-function updatePlayerLatency(playerID, timestamp) {
-  var newTimestamp = getTimestamp()
-  var latency = (newTimestamp - timestamp) / 2
-  var player = players[playerID]
-  var latencies = player.latencies
-  latencies.push(latency)
-  if (latencies.length >= 20) {
-    latencies.shift()
+function broadcast() {
+  for (var districtID in districts) {
+    var district = districts[districtID]
+    io.to(districtID.toString()).volatile.emit('district', district)
   }
+}
+
+// function broadcast() {
+//   for (var districtID in broadcasts) {
+//     var broadcast = broadcasts[districtID]
+//     for (var playerID in broadcast) {
+//       var socket = broadcast[playerID]
+//       var district = districts[districtID]
+//       district.tick = server.tick
+//       var timestamp = now()
+//       district.timestamp = timestamp
+//       socket.volatile.emit('district', district)
+//     }
+//   }
+// }
+
+function setDelay() {
+  var _ = server.setDelay
+  var refreshDuration = now() - _.refreshStartTime
+  var totalDuration = now() - _.totalStartTime
+  _.totalStartTime = now()
+  var delayDuration = totalDuration - refreshDuration
+  if (_.checkForSlowdown) {
+    if (delayDuration > _.delay * 1.2) {
+      _.slowdownCompensation = _.delay / delayDuration
+      _.slowdownConfirmed = true
+    }
+  }
+  _.millisecondsAhead += 1000 / 60 - totalDuration
+  _.delay = 1000 / 60 + _.millisecondsAhead - refreshDuration
+  clearTimeout(_.timeoutID)
+  if (_.delay < 5) {
+    _.checkForSlowdown = false
+    refresh()
+  }
+  else {
+    if (_.slowdownConfirmed) {
+      _.delay = _.delay * _.slowdownCompensation
+      if (_.delay < 14) {
+        if (_.delay < 7) {
+          refresh()
+        }
+        else {
+          _.checkForSlowdown = true
+          _.slowdownConfirmed = false
+          _.timeoutID = setTimeout(refresh, 0)
+        }
+      }
+      else {
+        _.checkForSlowdown = true
+        _.slowdownConfirmed = false
+        var delay = Math.round(_.delay)
+        _.timeoutID = setTimeout(refresh, delay - 2)
+      }
+    }
+    else {
+      _.checkForSlowdown = true
+      delay = Math.round(_.delay - 2)
+      _.timeoutID = setTimeout(refresh, delay)
+    }
+  }
+}
+
+function getAverage(value, bufferName, maxItems = 60, precision = 1000) {
+  if (!server.getAverage) server.getAverage = {}
+  var _ = server.getAverage
+  if (!_[bufferName]) _[bufferName] = []
+  _[bufferName].push(value)
+  if (_[bufferName].length > maxItems) _[bufferName].shift()
+  var total = _[bufferName].reduce((total, value) => {
+    return total + value
+  }, 0)
+  var average = total / _[bufferName].length
+  return Math.round(average * precision) / precision
 }
 
 io.on('connection', socket => {
@@ -1061,9 +1130,14 @@ io.on('connection', socket => {
   })
   */
 
+  // socket.on('disconnect', socket => {
+  //   var playerID = getPlayerIDBySocket(socket)
+  //   removePlayerFromBroadcast(playerID)
+  // })
+
   socket.on('timestamp', timestamp => {
     var playerID = getPlayerIDBySocket(socket)
-    updatePlayerLatency(playerID, timestamp)
+    updatePlayerLatencyBuffer(playerID, timestamp)
   })
 
   socket.on('input', input => {
@@ -1073,14 +1147,15 @@ io.on('connection', socket => {
   })
 })
 
-populateDistrict('1')
+populateDistricts(1)
 assignElementIDs(districts)
-compose('backgrounds')
-compose('foregrounds')
+composeScenery('backgrounds')
+composeScenery('foregrounds')
 
 app.use(express.static(path.join(__dirname, 'public')))
-server.listen(port, () => {
+server_.listen(port, () => {
   console.log('Listening on port 3000.')
 })
 
-setInterval(refresh, 33)
+server.setDelay.totalStartTime = now() - 1000 / 60
+refresh()
