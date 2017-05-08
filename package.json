@@ -25,6 +25,7 @@
     "watchify": "^3.9.0"
   },
   "scripts": {
+    "install": "npm install",
     "bundle": "browserify client/index.js -v --transform babelify -o server/public/main.js",
     "start": "npm run bundle && node .",
     "watch:server": "nodemon .",
