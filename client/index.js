@@ -134,10 +134,10 @@ function refresh() {
 function updateDistrict() {
   var characterID = player.character
   var character = district.characters[characterID]
-  console.log('client tick = ' + client.tick + ', character direction = ' + character.direction + ', character x = ' + character.x;)
+  console.log('client tick = ' + client.tick + ', character direction = ' + character.direction + ', character x = ' + character.x);
   district = queuedDistrict
   character = district.characters[characterID]
-  console.log('district tick = ' + district.tick + ', character direction = ' + character.direction + ', character x = ' + character.x;
+  console.log('district tick = ' + district.tick + ', character direction = ' + character.direction + ', character x = ' + character.x);
   queuedDistrict = null
   player.inputBuffer = []
 }
