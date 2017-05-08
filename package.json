@@ -5,6 +5,7 @@
   "main": "server/index.js",
   "dependencies": {
     "express": "^4.15.2",
+    "performance-now": "^2.1.0",
     "socket.io": "^1.7.3"
   },
   "devDependencies": {
@@ -27,7 +28,7 @@
     "bundle": "browserify client/index.js -v --transform babelify -o server/public/main.js",
     "start": "npm run bundle && node .",
     "watch:server": "nodemon .",
-    "watch:client": "watchify client/index.js -v --transform babelify -o server/public/main.js",
+    "watch:client": "watchify client/index.js -vd --transform babelify -o server/public/main.js",
     "watch": "run-p watch:client watch:server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

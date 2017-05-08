@@ -2,11 +2,16 @@ var io = require('socket.io-client')
 var socket = io()
 
 var client = {
-  imagesTotal: 0,
-  imagesLoaded: undefined,
-  upToDate: false,
+  tick: 1,
   timestamp: 1,
-  tick: 1
+  imagesTotal: 0,
+  imagesLoaded: null,
+  setDelay: {
+    timeoutID: 0,
+    millisecondsAhead: 0,
+    totalStartTime: 0,
+    refreshStartTime: 0
+  }
 }
 
 var camera = {
@@ -20,21 +25,11 @@ var camera = {
   height: 1080
 }
 
-var player = {}
+var player = null
 
-var queuedDistrict = {}
+var district = null
 
-var district = {}
-
-function checkDistrictPopulated() {
-  if (district.characters) {
-    createElements(camera)
-    createElements(district, true)
-  }
-  else {
-    setTimeout(checkDistrictPopulated, 50)
-  }
-}
+var queuedDistrict = null
 
 function createElements(object, loop) {
   for (var property in object) {
@@ -52,7 +47,7 @@ function createElements(object, loop) {
       if (object.src) {
         client.imagesTotal += 1
         $element.src = object.src
-        $element.onload = function () {
+        $element.onload = () => {
           if (!client.imagesLoaded) client.imagesLoaded = 0
           client.imagesLoaded += 1
         }
@@ -71,86 +66,74 @@ function createElements(object, loop) {
 }
 
 function checkImagesLoaded() {
-  if (client.imagesLoaded === client.imagesTotal) {
-    loopThrough(district.backgrounds, drawToLayer)
-    loopThrough(district.foregrounds, drawToLayer)
-    start()
-  }
-  else {
-    setTimeout(checkImagesLoaded, 50)
-  }
+  clearTimeout(client.timeoutID)
+  if (client.imagesLoaded === client.imagesTotal) drawToLayers()
+  else client.timeoutID = setTimeout(checkImagesLoaded, 50)
 }
 
-function loopThrough(objects, callback) {
-  for (var property in objects) {
-    var object = objects[property]
-    callback(object)
+function drawToLayers() {
+  drawToLayer('backgrounds')
+  drawToLayer('foregrounds')
+  client.setDelay.totalStartTime = performance.now() - 1000 / 60
+  refresh()
+}
+
+function drawToLayer(type) {
+  var layers = district.scenery[type]
+  for (var layerID in layers) {
+    var layer = layers[layerID]
+    var blueprints = layer.blueprints
+    blueprints.forEach(blueprint => {
+      var sectionID = blueprint.section
+      var variationID = blueprint.variation
+      var variation = layer.sections[sectionID].variations[variationID]
+      var $variation = document.getElementById(variation.elementID)
+      var $layer = document.getElementById(layer.elementID)
+      var context = $layer.getContext('2d')
+      if (layer.scale) {
+        context.scale(layer.scale, layer.scale)
+        var x = blueprint.x / layer.scale
+        var y = blueprint.y / layer.scale
+      }
+      else {
+        x = blueprint.x
+        y = blueprint.y
+      }
+      context.drawImage($variation, 0, 0, variation.width, variation.height,
+        x, y, variation.width, variation.height)
+      context.setTransform(1, 0, 0, 1, 0, 0)
+    })
   }
-}
-
-function drawToLayer(layer) {
-  var blueprints = layer.blueprints
-  blueprints.forEach(blueprint => {
-    var sectionID = blueprint.section
-    var variationID = blueprint.variation
-    var variation = layer.sections[sectionID].variations[variationID]
-    var $variation = document.getElementById(variation.elementID)
-    var $layer = document.getElementById(layer.elementID)
-    var context = $layer.getContext('2d')
-    if (layer.scale) {
-      context.scale(layer.scale, layer.scale)
-      var x = blueprint.x / layer.scale
-      var y = blueprint.y / layer.scale
-    }
-    else {
-      x = blueprint.x
-      y = blueprint.y
-    }
-    context.drawImage($variation, 0, 0, variation.width, variation.height,
-      x, y, variation.width, variation.height)
-    context.setTransform(1, 0, 0, 1, 0, 0)
-  })
-}
-
-function start() {
-  setInterval(refresh, 33)
 }
 
 function refresh() {
-  if (!client.upToDate) updateDistrict()
-  sendInput()
-  updateInputBuffer()
-  updatePlayerCharacter()
-  loopThrough(district.characters, updateLocation)
-  loopThrough(district.vehicles, updateVehicleLocation)
+  client.setDelay.refreshStartTime = performance.now()
+  client.tick += 1
+  if (queuedDistrict) updateDistrict()
+  socket.emit('input', player.input)
+  player.inputBuffer.push(player.input)
+  updatePlayerCharactersSpeedDirection()
+  updateLocation('characters')
+  updateLocation('aiCharacters')
+  updateLocation('vehicles')
   updateCamera()
+  // if (!client.skipRender) {
   clearCanvas()
-  loopThrough(district.backgrounds, renderLayer)
-  loopThrough(district.characters, render)
-  loopThrough(district.vehicles, render)
-  loopThrough(district.foregrounds, renderLayer)
+  renderScenery('backgrounds')
+  render('aiCharacters')
+  render('characters')
+  render('vehicles')
+  renderScenery('foregrounds')
+  // }
+  // client.skipRender = false
+  setDelay()
 }
 
 function updateDistrict() {
-  if (district.characters) {
-    for (var characterID in district.characters) {
-      var character = district.characters[characterID]
-      for (var queuedCharacterID in queuedDistrict.characters) {
-        var queuedCharacter = queuedDistrict.characters[queuedCharacterID]
-        if (characterID === queuedCharacterID) {
-          if (character.x !== queuedCharacter.x) {
-            reconcileCharacter(characterID)
-          }
-        }
-      }
-    }
-    district = queuedDistrict
-    player.inputBuffer = []
-    client.upToDate = true
-  }
-}
-
-function reconcileCharacter(characterID) {
+  district = queuedDistrict
+  queuedDistrict = null
+  client.tick = district.tick
+  player.inputBuffer = []
 }
 
 function control(key, action) {
@@ -172,67 +155,42 @@ function control(key, action) {
   }
 }
 
-function sendInput() {
-  socket.emit('input', player.input)
-}
-
-function updateInputBuffer () {
-  player.inputBuffer.push(player.input)
-}
-
-function updatePlayerCharacter() {
+function updatePlayerCharactersSpeedDirection() {
   var input = player.input
   var characterID = player.character
   var character = district.characters[characterID]
   if (input.right === true) {
     character.direction = 'right'
-    character.speed = 13
+    character.speed = 5
   }
   else if (input.left === true) {
     character.direction = 'left'
-    character.speed = 13
+    character.speed = 5
   }
   else character.speed = 0
 }
 
-function updateLocation(object) {
-  if (object.speed > 0) {
-    if (object.direction === 'left') {
-      object.x -= object.speed
-      var nextX = object.x - object.speed
-    }
-    if (object.direction === 'right') {
-      object.x += object.speed
-      nextX = object.x + object.speed
-    }
-    var min = 0
-    var max = district.width - object.width
-    if (nextX < min) {
-      object.direction = 'right'
-    }
-    if (nextX > max) {
-      object.direction = 'left'
-    }
-  }
-}
-
-function updateVehicleLocation(vehicle) {
-  if (vehicle.speed > 0) {
-    if (vehicle.direction === 'left') {
-      vehicle.x -= vehicle.speed
-      var nextX = vehicle.x - vehicle.speed
-    }
-    else if (vehicle.direction === 'right') {
-      vehicle.x += vehicle.speed
-      nextX = vehicle.x + vehicle.speed
-    }
-    var min = 0
-    var max = district.width - vehicle.width
-    if (nextX < min) {
-      vehicle.direction = 'right'
-    }
-    else if (nextX > max) {
-      vehicle.direction = 'left'
+function updateLocation(type) {
+  var objects = district[type]
+  for (var objectID in objects) {
+    var object = objects[objectID]
+    if (object.speed > 0) {
+      if (object.direction === 'left') {
+        object.x -= object.speed
+        var nextX = object.x - object.speed
+      }
+      else if (object.direction === 'right') {
+        object.x += object.speed
+        nextX = object.x + object.speed
+      }
+      var min = 0
+      var max = district.width - object.width
+      if (nextX < min) {
+        object.direction = 'right'
+      }
+      if (nextX > max) {
+        object.direction = 'left'
+      }
     }
   }
 }
@@ -258,59 +216,120 @@ function clearCanvas() {
   context.clearRect(0, 0, camera.width, camera.height)
 }
 
-function renderLayer(layer) {
-  var characterID = camera.following
-  var character = district.characters[characterID]
-  var $layer = document.getElementById(layer.elementID)
-  var $camera = document.getElementById(camera.elementID)
-  var context = $camera.getContext('2d')
-  if (layer.x) var layerX = layer.x
-  else layerX = 0
-  var cameraX = Math.round(character.x / layer.depth - camera.width / 2 / layer.depth - layerX)
-  var cameraMaxX = Math.round(district.width / layer.depth - camera.width / layer.depth - layerX)
-  if (!layer.x) {
-    if (cameraX < 0) cameraX = 0
+function renderScenery(sceneryType) {
+  var layers = district.scenery[sceneryType]
+  for (var layerID in layers) {
+    var layer = layers[layerID]
+    var characterID = camera.following
+    var character = district.characters[characterID]
+    var $layer = document.getElementById(layer.elementID)
+    var $camera = document.getElementById(camera.elementID)
+    var context = $camera.getContext('2d')
+    if (layer.x) var layerX = layer.x
+    else layerX = 0
+    var cameraX = Math.round(character.x / layer.depth - camera.width / 2 / layer.depth - layerX)
+    var cameraMaxX = Math.round(district.width / layer.depth - camera.width / layer.depth - layerX)
     if (cameraX > cameraMaxX) cameraX = cameraMaxX
+    if (!layer.x && cameraX < 0) cameraX = 0
+    context.drawImage($layer, cameraX, camera.y, camera.width,
+      camera.height, 0, 0, camera.width, camera.height)
   }
-  if (layer.x) {
-    if ((layer.x && layer.id === 2) || (layer.x && layer.id === 6)) {
-      if (cameraX > cameraMaxX) cameraX = cameraMaxX
-    }
-  }
-  context.drawImage($layer, cameraX, camera.y, camera.width,
-    camera.height, 0, 0, camera.width, camera.height)
-  context.setTransform(1, 0, 0, 1, 0, 0)
 }
 
-function render(object) {
-  var $object = document.getElementById(object.elementID)
-  var $camera = document.getElementById(camera.elementID)
-  var context = $camera.getContext('2d')
-  var xInCamera = object.x - camera.x
-  var yInCamera = object.y - camera.y
-  if (
-    xInCamera > camera.width ||
-    xInCamera < 0 ||
-    yInCamera > camera.height ||
-    yInCamera < 0
-  ) return
-  if (object.direction) {
-    if (object.direction === 'left') {
-      xInCamera = Math.round(-object.x + camera.x - object.width / 2)
-      context.scale(-1, 1)
+function render(type) {
+  var objects = district[type]
+  for (var objectID in objects) {
+    var object = objects[objectID]
+    var $object = document.getElementById(object.elementID)
+    var $camera = document.getElementById(camera.elementID)
+    var context = $camera.getContext('2d')
+    var xInCamera = object.x - camera.x
+    var yInCamera = object.y - camera.y
+    if (!(
+      xInCamera > camera.width ||
+      xInCamera < 0 ||
+      yInCamera > camera.height ||
+      yInCamera < 0
+    )) {
+      if (object.direction) {
+        if (object.direction === 'left') {
+          context.scale(-1, 1)
+          xInCamera = Math.round(-object.x + camera.x - object.width / 2)
+        }
+      }
+      context.drawImage($object, xInCamera, yInCamera)
+      context.setTransform(1, 0, 0, 1, 0, 0)
     }
   }
-  context.drawImage($object, xInCamera, yInCamera)
-  context.setTransform(1, 0, 0, 1, 0, 0)
+}
+
+function setDelay() {
+  var _ = client.setDelay
+  var refreshDuration = performance.now() - _.refreshStartTime
+  var totalDuration = performance.now() - _.totalStartTime
+  _.totalStartTime = performance.now()
+  var delayDuration = totalDuration - refreshDuration
+  if (_.checkForSlowdown) {
+    if (delayDuration > _.delay * 1.2) {
+      _.slowdownCompensation = _.delay / delayDuration
+      _.slowdownConfirmed = true
+    }
+  }
+  _.millisecondsAhead += 16.666667 - totalDuration
+  _.delay = 16.666667 + _.millisecondsAhead - refreshDuration
+  clearTimeout(_.timeoutID)
+  if (_.delay < 5) {
+    _.checkForSlowdown = false
+    refresh()
+  }
+  else {
+    if (_.slowdownConfirmed) {
+      _.delay = _.delay * _.slowdownCompensation
+      if (_.delay < 14) {
+        if (_.delay < 7) {
+          refresh()
+        }
+        else {
+          _.checkForSlowdown = true
+          _.slowdownConfirmed = false
+          _.timeoutID = setTimeout(refresh, 0)
+        }
+      }
+      else {
+        _.checkForSlowdown = true
+        _.slowdownConfirmed = false
+        var delay = Math.round(_.delay)
+        _.timeoutID = setTimeout(refresh, delay - 2)
+      }
+    }
+    else {
+      _.checkForSlowdown = true
+      delay = Math.round(_.delay)
+      _.timeoutID = setTimeout(refresh, delay - 2)
+    }
+  }
+}
+
+function getAverage(value, bufferName, maxItems = 60, precision = 1000) {
+  if (!client.getAverage) client.getAverage = {}
+  var _ = client.getAverage
+  if (!_[bufferName]) _[bufferName] = []
+  _[bufferName].push(value)
+  if (_[bufferName].length > maxItems) _[bufferName].shift()
+  var total = _[bufferName].reduce((total, value) => {
+    return total + value
+  }, 0)
+  var average = total / _[bufferName].length
+  return Math.round(average * precision) / precision
 }
 
 window.addEventListener('resize', () => {
   if (document.getElementById(camera.elementID)) {
     var $camera = document.getElementById(camera.elementID)
-    camera.width = window.innerWidth
-    camera.height = window.innerHeight
-    $camera.width = window.innerWidth
-    $camera.height = window.innerHeight
+    camera.width = innerWidth
+    camera.height = innerHeight
+    $camera.width = innerWidth
+    $camera.height = innerHeight
   }
 }, false)
 
@@ -333,24 +352,23 @@ socket.on('character', character => {
 
 socket.on('request-token', () => {
   var token = player.token
-  client.socket.emit('token', token)
+  socket.emit('token', token)
 })
 
 socket.on('district', receivedDistrict => {
   var timestamp = receivedDistrict.timestamp
   socket.emit('timestamp', timestamp)
-  if (district.characters) {
+  if (district) {
     queuedDistrict = receivedDistrict
-    client.upToDate = false
   }
   else {
     district = receivedDistrict
-    client.upToDate = true
+    createElements(district, true)
+    checkImagesLoaded()
   }
 })
 
-camera.width = window.innerWidth
-camera.height = window.innerHeight
+camera.width = innerWidth
+camera.height = innerHeight
 
-checkDistrictPopulated()
-checkImagesLoaded()
+createElements(camera)
