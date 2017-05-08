@@ -132,12 +132,7 @@ function refresh() {
 }
 
 function updateDistrict() {
-  var characterID = player.character
-  var character = district.characters[characterID]
-  console.log('client tick = ' + client.tick + ', character direction = ' + character.direction + ', character x = ' + character.x);
   district = queuedDistrict
-  character = district.characters[characterID]
-  console.log('district tick = ' + district.tick + ', character direction = ' + character.direction + ', character x = ' + character.x);
   queuedDistrict = null
   player.inputBuffer = []
 }
@@ -364,6 +359,8 @@ socket.on('request-token', () => {
 socket.on('district', receivedDistrict => {
   var timestamp = receivedDistrict.timestamp
   socket.emit('timestamp', timestamp)
+  var playerID = player.id
+  console.log(receivedDistrict.latencyBuffer);
   if (district) {
     queuedDistrict = receivedDistrict
     if (!client.synced) {
