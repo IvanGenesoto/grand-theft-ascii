@@ -311,7 +311,7 @@ function setDelay() {
   }
 }
 
-function getAverage(value, bufferName, maxItems = 60, precision = 1000) {
+function getAverage(value, bufferName, maxItems = 60, precision = 1000) { // eslint-disable-line no-unused-vars
   if (!client.getAverage) client.getAverage = {}
   var _ = client.getAverage
   if (!_[bufferName]) _[bufferName] = []
@@ -361,10 +361,6 @@ socket.on('district', receivedDistrict => {
   socket.emit('timestamp', timestamp)
   if (district) {
     queuedDistrict = receivedDistrict
-    if (!client.synced) {
-      client.tick = district.tick
-      client.synced = true
-    }
   }
   else {
     district = receivedDistrict
