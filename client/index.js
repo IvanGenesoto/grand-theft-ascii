@@ -1,17 +1,9 @@
 var io = require('socket.io-client')
 var socket = io()
 
-var client = {
-  tick: 1,
-  timestamp: 1,
+var _ = {
   imagesTotal: 0,
-  imagesLoaded: null,
-  setDelay: {
-    timeoutID: 0,
-    millisecondsAhead: 0,
-    totalStartTime: 0,
-    refreshStartTime: 0
-  }
+  imagesLoaded: null
 }
 
 var camera = {
@@ -45,11 +37,12 @@ function createElements(object, loop) {
         $element.height = object.height
       }
       if (object.src) {
-        client.imagesTotal += 1
+        if (!_.imagesTotal) _.imagesTotal = 0
+        _.imagesTotal += 1
         $element.src = object.src
         $element.onload = () => {
-          if (!client.imagesLoaded) client.imagesLoaded = 0
-          client.imagesLoaded += 1
+          if (!_.imagesLoaded) _.imagesLoaded = 0
+          _.imagesLoaded += 1
         }
       }
     }
@@ -66,15 +59,14 @@ function createElements(object, loop) {
 }
 
 function checkImagesLoaded() {
-  clearTimeout(client.timeoutID)
-  if (client.imagesLoaded === client.imagesTotal) drawToLayers()
-  else client.timeoutID = setTimeout(checkImagesLoaded, 50)
+  clearTimeout(_.timeout)
+  if (_.imagesLoaded === _.imagesTotal) drawToLayers()
+  else _.timeout = setTimeout(checkImagesLoaded, 50)
 }
 
 function drawToLayers() {
   drawToLayer('backgrounds')
   drawToLayer('foregrounds')
-  client.setDelay.totalStartTime = performance.now() - 1000 / 60
   refresh()
 }
 
@@ -106,35 +98,51 @@ function drawToLayer(type) {
   }
 }
 
-function refresh() {
-  client.setDelay.refreshStartTime = performance.now()
-  client.tick += 1
-  if (queuedDistrict) updateDistrict()
-  // setTimeout(() => {
-  socket.emit('input', player.input)
-  // }, 3000)
-  player.inputBuffer.push(player.input)
-  updatePlayerCharactersSpeedDirection()
+function refresh(tick, input) {
+  if (!tick) {
+    _.refreshStartTime = performance.now()
+    if (queuedDistrict) updateDistrict()
+    district.tick += 1
+    socket.emit('input', player.input)
+    updateInputBuffer()
+  }
+  updatePlayerCharactersSpeedDirection(input)
   updateLocation('characters')
   updateLocation('aiCharacters')
   updateLocation('vehicles')
-  updateCamera()
-  // if (!client.skipRender) {
-  clearCanvas()
-  renderScenery('backgrounds')
-  render('aiCharacters')
-  render('characters')
-  render('vehicles')
-  renderScenery('foregrounds')
-  // }
-  // client.skipRender = false
-  setDelay()
+  if (tick) reconcileDistrict(tick)
+  else {
+    updateCamera()
+    clearCanvas()
+    renderScenery('backgrounds')
+    render('aiCharacters')
+    render('characters')
+    render('vehicles')
+    renderScenery('foregrounds')
+    setDelay()
+  }
 }
 
 function updateDistrict() {
+  var tick = district.tick
   district = queuedDistrict
   queuedDistrict = null
+  if (tick !== district.tick) reconcileDistrict(tick)
   player.inputBuffer = []
+}
+
+function reconcileDistrict(tick) {
+  if (tick > district.tick) {
+    tick -= 1
+    var input = player.inputBuffer[0]
+    player.inputBuffer.shift()
+    refresh(tick, input)
+  }
+}
+
+function updateInputBuffer() {
+  var input = {...player.input}
+  player.inputBuffer.push(input)
 }
 
 function control(key, action) {
@@ -156,8 +164,8 @@ function control(key, action) {
   }
 }
 
-function updatePlayerCharactersSpeedDirection() {
-  var input = player.input
+function updatePlayerCharactersSpeedDirection(input) {
+  if (!input) input = player.input
   var characterID = player.character
   var character = district.characters[characterID]
   if (input.right === true) {
@@ -265,62 +273,66 @@ function render(type) {
 }
 
 function setDelay() {
-  var _ = client.setDelay
+  if (!_.setDelay) _.setDelay = {}
+  var __ = _.setDelay
+  if (!__.loopStartTime) __.loopStartTime = performance.now() - 1000 / 60
+  if (!__.millisecondsAhead) __.millisecondsAhead = 0
   var refreshDuration = performance.now() - _.refreshStartTime
-  var totalDuration = performance.now() - _.totalStartTime
-  _.totalStartTime = performance.now()
-  var delayDuration = totalDuration - refreshDuration
-  if (_.checkForSlowdown) {
-    if (delayDuration > _.delay * 1.2) {
-      _.slowdownCompensation = _.delay / delayDuration
-      _.slowdownConfirmed = true
+  var loopDuration = performance.now() - __.loopStartTime
+  __.loopStartTime = performance.now()
+  var delayDuration = loopDuration - refreshDuration
+  if (__.checkForSlowdown) {
+    if (delayDuration > __.delay * 1.2) {
+      __.slowdownCompensation = __.delay / delayDuration
+      __.slowdownConfirmed = true
     }
   }
-  _.millisecondsAhead += 16.666667 - totalDuration
-  _.delay = 16.666667 + _.millisecondsAhead - refreshDuration
-  clearTimeout(_.timeoutID)
-  if (_.delay < 5) {
-    _.checkForSlowdown = false
+  var millisecondsPerFrame = 1000 / 60
+  __.millisecondsAhead += millisecondsPerFrame - loopDuration
+  __.delay = millisecondsPerFrame + __.millisecondsAhead - refreshDuration
+  clearTimeout(__.timeout)
+  if (__.delay < 5) {
+    __.checkForSlowdown = false
     refresh()
   }
   else {
-    if (_.slowdownConfirmed) {
-      _.delay = _.delay * _.slowdownCompensation
-      if (_.delay < 14) {
-        if (_.delay < 7) {
+    if (__.slowdownConfirmed) {
+      __.delay = __.delay * __.slowdownCompensation
+      if (__.delay < 14) {
+        if (__.delay < 7) {
           refresh()
         }
         else {
-          _.checkForSlowdown = true
-          _.slowdownConfirmed = false
-          _.timeoutID = setTimeout(refresh, 0)
+          __.checkForSlowdown = true
+          __.slowdownConfirmed = false
+          __.timeout = setTimeout(refresh, 0)
         }
       }
       else {
-        _.checkForSlowdown = true
-        _.slowdownConfirmed = false
-        var delay = Math.round(_.delay)
-        _.timeoutID = setTimeout(refresh, delay - 2)
+        __.checkForSlowdown = true
+        __.slowdownConfirmed = false
+        var delay = Math.round(__.delay)
+        __.timeout = setTimeout(refresh, delay - 2)
       }
     }
     else {
-      _.checkForSlowdown = true
-      delay = Math.round(_.delay)
-      _.timeoutID = setTimeout(refresh, delay - 2)
+      __.checkForSlowdown = true
+      delay = Math.round(__.delay - 2)
+      __.timeout = setTimeout(refresh, delay)
     }
   }
 }
 
 function getAverage(value, bufferName, maxItems = 60, precision = 1000) { // eslint-disable-line no-unused-vars
-  if (!client.getAverage) client.getAverage = {}
-  var _ = client.getAverage
-  if (!_[bufferName]) _[bufferName] = []
-  _[bufferName].push(value)
-  if (_[bufferName].length > maxItems) _[bufferName].shift()
-  var total = _[bufferName].reduce((total, value) => {
+  if (!_.getAverage) _.getAverage = {}
+  var __ = _.getAverage
+  if (!__[bufferName]) __[bufferName] = []
+  __[bufferName].push(value)
+  if (__[bufferName].length > maxItems) __[bufferName].shift()
+  var total = __[bufferName].reduce((total, value) => {
     return total + value
   }, 0)
-  var average = total / _[bufferName].length
+  var average = total / __[bufferName].length
   return Math.round(average * precision) / precision
 }
 

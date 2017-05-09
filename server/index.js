@@ -1,31 +1,21 @@
 var express = require('express')
 var app = express()
 var http = require('http')
-var server_ = http.Server(app)
+var server = http.Server(app)
 var socket = require('socket.io')
-var io = socket(server_)
+var io = socket(server)
 var path = require('path')
 var port = process.env.PORT || 3000
 var now = require('performance-now')
 
-var server = {
-  layerY: 0,
-  timestamp: 0,
-  timeoutID: 0,
-  tick: 0,
-  setDelay: {
-    millisecondsAhead: 0,
-    totalStartTime: 0,
-    refreshStartTime: 0
+var _ = {
+  id: {
+    character: 0,
+    vehicle: 0,
+    element: 0,
+    player: 0,
+    key: 0
   }
-}
-
-var id = {
-  vehicle: 0,
-  key: 0,
-  element: 0,
-  player: 0,
-  character: 0
 }
 
 var players = {}
@@ -715,7 +705,7 @@ function createAICharacter(districtID) {
   var directions = ['left', 'right']
   var directionIndex = Math.floor(Math.random() * directions.length)
   var aiCharacter = {
-    id: id.character += 1,
+    id: _.id.character += 1,
     name: '',
     room: 0,
     keys: [],
@@ -747,8 +737,8 @@ function createVehicle(districtID) {
   var directions = ['left', 'right', 'left', 'right', 'left', 'right']
   var directionIndex = Math.floor(Math.random() * directions.length)
   var vehicle = {
-    id: id.vehicle += 1,
-    key: id.key += 1,
+    id: _.id.vehicle += 1,
+    key: _.id.key += 1,
     width: 268,
     height: 80,
     direction: directions[directionIndex],
@@ -770,7 +760,7 @@ function createVehicle(districtID) {
 function assignElementIDs(object) {
   for (var property in object) {
     if (property === 'element') {
-      var element = {id: id.element += 1}
+      var element = {id: _.id.element += 1}
       object.elementID = '_' + element.id
     }
     else if (
@@ -790,7 +780,7 @@ function composeScenery(type) {
     for (var sceneryType in district.scenery) {
       if (sceneryType === type) {
         var layers = district.scenery[sceneryType]
-        server.layerY = 0
+        _.layerY = 0
         for (var layerID in layers) {
           var layer = layers[layerID]
           for (var sectionID in layer.sections) {
@@ -820,8 +810,8 @@ function createBlueprints(type, layer, section, rows, variationsArray) {
       if (x < layer.width) {
         var index = Math.floor(Math.random() * variationsArray.length)
         var variation = variationsArray[index]
-        if (layer.y) server.layerY = layer.y
-        var blueprint = {section: section.id, variation: variation.id, x, y: server.layerY}
+        if (layer.y) _.layerY = layer.y
+        var blueprint = {section: section.id, variation: variation.id, x, y: _.layerY}
         layer.blueprints.push(blueprint)
         if (type === 'foregrounds') {
           if (layer.id < 3) {
@@ -838,7 +828,7 @@ function createBlueprints(type, layer, section, rows, variationsArray) {
       }
       else {
         rowsDrawn += 1
-        server.layerY += rowY
+        _.layerY += rowY
         startRow()
       }
     }
@@ -864,7 +854,7 @@ function initiatePlayer(socket) {
 
 function createPlayer() {
   var player = {
-    id: id.player += 1,
+    id: _.id.player += 1,
     latencyBuffer: [],
     inputBuffer: [],
     input: {
@@ -881,9 +871,9 @@ function createPlayer() {
 }
 
 function createCharacter(name = 'Sam') {
-  var elementID = id.element += 1
+  var elementID = _.id.element += 1
   var character = {
-    id: id.character += 1,
+    id: _.id.character += 1,
     name,
     vehicle: 0,
     room: 0,
@@ -913,22 +903,9 @@ function getDistrictID() {
   }
 }
 
-// function associatePlayerWithSocket(playerID, socket, districtID) {
-//   var broadcast = broadcasts[districtID]
-//   broadcast[playerID] = socket
-// }
-
 function broadcastCharacterToDistrict(character, districtID) {
   io.to(districtID.toString()).emit('character', character)
 }
-
-// function broadcastCharacterToDistrict(character, districtID) {
-//   var broadcast = broadcasts[districtID]
-//   for (var playerID in broadcast) {
-//     var socket = broadcast[playerID]
-//     socket.emit('character', character)
-//   }
-// }
 
 function getPlayerIDBySocket(socket) {
   for (var playerID in players) {
@@ -960,13 +937,14 @@ function getPlayerByToken(token) {
 */
 
 function refresh() {
-  server.setDelay.refreshStartTime = now()
-  server.tick += 1
+  _.refreshStartTime = now()
+  if (!_.tick) _.tick = 0
+  _.tick += 1
   updatePlayerCharactersSpeedDirection()
   updateLocation('characters')
   updateLocation('aiCharacters')
   updateLocation('vehicles')
-  if (!(server.tick % 3)) {
+  if (!(_.tick % 3)) {
     broadcast()
   }
   setDelay()
@@ -1028,62 +1006,66 @@ function broadcast() {
 }
 
 function setDelay() {
-  var _ = server.setDelay
+  if (!_.setDelay) _.setDelay = {}
+  var __ = _.setDelay
+  if (!__.loopStartTime) __.loopStartTime = now() - 1000 / 60
+  if (!__.millisecondsAhead) __.millisecondsAhead = 0
   var refreshDuration = now() - _.refreshStartTime
-  var totalDuration = now() - _.totalStartTime
-  _.totalStartTime = now()
-  var delayDuration = totalDuration - refreshDuration
-  if (_.checkForSlowdown) {
-    if (delayDuration > _.delay * 1.2) {
-      _.slowdownCompensation = _.delay / delayDuration
-      _.slowdownConfirmed = true
+  var loopDuration = now() - __.loopStartTime
+  __.loopStartTime = now()
+  var delayDuration = loopDuration - refreshDuration
+  if (__.checkForSlowdown) {
+    if (delayDuration > __.delay * 1.2) {
+      __.slowdownCompensation = __.delay / delayDuration
+      __.slowdownConfirmed = true
     }
   }
-  _.millisecondsAhead += 1000 / 60 - totalDuration
-  _.delay = 1000 / 60 + _.millisecondsAhead - refreshDuration
-  clearTimeout(_.timeoutID)
-  if (_.delay < 5) {
-    _.checkForSlowdown = false
+  var millisecondsPerFrame = 1000 / 60
+  __.millisecondsAhead += millisecondsPerFrame - loopDuration
+  __.delay = millisecondsPerFrame + __.millisecondsAhead - refreshDuration
+  clearTimeout(__.timeout)
+  if (__.delay < 5) {
+    __.checkForSlowdown = false
     refresh()
   }
   else {
-    if (_.slowdownConfirmed) {
-      _.delay = _.delay * _.slowdownCompensation
-      if (_.delay < 14) {
-        if (_.delay < 7) {
+    if (__.slowdownConfirmed) {
+      __.delay = __.delay * __.slowdownCompensation
+      if (__.delay < 14) {
+        if (__.delay < 7) {
           refresh()
         }
         else {
-          _.checkForSlowdown = true
-          _.slowdownConfirmed = false
-          _.timeoutID = setTimeout(refresh, 0)
+          __.checkForSlowdown = true
+          __.slowdownConfirmed = false
+          __.timeout = setTimeout(refresh, 0)
         }
       }
       else {
-        _.checkForSlowdown = true
-        _.slowdownConfirmed = false
-        var delay = Math.round(_.delay)
-        _.timeoutID = setTimeout(refresh, delay - 2)
+        __.checkForSlowdown = true
+        __.slowdownConfirmed = false
+        var delay = Math.round(__.delay)
+        __.timeout = setTimeout(refresh, delay - 2)
       }
     }
     else {
-      _.checkForSlowdown = true
-      delay = Math.round(_.delay - 2)
-      _.timeoutID = setTimeout(refresh, delay)
+      __.checkForSlowdown = true
+      delay = Math.round(__.delay - 2)
+      __.timeout = setTimeout(refresh, delay)
     }
   }
 }
 
 function getAverage(value, bufferName, maxItems = 60, precision = 1000) { // eslint-disable-line no-unused-vars
-  if (!server.getAverage) server.getAverage = {}
-  var _ = server.getAverage
-  if (!_[bufferName]) _[bufferName] = []
-  _[bufferName].push(value)
-  if (_[bufferName].length > maxItems) _[bufferName].shift()
-  var total = _[bufferName].reduce((total, value) => {
+  if (!_.getAverage) _.getAverage = {}
+  var __ = _.getAverage
+  if (!__[bufferName]) __[bufferName] = []
+  __[bufferName].push(value)
+  if (__[bufferName].length > maxItems) __[bufferName].shift()
+  var total = __[bufferName].reduce((total, value) => {
     return total + value
   }, 0)
-  var average = total / _[bufferName].length
+  var average = total / __[bufferName].length
   return Math.round(average * precision) / precision
 }
 
@@ -1117,9 +1099,11 @@ composeScenery('backgrounds')
 composeScenery('foregrounds')
 
 app.use(express.static(path.join(__dirname, 'public')))
-server_.listen(port, () => {
+server.listen(port, () => {
   console.log('Listening on port 3000.')
 })
 
-server.setDelay.totalStartTime = now() - 1000 / 60
+setInterval(() => {
+}, 1000)
+
 refresh()
