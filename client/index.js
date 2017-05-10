@@ -101,7 +101,7 @@ function drawToLayer(type) {
 function refresh() {
   _.refreshStartTime = performance.now()
   socket.emit('input', player.input)
-  updateInputBuffer()
+  player.inputBuffer.push({...player.input})
   updateObjects()
   updateDistrict()
   district.tick += 1
@@ -109,32 +109,20 @@ function refresh() {
   setDelay()
 }
 
-function updateDistrict() {
-  if (queuedDistrict) {
-    district = queuedDistrict
-    queuedDistrict = null
-    rerunInputs()
-    player.inputBuffer = []
-  }
-}
-
-function rerunInputs() {
-  if (player.inputBuffer.length > 0) {
-    updateObjects('rerun')
-    player.inputBuffer.shift()
-  }
-}
-
-function updateInputBuffer() {
-  var input = {...player.input}
-  player.inputBuffer.push(input)
-}
-
 function updateObjects(rerun) {
   updatePlayerCharactersSpeedDirection(rerun)
   updateLocation('characters', rerun)
   updateLocation('aiCharacters', rerun)
   updateLocation('vehicles', rerun)
+}
+
+function updateDistrict() {
+  if (queuedDistrict) {
+    district = queuedDistrict
+    queuedDistrict = null
+    player.inputBuffer.forEach(input => updateObjects('rerun'))
+    player.inputBuffer = []
+  }
 }
 
 function render() {
