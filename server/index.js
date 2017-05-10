@@ -860,6 +860,10 @@ function createPlayer() {
     id: _.id.player += 1,
     latencyBuffer: [],
     inputBuffer: [],
+    speed: 0,
+    direction: 'right',
+    x: 0,
+    y: 0,
     input: {
       up: false,
       down: false,
