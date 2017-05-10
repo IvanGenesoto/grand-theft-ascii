@@ -1040,6 +1040,7 @@ function broadcast() {
   for (var districtID in districts) {
     var district = districts[districtID]
     district.timestamp = now()
+    district.tick = _.tick
     io.to(districtID.toString()).volatile.emit('district', district)
   }
 }
