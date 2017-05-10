@@ -106,9 +106,8 @@ function refresh() {
     rerunInputs()
   }
   district.tick += 1
-  player.inputBuffer = []
-  updateInputBuffer()
   socket.emit('input', player.input)
+  updateInputBuffer()
   update()
   render()
   setDelay()
@@ -122,6 +121,7 @@ function rerunInputs() {
 }
 
 function updateInputBuffer() {
+  player.inputBuffer = []
   var input = {...player.input}
   player.inputBuffer.push(input)
 }
@@ -378,6 +378,7 @@ socket.on('request-token', () => {
 socket.on('district', receivedDistrict => {
   var timestamp = receivedDistrict.timestamp
   socket.emit('timestamp', timestamp)
+  console.log(receivedDistrict.tick);
   if (district) {
     queuedDistrict = receivedDistrict
   }
