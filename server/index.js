@@ -967,7 +967,7 @@ function refresh() {
   updateLocation('aiCharacters')
   updateLocation('vehicles')
   checkForMissedEvents()
-  if (!(_.tick % 20)) broadcast()
+  if (!(_.tick % 3)) broadcast()
   districtsBuffer.push(Object.assign({}, districts))
   districtsBuffer.shift()
   setDelay()

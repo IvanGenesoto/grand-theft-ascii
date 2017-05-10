@@ -170,26 +170,6 @@ function control(key, action) {
   }
 }
 
-function updatePlayerSpeedDirection(rerun) {
-  if (rerun) {
-    var input = player.inputBuffer[0]
-    var object = _.rerun
-  }
-  else {
-    input = player.input
-    object = player
-  }
-  if (input.right === true) {
-    object.direction = 'right'
-    object.speed = 5
-  }
-  else if (input.left === true) {
-    object.direction = 'left'
-    object.speed = 5
-  }
-  else object.speed = 0
-}
-
 function updateSpeedDirection(objectType) {
   if (objectType === 'rerun') var input = player.inputBuffer[0]
   else input = player.input
