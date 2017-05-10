@@ -21,8 +21,6 @@ var player = null
 
 var district = null
 
-var queuedDistrict = null
-
 function createElements(object, loop) {
   for (var property in object) {
     if (property === 'element') {
@@ -117,11 +115,15 @@ function updateObjects(rerun) {
 }
 
 function updateDistrict() {
-  if (queuedDistrict) {
-    district = queuedDistrict
-    queuedDistrict = null
-    player.inputBuffer.forEach(input => updateObjects('rerun'))
+  if (_.queuedDistrict) {
+    district = _.queuedDistrict
+    _.queuedDistrict = null
+    if (_.queuedCharacter) player.inputBuffer.forEach(input => updateObjects('rerun'))
     player.inputBuffer = []
+    var characterID = player.character
+    var character = district.characters[characterID]
+    character = {..._.queuedCharacter}
+    _.queuedCharacter = {...character}
   }
 }
 
@@ -174,12 +176,8 @@ function updateLocation(objectType, rerun) {
   if (rerun && objectType !== 'characters') return
   var objects = district[objectType]
   for (var objectID in objects) {
-    if (rerun) {
-      var s = objectType.length - 1
-      objectType = objectType.slice(0, s)
-      objectID = player[objectType]
-    }
     var object = objects[objectID]
+    if (rerun) object = _.queuedCharacter
     if (object.speed > 0) {
       if (object.direction === 'left') {
         object.x -= object.speed
@@ -370,9 +368,8 @@ socket.on('request-token', () => {
 socket.on('district', receivedDistrict => {
   var timestamp = receivedDistrict.timestamp
   socket.emit('timestamp', timestamp)
-  console.log(receivedDistrict.tick);
   if (district) {
-    queuedDistrict = receivedDistrict
+    _.queuedDistrict = receivedDistrict
   }
   else {
     district = receivedDistrict
