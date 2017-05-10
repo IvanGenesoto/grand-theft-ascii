@@ -9,6 +9,7 @@ var port = process.env.PORT || 3000
 var now = require('performance-now')
 
 var _ = {
+  tick: 0,
   id: {
     character: 0,
     vehicle: 0,
@@ -19,6 +20,8 @@ var _ = {
 }
 
 var players = {}
+
+var districtsBuffer = [null, null, null, null, null, null]
 
 var districts = {
   '1': {
@@ -846,7 +849,7 @@ function initiatePlayer(socket) {
   character.district = districtID
   players[player.id] = player
   socket.emit('player', player)
-  player.socket = socket
+  player.socket = socket.id
   socket.join(districtID.toString())
   districts[districtID].characters[character.id] = character
   broadcastCharacterToDistrict(character, districtID)
@@ -907,9 +910,9 @@ function broadcastCharacterToDistrict(character, districtID) {
   io.to(districtID.toString()).emit('character', character)
 }
 
-function getPlayerIDBySocket(socket) {
+function getPlayerIDBySocketID(socketID) {
   for (var playerID in players) {
-    if (players[playerID].socket === socket) {
+    if (players[playerID].socket === socketID) {
       return playerID
     }
   }
@@ -920,10 +923,26 @@ function updatePlayerLatencyBuffer(playerID, timestamp) {
   var latency = (newTimestamp - timestamp) / 2
   var latencyBuffer = players[playerID].latencyBuffer
   latencyBuffer.push(latency)
-  if (latencyBuffer.length >= 20) {
-    latencyBuffer.shift()
-  }
+  if (latencyBuffer.length >= 20) latencyBuffer.shift()
 }
+
+function updatePlayerInputBuffer(playerID) {
+  var player = players[playerID]
+  var latencyBuffer = player.latencyBuffer
+  var total = latencyBuffer.reduce((total, value) => {
+    return total + value
+  }, 0)
+  var latency = total / latencyBuffer.length
+  var ticksAgo = Math.floor(latency / (1000 / 60))
+  var index = 5 - ticksAgo
+  player.inputBuffer[index] = player.input
+}
+
+// function updateReconcilliationBuffer(playerID, index, input) {
+//   var player = players[playerID]
+//   var districtID = player.district
+//   var characterID = player.character
+// }
 
 /* Use for persistent online world:
 function getPlayerByToken(token) {
@@ -938,17 +957,37 @@ function getPlayerByToken(token) {
 
 function refresh() {
   _.refreshStartTime = now()
-  if (!_.tick) _.tick = 0
   _.tick += 1
   updatePlayerCharactersSpeedDirection()
   updateLocation('characters')
   updateLocation('aiCharacters')
   updateLocation('vehicles')
-  if (!(_.tick % 3)) {
-    broadcast()
-  }
+  checkForMissedEvents()
+  if (!(_.tick % 3)) broadcast()
+  districtsBuffer.push(Object.assign({}, districts))
+  districtsBuffer.shift()
   setDelay()
 }
+
+function checkForMissedEvents() {
+
+}
+
+// function reconcilePlayerCharactersSpeedDirection() {
+//   reconcilliationBuffer.forEach(reconciliation => {
+//     var {input, characterID, districtID} = reconciliation
+//     var character = districts[districtID].characters[characterID]
+//     if (input.right === true) {
+//       character.direction = 'right'
+//       character.speed = 5
+//     }
+//     else if (input.left === true) {
+//       character.direction = 'left'
+//       character.speed = 5
+//     }
+//     else character.speed = 0
+//   })
+// }
 
 function updatePlayerCharactersSpeedDirection() {
   for (var playerID in players) {
@@ -969,10 +1008,10 @@ function updatePlayerCharactersSpeedDirection() {
   }
 }
 
-function updateLocation(type) {
+function updateLocation(objectType) {
   for (var districtID in districts) {
     var district = districts[districtID]
-    var objects = district[type]
+    var objects = district[objectType]
     for (var objectID in objects) {
       var object = objects[objectID]
       if (object.speed > 0) {
@@ -1056,18 +1095,18 @@ function setDelay() {
   }
 }
 
-function getAverage(value, bufferName, maxItems = 60, precision = 1000) { // eslint-disable-line no-unused-vars
-  if (!_.getAverage) _.getAverage = {}
-  var __ = _.getAverage
-  if (!__[bufferName]) __[bufferName] = []
-  __[bufferName].push(value)
-  if (__[bufferName].length > maxItems) __[bufferName].shift()
-  var total = __[bufferName].reduce((total, value) => {
-    return total + value
-  }, 0)
-  var average = total / __[bufferName].length
-  return Math.round(average * precision) / precision
-}
+// function getAverage(value, bufferName, maxItems = 60, precision = 1000) { // eslint-disable-line no-unused-vars
+//   if (!_.getAverage) _.getAverage = {}
+//   var __ = _.getAverage
+//   if (!__[bufferName]) __[bufferName] = []
+//   __[bufferName].push(value)
+//   if (__[bufferName].length > maxItems) __[bufferName].shift()
+//   var total = __[bufferName].reduce((total, value) => {
+//     return total + value
+//   }, 0)
+//   var average = total / __[bufferName].length
+//   return Math.round(average * precision) / precision
+// }
 
 io.on('connection', socket => {
   initiatePlayer(socket)
@@ -1082,14 +1121,16 @@ io.on('connection', socket => {
   */
 
   socket.on('timestamp', timestamp => {
-    var playerID = getPlayerIDBySocket(socket)
+    var playerID = getPlayerIDBySocketID(socket.id)
     updatePlayerLatencyBuffer(playerID, timestamp)
   })
 
   socket.on('input', input => {
-    var playerID = getPlayerIDBySocket(socket)
+    var playerID = getPlayerIDBySocketID(socket.id)
     players[playerID].input = input
-    // checkForMissedEvents(playerID)
+    updatePlayerInputBuffer(playerID)
+    // var index = getReconcilliationIndex(playerID)
+    // updateReconcilliationBuffer(playerID, index, input)
   })
 })
 

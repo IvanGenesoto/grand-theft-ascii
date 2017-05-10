@@ -98,51 +98,49 @@ function drawToLayer(type) {
   }
 }
 
-function refresh(tick, input) {
-  if (!tick) {
-    _.refreshStartTime = performance.now()
-    if (queuedDistrict) updateDistrict()
-    district.tick += 1
-    socket.emit('input', player.input)
-    updateInputBuffer()
+function refresh() {
+  _.refreshStartTime = performance.now()
+  if (queuedDistrict) {
+    district = queuedDistrict
+    queuedDistrict = null
+    rerunInputs()
   }
-  updatePlayerCharactersSpeedDirection(input)
-  updateLocation('characters')
-  updateLocation('aiCharacters')
-  updateLocation('vehicles')
-  if (tick) reconcileDistrict(tick)
-  else {
-    updateCamera()
-    clearCanvas()
-    renderScenery('backgrounds')
-    render('aiCharacters')
-    render('characters')
-    render('vehicles')
-    renderScenery('foregrounds')
-    setDelay()
-  }
-}
-
-function updateDistrict() {
-  var tick = district.tick
-  district = queuedDistrict
-  queuedDistrict = null
-  if (tick !== district.tick) reconcileDistrict(tick)
+  district.tick += 1
   player.inputBuffer = []
+  updateInputBuffer()
+  socket.emit('input', player.input)
+  update()
+  render()
+  setDelay()
 }
 
-function reconcileDistrict(tick) {
-  if (tick > district.tick) {
-    tick -= 1
-    var input = player.inputBuffer[0]
+function rerunInputs() {
+  if (player.inputBuffer.length > 0) {
+    update('rerun')
     player.inputBuffer.shift()
-    refresh(tick, input)
   }
 }
 
 function updateInputBuffer() {
   var input = {...player.input}
   player.inputBuffer.push(input)
+}
+
+function update(rerun) {
+  updatePlayerCharactersSpeedDirection(rerun)
+  updateLocation('characters', rerun)
+  updateLocation('aiCharacters', rerun)
+  updateLocation('vehicles', rerun)
+}
+
+function render() {
+  updateCamera()
+  clearCanvas()
+  renderScenery('backgrounds')
+  renderObject('aiCharacters')
+  renderObject('characters')
+  renderObject('vehicles')
+  renderScenery('foregrounds')
 }
 
 function control(key, action) {
@@ -164,8 +162,9 @@ function control(key, action) {
   }
 }
 
-function updatePlayerCharactersSpeedDirection(input) {
-  if (!input) input = player.input
+function updatePlayerCharactersSpeedDirection(rerun) {
+  if (rerun) var input = player.inputBuffer[0]
+  else input = player.input
   var characterID = player.character
   var character = district.characters[characterID]
   if (input.right === true) {
@@ -179,9 +178,15 @@ function updatePlayerCharactersSpeedDirection(input) {
   else character.speed = 0
 }
 
-function updateLocation(type) {
-  var objects = district[type]
+function updateLocation(objectType, rerun) {
+  if (rerun && objectType !== 'characters') return
+  var objects = district[objectType]
   for (var objectID in objects) {
+    if (rerun) {
+      var s = objectType.length - 1
+      objectType = objectType.slice(0, s)
+      objectID = player[objectType]
+    }
     var object = objects[objectID]
     if (object.speed > 0) {
       if (object.direction === 'left') {
@@ -201,6 +206,7 @@ function updateLocation(type) {
         object.direction = 'left'
       }
     }
+    if (rerun) return
   }
 }
 
@@ -245,8 +251,8 @@ function renderScenery(sceneryType) {
   }
 }
 
-function render(type) {
-  var objects = district[type]
+function renderObject(objectType) {
+  var objects = district[objectType]
   for (var objectID in objects) {
     var object = objects[objectID]
     var $object = document.getElementById(object.elementID)
@@ -323,18 +329,18 @@ function setDelay() {
   }
 }
 
-function getAverage(value, bufferName, maxItems = 60, precision = 1000) { // eslint-disable-line no-unused-vars
-  if (!_.getAverage) _.getAverage = {}
-  var __ = _.getAverage
-  if (!__[bufferName]) __[bufferName] = []
-  __[bufferName].push(value)
-  if (__[bufferName].length > maxItems) __[bufferName].shift()
-  var total = __[bufferName].reduce((total, value) => {
-    return total + value
-  }, 0)
-  var average = total / __[bufferName].length
-  return Math.round(average * precision) / precision
-}
+// function getAverage(value, bufferName, maxItems = 60, precision = 1000) {
+//   if (!_.getAverage) _.getAverage = {}
+//   var __ = _.getAverage
+//   if (!__[bufferName]) __[bufferName] = []
+//   __[bufferName].push(value)
+//   if (__[bufferName].length > maxItems) __[bufferName].shift()
+//   var total = __[bufferName].reduce((total, value) => {
+//     return total + value
+//   }, 0)
+//   var average = total / __[bufferName].length
+//   return Math.round(average * precision) / precision
+// }
 
 window.addEventListener('resize', () => {
   if (document.getElementById(camera.elementID)) {
@@ -355,6 +361,7 @@ window.addEventListener('keyup', event => {
 })
 
 socket.on('player', receivedPlayer => {
+  receivedPlayer.inputBuffer = []
   player = receivedPlayer
   camera.following = receivedPlayer.character
 })
