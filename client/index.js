@@ -107,23 +107,37 @@ function refresh() {
   setDelay()
 }
 
-function updateObjects(rerun) {
-  updatePlayerCharactersSpeedDirection(rerun)
-  updateLocation('characters', rerun)
-  updateLocation('aiCharacters', rerun)
-  updateLocation('vehicles', rerun)
+function updateObjects() {
+  updateSpeedDirection('player')
+  updateSpeedDirection('character')
+  updateLocation('player')
+  updateLocation('characters')
+  updateLocation('aiCharacters')
+  updateLocation('vehicles')
+  interpolate()
 }
 
 function updateDistrict() {
   if (_.queuedDistrict) {
     district = _.queuedDistrict
     _.queuedDistrict = null
-    if (_.queuedCharacter) player.inputBuffer.forEach(input => updateObjects('rerun'))
-    player.inputBuffer = []
     var characterID = player.character
     var character = district.characters[characterID]
-    character = {..._.queuedCharacter}
-    _.queuedCharacter = {...character}
+    player.x = character.x
+    player.y = character.y
+    player.speed = character.speed
+    player.direction = character.direction
+    if (!_.rerun) _.rerun = {...player}
+    player.inputBuffer.forEach(input => {
+      updateSpeedDirection('rerun')
+      updateLocation('rerun')
+    })
+    player.inputBuffer = []
+    player.x = _.rerun.x
+    player.y = _.rerun.y
+    player.speed = _.rerun.speed
+    player.direction = _.rerun.direction
+    _.rerun = {...player}
   }
 }
 
@@ -156,28 +170,59 @@ function control(key, action) {
   }
 }
 
-function updatePlayerCharactersSpeedDirection(rerun) {
-  if (rerun) var input = player.inputBuffer[0]
-  else input = player.input
-  var characterID = player.character
-  var character = district.characters[characterID]
+function updatePlayerSpeedDirection(rerun) {
+  if (rerun) {
+    var input = player.inputBuffer[0]
+    var object = _.rerun
+  }
+  else {
+    input = player.input
+    object = player
+  }
   if (input.right === true) {
-    character.direction = 'right'
-    character.speed = 5
+    object.direction = 'right'
+    object.speed = 5
   }
   else if (input.left === true) {
-    character.direction = 'left'
-    character.speed = 5
+    object.direction = 'left'
+    object.speed = 5
   }
-  else character.speed = 0
+  else object.speed = 0
 }
 
-function updateLocation(objectType, rerun) {
-  if (rerun && objectType !== 'characters') return
+function updateSpeedDirection(objectType) {
+  if (objectType === 'rerun') var input = player.inputBuffer[0]
+  else input = player.input
+  switch (objectType) {
+    case 'player':
+      var object = player
+      break
+    case 'character':
+      var characterID = player.character
+      object = district.characters[characterID]
+      break
+    case 'rerun':
+      object = _.rerun
+      break
+    default: object = player
+  }
+  if (input.right === true) {
+    object.direction = 'right'
+    object.speed = 5
+  }
+  else if (input.left === true) {
+    object.direction = 'left'
+    object.speed = 5
+  }
+  else object.speed = 0
+}
+
+function updateLocation(objectType) {
   var objects = district[objectType]
   for (var objectID in objects) {
     var object = objects[objectID]
-    if (rerun) object = _.queuedCharacter
+    if (objectType === 'player') object = player
+    if (objectType === 'rerun') object = _.rerun
     if (object.speed > 0) {
       if (object.direction === 'left') {
         object.x -= object.speed
@@ -196,8 +241,16 @@ function updateLocation(objectType, rerun) {
         object.direction = 'left'
       }
     }
-    if (rerun) return
+    if (objectType === ('player' || 'rerun')) return
   }
+}
+
+function interpolate() {
+  var characterID = player.character
+  var character = district.characters[characterID]
+  var x = (character.x + player.x) / 2
+  var y = (character.x + player.x) / 2
+  _.interpolatedCharacter = {...character, x, y}
 }
 
 function updateCamera() {
@@ -245,6 +298,9 @@ function renderObject(objectType) {
   var objects = district[objectType]
   for (var objectID in objects) {
     var object = objects[objectID]
+    if (objectType === 'characters' && objectID === player.character) {
+      object = _.interpolatedCharacter
+    }
     var $object = document.getElementById(object.elementID)
     var $camera = document.getElementById(camera.elementID)
     var context = $camera.getContext('2d')
@@ -358,6 +414,10 @@ socket.on('player', receivedPlayer => {
 
 socket.on('character', character => {
   createElements(character)
+  if (character.id === player.character) {
+    player.x = character.x
+    player.y = character.y
+  }
 })
 
 socket.on('request-token', () => {
