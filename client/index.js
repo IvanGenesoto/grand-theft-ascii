@@ -134,7 +134,6 @@ function refresh() {
   if (_.ratioIndex > 1) {
     shiftDistrictBuffer()
     var result = checkPredictionOutcome()
-    console.log(result);
     if (result) reconcilePlayerCharacter(result)
   }
   var input = {...player.input}
@@ -200,29 +199,10 @@ function checkPredictionOutcome() {
   var smallest = Math.min(...differences)
   var index = differences.findIndex(difference => difference === smallest)
   var prediction = predictionBuffer[index]
-  console.log(prediction.x + ' ' + _.bufferedDistrictX);
   if (prediction.x !== _.bufferedDistrictX || prediction.y !== _.bufferedDistrictY) {
     return index
   }
 }
-
-// function getValue(operation, buffer, value, bufferName = 'valueBuffer', maxItems = 60) {
-//   if (!_.getValue) _.getValue = {}
-//   var __ = _.getValue
-//   if (!__[bufferName]) __[bufferName] = []
-//   if (!buffer) buffer = __[bufferName]
-//   buffer.push(value)
-//   if (buffer.length > maxItems) buffer.shift()
-//   switch (operation) {
-//     case 'max': return Math.max(...buffer)
-//     case 'min': return Math.min(...buffer)
-//     case 'average':
-//       var total = buffer.reduce((total, value) => {
-//         return total + value
-//       }, 0)
-//       return total / buffer.length
-//   }
-// }
 
 function reconcilePlayerCharacter(index) {
   var {predictionBuffer} = player
