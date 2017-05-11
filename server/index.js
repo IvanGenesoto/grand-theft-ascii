@@ -26,6 +26,7 @@ var districts = {
     name: 'District 1',
     width: 32000,
     height: 8000,
+    grid: {},
     population: {
       characters: 0,
       aiCharacters: 0,
@@ -945,6 +946,7 @@ function refresh() {
   _.tick += 1
   updateCharactersSpeedDirection()
   loopThroughObjects(updateLocations)
+  clearGrids()
   if (!(_.tick % 3)) broadcast()
   districtsBuffer.push(Object.assign({}, districts))
   if (districts.buffer.length > 6) districtsBuffer.shift()
@@ -1017,6 +1019,13 @@ function updateLocations(object) {
         object.direction = 'left'
       }
     }
+  }
+}
+
+function clearGrids() {
+  for (var districtID in districts) {
+    var district = districts[districtID]
+    district.grid = {}
   }
 }
 
