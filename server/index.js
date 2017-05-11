@@ -859,7 +859,7 @@ function initiatePlayer(socket) {
 function createPlayer() {
   var player = {
     id: _.id.player += 1,
-    characterBuffer: [],
+    predictionBuffer: [],
     latencyBuffer: [],
     input: {
       up: false,
@@ -924,7 +924,7 @@ function updatePlayerLatencyBuffer(playerID, timestamp) {
   var latency = (newTimestamp - timestamp)
   var latencyBuffer = players[playerID].latencyBuffer
   latencyBuffer.push(latency)
-  if (latencyBuffer.length >= 20) latencyBuffer.shift()
+  if (latencyBuffer.length > 20) latencyBuffer.shift()
 }
 
 function updatePlayerInputBuffer(playerID) {
@@ -1026,11 +1026,21 @@ function updateLocation(objectType) {
         }
         var min = 0
         var max = districts[1].width - object.width
-        if (nextX < min) {
-          object.direction = 'right'
+        if (objectType === 'characters') {
+          if (nextX < min) {
+            object.x = min
+          }
+          if (nextX > max) {
+            object.x = max
+          }
         }
-        if (nextX > max) {
-          object.direction = 'left'
+        else {
+          if (nextX < min) {
+            object.direction = 'right'
+          }
+          if (nextX > max) {
+            object.direction = 'left'
+          }
         }
       }
     }

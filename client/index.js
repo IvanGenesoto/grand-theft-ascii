@@ -21,16 +21,15 @@ var player = null
 var district = null
 var districtBuffer = []
 
-function initiateDistrict(done) {
-  if (!done) {
-    _.districtInitiated = true
-    createElements(district, 'loop')
-    checkImagesLoaded()
-  }
-  else {
+function initiateDistrict(imagesLoaded) {
+  if (imagesLoaded) {
     drawToLayer('backgrounds')
     drawToLayer('foregrounds')
-    initiateRefresh()
+    shiftDistrictBuffer('initiateRefresh')
+  }
+  else {
+    createElements(district, 'loop')
+    checkImagesLoaded()
   }
 }
 
@@ -71,7 +70,7 @@ function createElements(object, loop) {
 
 function checkImagesLoaded() {
   clearTimeout(_.timeout)
-  if (_.imagesLoaded === _.imagesTotal) initiateDistrict('done')
+  if (_.imagesLoaded === _.imagesTotal) initiateDistrict('imagesLoaded')
   else _.timeout = setTimeout(checkImagesLoaded, 50)
 }
 
@@ -103,59 +102,69 @@ function drawToLayer(type) {
   }
 }
 
-function initiateRefresh() {
-  shiftDistrictBuffer()
-  _.ratioIndex = 2
-  refresh()
+function shiftDistrictBuffer(initiatingRefresh) {
+  clearTimeout(_.shiftTimeout)
+  if (districtBuffer.length > 2) {
+    while (districtBuffer.length > 2) districtBuffer.shift()
+    _.ratioIndex = -1
+    preservePlayerCharacterLocation(districtBuffer[0])
+    if (initiatingRefresh) refresh()
+  }
+  else {
+    _.shiftTimeout = setTimeout(() => {
+      shiftDistrictBuffer(initiatingRefresh)
+    }, 1000 / 60)
+  }
 }
 
-function shiftDistrictBuffer() {
-  clearTimeout(_.timeout)
-  if (districtBuffer.length > 2) {
-    while (districtBuffer.length > 3) districtBuffer.shift()
-  }
-  else _.timeout = setTimeout(shiftDistrictBuffer, 1000 / 60)
+function preservePlayerCharacterLocation(bufferedDistrict) {
+  _.bufferedDistrictX = bufferedDistrict.characters[player.character].x
+  _.bufferedDistrictY = bufferedDistrict.characters[player.character].y
+  var {x, y} = district.characters[player.character]
+  district = bufferedDistrict
+  var character = district.characters[player.character]
+  character.x = x
+  character.y = y
 }
 
 function refresh() {
   _.refreshStartTime = performance.now()
   var ratio = getInterpolationRatio()
-  interpolateDistrict(ratio)
-  if (ratio === 2 / 3) shiftDistrictBuffer()
-  socket.emit('input', player.input)
-  bufferPlayerCharacter()
-  updatePlayerCharacterSpeedDirection()
+  if (ratio) interpolateDistrict(ratio)
+  if (_.ratioIndex > 1) {
+    shiftDistrictBuffer()
+    var result = checkPredictionOutcome()
+    console.log(result);
+    if (result) reconcilePlayerCharacter(result)
+  }
+  var input = {...player.input}
+  socket.emit('input', input)
+  updatePredictionBuffer(input)
+  updatePlayerCharacterSpeedDirection(input)
   updatePlayerCharacterLocation()
   render()
   setDelay()
 }
 
 function getInterpolationRatio() {
-  var ratios = [0, 1 / 3, 2 / 3]
-  switch (_.ratioIndex) {
-    case 0:
-      _.ratioIndex = 1
-      return ratios[0]
-    case 1:
-      _.ratioIndex = 2
-      return ratios[1]
-    case 2:
-      _.ratioIndex = 0
-      return ratios[2]
-    default: return ratios[0]
-  }
+  var ratios = [
+    0,
+    1 / 3,
+    2 / 3,
+    1,
+    4 / 3,
+    5 / 3,
+    2
+  ]
+  _.ratioIndex += 1
+  if (_.ratioIndex > 6) _.ratioIndex = 6
+  return ratios[_.ratioIndex]
 }
 
 function interpolateDistrict(ratio) {
   var a = districtBuffer[0]
   var b = districtBuffer[1]
-  if (!ratio) {
-    var {x, y} = district.characters[player.character]
-    district = a
-    var character = district.characters[player.character]
-    character.x = x
-    character.y = y
-  }
+  if (ratio === 1) preservePlayerCharacterLocation(b)
   else {
     for (var objectType in district) {
       if (objectType === 'aiCharacters' ||
@@ -175,16 +184,67 @@ function interpolateDistrict(ratio) {
   }
 }
 
-function bufferPlayerCharacter() {
+function checkPredictionOutcome() {
+  var {predictionBuffer} = player
+  if (!predictionBuffer[0]) return
   var character = district.characters[player.character]
-  var bufferedCharacter = {...character, input: {...player.input}, tick: district.tick}
-  player.characterBuffer.push(bufferedCharacter)
-  if (player.characterBuffer.length > 12) player.characterBuffer.shift()
+  var {latencyBuffer} = character
+  if (!latencyBuffer[0]) return
+  var {timestamp} = district
+  var total = latencyBuffer.reduce((total, latency) => total + latency)
+  var latency = total / latencyBuffer.length
+  var differences = predictionBuffer.map((prediction) => {
+    var duration = timestamp - prediction.timestamp
+    return Math.abs(duration - latency)
+  })
+  var smallest = Math.min(...differences)
+  var index = differences.findIndex(difference => difference === smallest)
+  var prediction = predictionBuffer[index]
+  console.log(prediction.x + ' ' + _.bufferedDistrictX);
+  if (prediction.x !== _.bufferedDistrictX || prediction.y !== _.bufferedDistrictY) {
+    return index
+  }
 }
 
-function updatePlayerCharacterSpeedDirection(reconciling) {
-  if (reconciling) var input = player.characterBuffer[reconciling]
-  else input = player.input
+// function getValue(operation, buffer, value, bufferName = 'valueBuffer', maxItems = 60) {
+//   if (!_.getValue) _.getValue = {}
+//   var __ = _.getValue
+//   if (!__[bufferName]) __[bufferName] = []
+//   if (!buffer) buffer = __[bufferName]
+//   buffer.push(value)
+//   if (buffer.length > maxItems) buffer.shift()
+//   switch (operation) {
+//     case 'max': return Math.max(...buffer)
+//     case 'min': return Math.min(...buffer)
+//     case 'average':
+//       var total = buffer.reduce((total, value) => {
+//         return total + value
+//       }, 0)
+//       return total / buffer.length
+//   }
+// }
+
+function reconcilePlayerCharacter(index) {
+  var {predictionBuffer} = player
+  var character = district.characters[player.character]
+  character.x = _.bufferedDistrictX
+  character.y = _.bufferedDistrictY
+  for (var i = index; i < predictionBuffer.length; i++) {
+    var input = predictionBuffer[i].input
+    updatePlayerCharacterSpeedDirection(input)
+    updatePlayerCharacterLocation()
+  }
+}
+
+function updatePredictionBuffer(input) {
+  var character = district.characters[player.character]
+  var {x, y} = character
+  var prediction = {x, y, input: {...player.input}, timestamp: performance.now()}
+  player.predictionBuffer.push(prediction)
+  if (player.predictionBuffer.length > 20) player.predictionBuffer.shift()
+}
+
+function updatePlayerCharacterSpeedDirection(input) {
   var character = district.characters[player.character]
   if (input.right === true) {
     character.direction = 'right'
@@ -367,19 +427,6 @@ function control(key, action) {
   }
 }
 
-// function getAverage(value, bufferName, maxItems = 60, precision = 1000) {
-//   if (!_.getAverage) _.getAverage = {}
-//   var __ = _.getAverage
-//   if (!__[bufferName]) __[bufferName] = []
-//   __[bufferName].push(value)
-//   if (__[bufferName].length > maxItems) __[bufferName].shift()
-//   var total = __[bufferName].reduce((total, value) => {
-//     return total + value
-//   }, 0)
-//   var average = total / __[bufferName].length
-//   return Math.round(average * precision) / precision
-// }
-
 window.addEventListener('resize', () => {
   if (document.getElementById(camera.elementID)) {
     var $camera = document.getElementById(camera.elementID)
@@ -414,10 +461,12 @@ socket.on('request-token', () => {
 })
 
 socket.on('district', receivedDistrict => {
-  var timestamp = receivedDistrict.timestamp
+  var {timestamp} = receivedDistrict
+  receivedDistrict.timestamp = performance.now()
   socket.emit('timestamp', timestamp)
   if (_.districtInitiated) districtBuffer.push(receivedDistrict)
   else {
+    _.districtInitiated = true
     district = receivedDistrict
     initiateDistrict()
   }
