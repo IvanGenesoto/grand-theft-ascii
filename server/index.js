@@ -927,35 +927,6 @@ function updatePlayerLatencyBuffer(playerID, timestamp) {
   if (latencyBuffer.length > 20) latencyBuffer.shift()
 }
 
-function updatePlayerInputBuffer(playerID) {
-  // var player = players[playerID]
-  // var latencyBuffer = player.latencyBuffer
-  // var total = latencyBuffer.reduce((total, value) => {
-  //   return total + value
-  // }, 0)
-  // var latency = total / latencyBuffer.length
-  // var ticksAgo = Math.floor(latency / (1000 / 60))
-  // var index = 5 - ticksAgo
-  // player.inputBuffer[index] = player.input
-}
-
-// function updateReconcilliationBuffer(playerID, index, input) {
-//   var player = players[playerID]
-//   var districtID = player.district
-//   var characterID = player.character
-// }
-
-/* Use for persistent online world:
-function getPlayerByToken(token) {
-  for (var playerID in players) {
-    var player = players[playerID]
-    if (player.token === token) {
-      return player
-    }
-  }
-}
-*/
-
 function refresh() {
   _.refreshStartTime = now()
   _.tick += 1
@@ -963,32 +934,11 @@ function refresh() {
   updateLocation('characters')
   updateLocation('aiCharacters')
   updateLocation('vehicles')
-  checkForMissedEvents()
   if (!(_.tick % 3)) broadcast()
   districtsBuffer.push(Object.assign({}, districts))
   districtsBuffer.shift()
   setDelay()
 }
-
-function checkForMissedEvents() {
-
-}
-
-// function reconcilePlayerCharactersSpeedDirection() {
-//   reconcilliationBuffer.forEach(reconciliation => {
-//     var {input, characterID, districtID} = reconciliation
-//     var character = districts[districtID].characters[characterID]
-//     if (input.right === true) {
-//       character.direction = 'right'
-//       character.speed = 5
-//     }
-//     else if (input.left === true) {
-//       character.direction = 'left'
-//       character.speed = 5
-//     }
-//     else character.speed = 0
-//   })
-// }
 
 function updatePlayerCharactersSpeedDirection() {
   for (var playerID in players) {
@@ -1107,30 +1057,8 @@ function setDelay() {
   }
 }
 
-// function getAverage(value, bufferName, maxItems = 60, precision = 1000) { // eslint-disable-line no-unused-vars
-//   if (!_.getAverage) _.getAverage = {}
-//   var __ = _.getAverage
-//   if (!__[bufferName]) __[bufferName] = []
-//   __[bufferName].push(value)
-//   if (__[bufferName].length > maxItems) __[bufferName].shift()
-//   var total = __[bufferName].reduce((total, value) => {
-//     return total + value
-//   }, 0)
-//   var average = total / __[bufferName].length
-//   return Math.round(average * precision) / precision
-// }
-
 io.on('connection', socket => {
   initiatePlayer(socket)
-
-  /* Use for persistent online world:
-  socket.emit('request-token')
-
-  socket.on('token', token => {
-    var player = getPlayerByToken(token)
-    associatePlayerWithSocket(player, socket)
-  })
-  */
 
   socket.on('timestamp', timestamp => {
     var playerID = getPlayerIDBySocketID(socket.id)
@@ -1140,9 +1068,6 @@ io.on('connection', socket => {
   socket.on('input', input => {
     var playerID = getPlayerIDBySocketID(socket.id)
     players[playerID].input = input
-    updatePlayerInputBuffer(playerID)
-    // var index = getReconcilliationIndex(playerID)
-    // updateReconcilliationBuffer(playerID, index, input)
   })
 })
 
