@@ -847,6 +847,7 @@ function initiatePlayer(socket) {
   player.character = character.id
   player.district = districtID
   character.district = districtID
+  character.latencyBuffer = player.latencyBuffer
   players[player.id] = player
   socket.emit('player', player)
   player.socket = socket.id
@@ -858,12 +859,8 @@ function initiatePlayer(socket) {
 function createPlayer() {
   var player = {
     id: _.id.player += 1,
+    characterBuffer: [],
     latencyBuffer: [],
-    inputBuffer: [],
-    speed: 0,
-    direction: 'right',
-    x: 0,
-    y: 0,
     input: {
       up: false,
       down: false,
@@ -924,22 +921,22 @@ function getPlayerIDBySocketID(socketID) {
 
 function updatePlayerLatencyBuffer(playerID, timestamp) {
   var newTimestamp = now()
-  var latency = (newTimestamp - timestamp) / 2
+  var latency = (newTimestamp - timestamp)
   var latencyBuffer = players[playerID].latencyBuffer
   latencyBuffer.push(latency)
   if (latencyBuffer.length >= 20) latencyBuffer.shift()
 }
 
 function updatePlayerInputBuffer(playerID) {
-  var player = players[playerID]
-  var latencyBuffer = player.latencyBuffer
-  var total = latencyBuffer.reduce((total, value) => {
-    return total + value
-  }, 0)
-  var latency = total / latencyBuffer.length
-  var ticksAgo = Math.floor(latency / (1000 / 60))
-  var index = 5 - ticksAgo
-  player.inputBuffer[index] = player.input
+  // var player = players[playerID]
+  // var latencyBuffer = player.latencyBuffer
+  // var total = latencyBuffer.reduce((total, value) => {
+  //   return total + value
+  // }, 0)
+  // var latency = total / latencyBuffer.length
+  // var ticksAgo = Math.floor(latency / (1000 / 60))
+  // var index = 5 - ticksAgo
+  // player.inputBuffer[index] = player.input
 }
 
 // function updateReconcilliationBuffer(playerID, index, input) {

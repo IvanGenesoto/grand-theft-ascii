@@ -18,8 +18,21 @@ var camera = {
 }
 
 var player = null
-
 var district = null
+var districtBuffer = []
+
+function initiateDistrict(done) {
+  if (!done) {
+    _.districtInitiated = true
+    createElements(district, 'loop')
+    checkImagesLoaded()
+  }
+  else {
+    drawToLayer('backgrounds')
+    drawToLayer('foregrounds')
+    initiateRefresh()
+  }
+}
 
 function createElements(object, loop) {
   for (var property in object) {
@@ -51,21 +64,15 @@ function createElements(object, loop) {
       typeof object[property] !== 'boolean'
     ) {
       var nestedObject = object[property]
-      createElements(nestedObject, true)
+      createElements(nestedObject, 'loop')
     }
   }
 }
 
 function checkImagesLoaded() {
   clearTimeout(_.timeout)
-  if (_.imagesLoaded === _.imagesTotal) drawToLayers()
+  if (_.imagesLoaded === _.imagesTotal) initiateDistrict('done')
   else _.timeout = setTimeout(checkImagesLoaded, 50)
-}
-
-function drawToLayers() {
-  drawToLayer('backgrounds')
-  drawToLayer('foregrounds')
-  refresh()
 }
 
 function drawToLayer(type) {
@@ -96,48 +103,119 @@ function drawToLayer(type) {
   }
 }
 
+function initiateRefresh() {
+  shiftDistrictBuffer()
+  _.ratioIndex = 2
+  refresh()
+}
+
+function shiftDistrictBuffer() {
+  clearTimeout(_.timeout)
+  if (districtBuffer.length > 2) {
+    while (districtBuffer.length > 3) districtBuffer.shift()
+  }
+  else _.timeout = setTimeout(shiftDistrictBuffer, 1000 / 60)
+}
+
 function refresh() {
   _.refreshStartTime = performance.now()
+  var ratio = getInterpolationRatio()
+  interpolateDistrict(ratio)
+  if (ratio === 2 / 3) shiftDistrictBuffer()
   socket.emit('input', player.input)
-  player.inputBuffer.push({...player.input})
-  updateObjects()
-  updateDistrict()
-  district.tick += 1
+  bufferPlayerCharacter()
+  updatePlayerCharacterSpeedDirection()
+  updatePlayerCharacterLocation()
   render()
   setDelay()
 }
 
-function updateObjects() {
-  updateSpeedDirection('player')
-  updateSpeedDirection('character')
-  updateLocation('player')
-  updateLocation('characters')
-  updateLocation('aiCharacters')
-  updateLocation('vehicles')
-  interpolate()
+function getInterpolationRatio() {
+  var ratios = [0, 1 / 3, 2 / 3]
+  switch (_.ratioIndex) {
+    case 0:
+      _.ratioIndex = 1
+      return ratios[0]
+    case 1:
+      _.ratioIndex = 2
+      return ratios[1]
+    case 2:
+      _.ratioIndex = 0
+      return ratios[2]
+    default: return ratios[0]
+  }
 }
 
-function updateDistrict() {
-  if (_.queuedDistrict) {
-    district = _.queuedDistrict
-    _.queuedDistrict = null
-    var characterID = player.character
-    var character = district.characters[characterID]
-    player.x = character.x
-    player.y = character.y
-    player.speed = character.speed
-    player.direction = character.direction
-    if (!_.rerun) _.rerun = {...player}
-    player.inputBuffer.forEach(input => {
-      updateSpeedDirection('rerun')
-      updateLocation('rerun')
-    })
-    player.inputBuffer = []
-    player.x = _.rerun.x
-    player.y = _.rerun.y
-    player.speed = _.rerun.speed
-    player.direction = _.rerun.direction
-    _.rerun = {...player}
+function interpolateDistrict(ratio) {
+  var a = districtBuffer[0]
+  var b = districtBuffer[1]
+  if (!ratio) {
+    var {x, y} = district.characters[player.character]
+    district = a
+    var character = district.characters[player.character]
+    character.x = x
+    character.y = y
+  }
+  else {
+    for (var objectType in district) {
+      if (objectType === 'aiCharacters' ||
+        objectType === 'vehicles'
+      ) {
+        var objects = district[objectType]
+        for (var objectID in objects) {
+          var object = objects[objectID]
+          var properties = ['x', 'y']
+          properties.forEach(property => {
+            var difference = b[objectType][objectID][property] - a[objectType][objectID][property]
+            object[property] = a[objectType][objectID][property] + difference * ratio
+          })
+        }
+      }
+    }
+  }
+}
+
+function bufferPlayerCharacter() {
+  var character = district.characters[player.character]
+  var bufferedCharacter = {...character, input: {...player.input}, tick: district.tick}
+  player.characterBuffer.push(bufferedCharacter)
+  if (player.characterBuffer.length > 12) player.characterBuffer.shift()
+}
+
+function updatePlayerCharacterSpeedDirection(reconciling) {
+  if (reconciling) var input = player.characterBuffer[reconciling]
+  else input = player.input
+  var character = district.characters[player.character]
+  if (input.right === true) {
+    character.direction = 'right'
+    character.speed = 5
+  }
+  else if (input.left === true) {
+    character.direction = 'left'
+    character.speed = 5
+  }
+  else character.speed = 0
+}
+
+function updatePlayerCharacterLocation() {
+  var character = district.characters[player.character]
+  if (character.speed > 0) {
+    if (character.direction === 'left') {
+      character.x -= character.speed
+      var nextX = character.x - character.speed
+    }
+    else if (character.direction === 'right') {
+      character.x += character.speed
+      nextX = character.x + character.speed
+    }
+    var min = 0
+    var max = district.width - character.width
+    if (nextX < min) {
+      character.x = min
+    }
+    if (nextX > max) {
+      character.x = max
+    }
   }
 }
 
@@ -149,88 +227,6 @@ function render() {
   renderObject('characters')
   renderObject('vehicles')
   renderScenery('foregrounds')
-}
-
-function control(key, action) {
-  if (key === 'a' || key === 'A' || key === 'ArrowLeft') {
-    if (action === 'down') player.input.left = true
-    if (action === 'up') player.input.left = false
-  }
-  if (key === 'd' || key === 'D' || key === 'ArrowRight') {
-    if (action === 'down') player.input.right = true
-    if (action === 'up') player.input.right = false
-  }
-  if (key === 'e' || key === 'E' || key === 'ArrowUp') {
-    if (action === 'down') player.input.up = true
-    if (action === 'up') player.input.up = false
-  }
-  if (key === 's' || key === 'S' || key === 'ArrowDown') {
-    if (action === 'down') player.input.down = true
-    if (action === 'up') player.input.down = false
-  }
-}
-
-function updateSpeedDirection(objectType) {
-  if (objectType === 'rerun') var input = player.inputBuffer[0]
-  else input = player.input
-  switch (objectType) {
-    case 'player':
-      var object = player
-      break
-    case 'character':
-      var characterID = player.character
-      object = district.characters[characterID]
-      break
-    case 'rerun':
-      object = _.rerun
-      break
-    default: object = player
-  }
-  if (input.right === true) {
-    object.direction = 'right'
-    object.speed = 5
-  }
-  else if (input.left === true) {
-    object.direction = 'left'
-    object.speed = 5
-  }
-  else object.speed = 0
-}
-
-function updateLocation(objectType) {
-  var objects = district[objectType]
-  for (var objectID in objects) {
-    var object = objects[objectID]
-    if (objectType === 'player') object = player
-    if (objectType === 'rerun') object = _.rerun
-    if (object.speed > 0) {
-      if (object.direction === 'left') {
-        object.x -= object.speed
-        var nextX = object.x - object.speed
-      }
-      else if (object.direction === 'right') {
-        object.x += object.speed
-        nextX = object.x + object.speed
-      }
-      var min = 0
-      var max = district.width - object.width
-      if (nextX < min) {
-        object.direction = 'right'
-      }
-      if (nextX > max) {
-        object.direction = 'left'
-      }
-    }
-    if (objectType === ('player' || 'rerun')) return
-  }
-}
-
-function interpolate() {
-  var characterID = player.character
-  var character = district.characters[characterID]
-  var x = (character.x + player.x) / 2
-  var y = (character.x + player.x) / 2
-  _.interpolatedCharacter = {...character, x, y}
 }
 
 function updateCamera() {
@@ -254,8 +250,8 @@ function clearCanvas() {
   context.clearRect(0, 0, camera.width, camera.height)
 }
 
-function renderScenery(sceneryType) {
-  var layers = district.scenery[sceneryType]
+function renderScenery(type) {
+  var layers = district.scenery[type]
   for (var layerID in layers) {
     var layer = layers[layerID]
     var characterID = camera.following
@@ -278,9 +274,6 @@ function renderObject(objectType) {
   var objects = district[objectType]
   for (var objectID in objects) {
     var object = objects[objectID]
-    if (objectType === 'characters' && objectID === player.character) {
-      object = _.interpolatedCharacter
-    }
     var $object = document.getElementById(object.elementID)
     var $camera = document.getElementById(camera.elementID)
     var context = $camera.getContext('2d')
@@ -355,6 +348,25 @@ function setDelay() {
   }
 }
 
+function control(key, action) {
+  if (key === 'a' || key === 'A' || key === 'ArrowLeft') {
+    if (action === 'down') player.input.left = true
+    if (action === 'up') player.input.left = false
+  }
+  if (key === 'd' || key === 'D' || key === 'ArrowRight') {
+    if (action === 'down') player.input.right = true
+    if (action === 'up') player.input.right = false
+  }
+  if (key === 'e' || key === 'E' || key === 'ArrowUp') {
+    if (action === 'down') player.input.up = true
+    if (action === 'up') player.input.up = false
+  }
+  if (key === 's' || key === 'S' || key === 'ArrowDown') {
+    if (action === 'down') player.input.down = true
+    if (action === 'up') player.input.down = false
+  }
+}
+
 // function getAverage(value, bufferName, maxItems = 60, precision = 1000) {
 //   if (!_.getAverage) _.getAverage = {}
 //   var __ = _.getAverage
@@ -387,17 +399,13 @@ window.addEventListener('keyup', event => {
 })
 
 socket.on('player', receivedPlayer => {
-  receivedPlayer.inputBuffer = []
   player = receivedPlayer
-  camera.following = receivedPlayer.character
+  camera.following = player.character
 })
 
 socket.on('character', character => {
   createElements(character)
-  if (character.id === player.character) {
-    player.x = character.x
-    player.y = character.y
-  }
+  if (district) district.characters[character.id] = character
 })
 
 socket.on('request-token', () => {
@@ -408,13 +416,10 @@ socket.on('request-token', () => {
 socket.on('district', receivedDistrict => {
   var timestamp = receivedDistrict.timestamp
   socket.emit('timestamp', timestamp)
-  if (district) {
-    _.queuedDistrict = receivedDistrict
-  }
+  if (_.districtInitiated) districtBuffer.push(receivedDistrict)
   else {
     district = receivedDistrict
-    createElements(district, true)
-    checkImagesLoaded()
+    initiateDistrict()
   }
 })
 
