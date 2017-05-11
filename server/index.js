@@ -10,13 +10,8 @@ var now = require('performance-now')
 
 var _ = {
   tick: 0,
-  id: {
-    character: 0,
-    vehicle: 0,
-    element: 0,
-    player: 0,
-    key: 0
-  }
+  id: 0,
+  playerID: 0
 }
 
 var players = {}
@@ -691,6 +686,7 @@ var districts = {
 }
 
 function populateDistricts(districtID) {
+  if (!_.id) _.id = 0
   populateWithAICharacters(districtID)
   populateWithVehicles(districtID)
 }
@@ -708,10 +704,13 @@ function createAICharacter(districtID) {
   var directions = ['left', 'right']
   var directionIndex = Math.floor(Math.random() * directions.length)
   var aiCharacter = {
-    id: _.id.character += 1,
-    name: '',
+    id: _.id += 1,
+    type: 'aiCharacters',
+    name: 'Fred',
+    district: 1,
     room: 0,
     keys: [],
+    vehicle: 0,
     y: 7832,
     width: 105,
     height: 155,
@@ -740,8 +739,13 @@ function createVehicle(districtID) {
   var directions = ['left', 'right', 'left', 'right', 'left', 'right']
   var directionIndex = Math.floor(Math.random() * directions.length)
   var vehicle = {
-    id: _.id.vehicle += 1,
-    key: _.id.key += 1,
+    id: _.id += 1,
+    type: 'vehicles',
+    model: 'delorean',
+    district: 1,
+    key: generateKey(),
+    driver: 0,
+    passengers: [],
     width: 268,
     height: 80,
     direction: directions[directionIndex],
@@ -760,11 +764,18 @@ function createVehicle(districtID) {
   return vehicle
 }
 
+function generateKey() {
+  var randomNumber = Math.random()
+  var base36RandomNumber = randomNumber.toString(36)
+  return base36RandomNumber.slice(2)
+}
+
 function assignElementIDs(object) {
+  if (!_.elementID) _.elementID = 0
   for (var property in object) {
     if (property === 'element') {
-      var element = {id: _.id.element += 1}
-      object.elementID = '_' + element.id
+      var id = _.elementID += 1
+      object.elementID = '_' + id
     }
     else if (
       typeof object[property] !== 'string' &&
@@ -857,8 +868,9 @@ function initiatePlayer(socket) {
 }
 
 function createPlayer() {
+  if (!_.playerID) _.playerID = 0
   var player = {
-    id: _.id.player += 1,
+    id: _.playerID += 1,
     predictionBuffer: [],
     latencyBuffer: [],
     input: {
@@ -875,9 +887,10 @@ function createPlayer() {
 }
 
 function createCharacter(name = 'Sam') {
-  var elementID = _.id.element += 1
+  var elementID = _.elementID += 1
   var character = {
-    id: _.id.character += 1,
+    id: _.id += 1,
+    type: 'characters',
     name,
     vehicle: 0,
     room: 0,
@@ -930,17 +943,15 @@ function updatePlayerLatencyBuffer(playerID, timestamp) {
 function refresh() {
   _.refreshStartTime = now()
   _.tick += 1
-  updatePlayerCharactersSpeedDirection()
-  updateLocation('characters')
-  updateLocation('aiCharacters')
-  updateLocation('vehicles')
+  updateCharactersSpeedDirection()
+  loopThroughObjects(updateLocations)
   if (!(_.tick % 3)) broadcast()
   districtsBuffer.push(Object.assign({}, districts))
-  districtsBuffer.shift()
+  if (districts.buffer.length > 6) districtsBuffer.shift()
   setDelay()
 }
 
-function updatePlayerCharactersSpeedDirection() {
+function updateCharactersSpeedDirection() {
   for (var playerID in players) {
     var player = players[playerID]
     var input = player.input
@@ -959,39 +970,51 @@ function updatePlayerCharactersSpeedDirection() {
   }
 }
 
-function updateLocation(objectType) {
+function loopThroughObjects(callback) {
   for (var districtID in districts) {
     var district = districts[districtID]
-    var objects = district[objectType]
-    for (var objectID in objects) {
-      var object = objects[objectID]
-      if (object.speed > 0) {
-        if (object.direction === 'left') {
-          object.x -= object.speed
-          var nextX = object.x - object.speed
+    for (var objectType in district) {
+      if (
+        objectType === 'characters' ||
+        objectType === 'aiCharacters' ||
+        objectType === 'vehicles'
+      ) {
+        var objects = district[objectType]
+        for (var objectID in objects) {
+          var object = objects[objectID]
+          callback(object)
         }
-        else if (object.direction === 'right') {
-          object.x += object.speed
-          nextX = object.x + object.speed
-        }
-        var min = 0
-        var max = districts[1].width - object.width
-        if (objectType === 'characters') {
-          if (nextX < min) {
-            object.x = min
-          }
-          if (nextX > max) {
-            object.x = max
-          }
-        }
-        else {
-          if (nextX < min) {
-            object.direction = 'right'
-          }
-          if (nextX > max) {
-            object.direction = 'left'
-          }
-        }
+      }
+    }
+  }
+}
+
+function updateLocations(object) {
+  if (object.speed > 0) {
+    if (object.direction === 'left') {
+      object.x -= object.speed
+      var nextX = object.x - object.speed
+    }
+    else if (object.direction === 'right') {
+      object.x += object.speed
+      nextX = object.x + object.speed
+    }
+    var min = 0
+    var max = districts[1].width - object.width
+    if (object.type === 'characters') {
+      if (nextX < min) {
+        object.x = min
+      }
+      if (nextX > max) {
+        object.x = max
+      }
+    }
+    else {
+      if (nextX < min) {
+        object.direction = 'right'
+      }
+      if (nextX > max) {
+        object.direction = 'left'
       }
     }
   }
