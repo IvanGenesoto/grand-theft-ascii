@@ -1134,7 +1134,7 @@ function getCollisionID(objectID, comparedObjectID) {
   return lower + '_' + higher
 }
 
-function getAction(collisions) {
+function getActions(collisions) {
   var actions = {}
   for (var collisionID in collisions) {
     var collision = collisions[collisionID]
@@ -1146,8 +1146,10 @@ function getAction(collisions) {
       if (match) {
         if (!actions[character.action]) actions[character.action] = {}
         actions[character.action][collisionID] = collision
+      }
     }
   }
+  return actions
 }
 
 function broadcast() {
