@@ -947,9 +947,12 @@ function refresh() {
   updateCharactersSpeedDirection()
   loopThroughObjects(updateLocations)
   clearGrids()
+  loopThroughObjects(updateGrid)
+  console.log(districts[1].grid);
+  detectCollisions()
   if (!(_.tick % 3)) broadcast()
   districtsBuffer.push(Object.assign({}, districts))
-  if (districts.buffer.length > 6) districtsBuffer.shift()
+  if (districtsBuffer.length > 6) districtsBuffer.shift()
   setDelay()
 }
 
@@ -1027,6 +1030,44 @@ function clearGrids() {
     var district = districts[districtID]
     district.grid = {}
   }
+}
+
+function updateGrid(object) {
+  var {x, y, width, height, id, district} = object
+  var grid = districts[district].grid
+  var rowTop = getGridIndex(y)
+  var sectionLeft = getGridIndex(x)
+  if (!grid[rowTop]) grid[rowTop] = {}
+  if (!grid[rowTop][sectionLeft]) grid[rowTop][sectionLeft] = {}
+  grid[rowTop][sectionLeft][id] = object
+  var xRight = x + width
+  var sectionRight = getGridIndex(xRight)
+  if (!grid[rowTop][sectionRight]) grid[rowTop][sectionRight] = {}
+  grid[rowTop][sectionRight][id] = object
+  var yBottom = y + height
+  var rowBottom = getGridIndex(yBottom)
+  if (!grid[rowBottom]) grid[rowBottom] = {}
+  if (!grid[rowBottom][sectionLeft]) grid[rowBottom][sectionLeft] = {}
+  grid[rowBottom][sectionLeft][id] = object
+  if (!grid[rowBottom][sectionRight]) grid[rowBottom][sectionRight] = {}
+  grid[rowBottom][sectionRight][id] = object
+
+}
+
+function getGridIndex(coordinate) {
+  coordinate = coordinate.toString()
+  var zerosToAdd = 5 - coordinate.length
+  var zeros = ''
+  while (zerosToAdd > 0) {
+    zeros += '0'
+    zerosToAdd -= 1
+  }
+  coordinate = zeros + coordinate
+  return coordinate.slice(0, 2)
+}
+
+function detectCollisions(object, objectType) {
+
 }
 
 function broadcast() {
