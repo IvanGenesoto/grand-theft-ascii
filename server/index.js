@@ -948,7 +948,6 @@ function refresh() {
   loopThroughObjects(updateLocations)
   clearGrids()
   loopThroughObjects(updateGrid)
-  console.log(districts[1].grid);
   detectCollisions()
   if (!(_.tick % 3)) broadcast()
   districtsBuffer.push(Object.assign({}, districts))
@@ -1033,7 +1032,7 @@ function clearGrids() {
 }
 
 function updateGrid(object) {
-  var {x, y, width, height, id, district} = object
+  var {x, y, width, height, district, id} = object
   var grid = districts[district].grid
   var rowTop = getGridIndex(y)
   var sectionLeft = getGridIndex(x)
@@ -1051,7 +1050,6 @@ function updateGrid(object) {
   grid[rowBottom][sectionLeft][id] = object
   if (!grid[rowBottom][sectionRight]) grid[rowBottom][sectionRight] = {}
   grid[rowBottom][sectionRight][id] = object
-
 }
 
 function getGridIndex(coordinate) {
@@ -1066,8 +1064,52 @@ function getGridIndex(coordinate) {
   return coordinate.slice(0, 2)
 }
 
-function detectCollisions(object, objectType) {
+function detectCollisions() {
+  var collisions = {}
+  for (var districtID in districts) {
+    var grid = districts[districtID].grid
+    for (var rowID in grid) {
+      var row = grid[rowID]
+      for (var sectionID in row) {
+        var section = row[sectionID]
+        var objects = []
+        for (var objectID in section) {
+          let object = section[objectID]
+          objects.push(object)
+        }
+        var comparedObjects = []
+        while (objects.length) {
+          var object = objects.shift()
+          comparedObjects.forEach(comparedObject => {
+            var a = object
+            var b = comparedObject
+            if (
+              a.x < b.x + b.width &&
+              a.x + a.width > b.x &&
+              a.y < b.y + b.height &&
+              a.y + a.height > b.y
+            ) {
+              var collisionID = getCollisionID(object.id, comparedObject.id)
+              if (!collisions[collisionID]) {
+                collisions[collisionID] = {}
+                collisions[collisionID][object.id] = object
+                collisions[collisionID][comparedObject.id] = comparedObject
+              }
+            }
+          })
+          comparedObjects.push(object)
+        }
+      }
+    }
+  }
+  return collisions
+}
 
+function getCollisionID(objectID, comparedObjectID) {
+  var lower = Math.min(objectID, comparedObjectID)
+  if (lower === objectID) var higher = comparedObjectID
+  else higher = objectID
+  return lower + '_' + higher
 }
 
 function broadcast() {
