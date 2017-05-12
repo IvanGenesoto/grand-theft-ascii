@@ -706,7 +706,7 @@ function createAICharacter(districtID) {
   var directionIndex = Math.floor(Math.random() * directions.length)
   var aiCharacter = {
     id: _.id += 1,
-    type: 'aiCharacters',
+    type: 'aiCharacter',
     name: 'Fred',
     district: 1,
     room: 0,
@@ -719,6 +719,7 @@ function createAICharacter(districtID) {
     speed: Math.floor(Math.random() * 6),
     maxSpeed: 0,
     acceleration: 0,
+    action: null,
     element: 'img',
     src: 'images/characters/man.png'
   }
@@ -736,32 +737,41 @@ function populateWithVehicles(districtID) {
   }
 }
 
-function createVehicle(districtID) {
+function createVehicle(districtID, key = generateKey(), x, y, speed = Math.floor(Math.random() * 76), action = null) {
   var directions = ['left', 'right', 'left', 'right', 'left', 'right']
   var directionIndex = Math.floor(Math.random() * directions.length)
+  var elementID = _.elementID += 1
   var vehicle = {
     id: _.id += 1,
-    type: 'vehicles',
+    type: 'vehicle',
     model: 'delorean',
     district: 1,
-    key: generateKey(),
+    key,
     driver: 0,
     passengers: [],
     width: 268,
     height: 80,
     direction: directions[directionIndex],
-    speed: Math.floor(Math.random() * 76),
+    speed,
     maxSpeed: 0,
     acceleration: 0,
     deceleration: 0,
     armor: undefined,
     weight: 0,
+    action,
     element: 'img',
+    elementID: '_' + elementID,
     src: 'images/vehicles/delorean.png'
   }
-  vehicle.x = Math.floor(Math.random() * (districts[districtID].width - vehicle.width))
-  vehicle.y = Math.floor(Math.random() * (districts[districtID].height -
-    districts[districtID].height / 2 - 168) + districts[districtID].height / 2)
+  if (!x) {
+    vehicle.x = Math.floor(Math.random() * (districts[districtID].width - vehicle.width))
+    vehicle.y = Math.floor(Math.random() * (districts[districtID].height -
+      districts[districtID].height / 2 - 168) + districts[districtID].height / 2)
+  }
+  else {
+    vehicle.x = x
+    vehicle.y = y
+  }
   return vehicle
 }
 
@@ -856,6 +866,9 @@ function initiatePlayer(socket) {
   var player = createPlayer()
   var character = createCharacter()
   var districtID = getDistrictID()
+  var key = generateKey()
+  var vehicle = createVehicle(districtID, key, 200, 7843, 0, 'check_for_key')
+  character.keys.push(key)
   player.character = character.id
   player.district = districtID
   character.district = districtID
@@ -865,7 +878,9 @@ function initiatePlayer(socket) {
   player.socket = socket.id
   socket.join(districtID.toString())
   districts[districtID].characters[character.id] = character
-  broadcastCharacterToDistrict(character, districtID)
+  districts[districtID].vehicles[vehicle.id] = vehicle
+  broadcastObjectToDistrict(character, districtID)
+  broadcastObjectToDistrict(vehicle, districtID)
 }
 
 function createPlayer() {
@@ -891,7 +906,7 @@ function createCharacter(name = 'Sam') {
   var elementID = _.elementID += 1
   var character = {
     id: _.id += 1,
-    type: 'characters',
+    type: 'character',
     name,
     vehicle: 0,
     room: 0,
@@ -904,6 +919,7 @@ function createCharacter(name = 'Sam') {
     speed: 0,
     maxSpeed: 0,
     acceleration: 0,
+    action: 'enter_vehicle',
     elementID: '_' + elementID,
     element: 'img',
     src: 'images/characters/man.png'
@@ -921,8 +937,8 @@ function getDistrictID() {
   }
 }
 
-function broadcastCharacterToDistrict(character, districtID) {
-  io.to(districtID.toString()).emit('character', character)
+function broadcastObjectToDistrict(object, districtID) {
+  io.to(districtID.toString()).emit('object', object)
 }
 
 function getPlayerIDBySocketID(socketID) {
@@ -948,7 +964,8 @@ function refresh() {
   loopThroughObjects(updateLocations)
   clearGrids()
   loopThroughObjects(updateGrid)
-  detectCollisions()
+  var collisions = detectCollisions()
+  if (collisions) var actions = getActions(collisions)
   if (!(_.tick % 3)) broadcast()
   districtsBuffer.push(Object.assign({}, districts))
   if (districtsBuffer.length > 6) districtsBuffer.shift()
@@ -1005,7 +1022,7 @@ function updateLocations(object) {
     }
     var min = 0
     var max = districts[1].width - object.width
-    if (object.type === 'characters') {
+    if (object.type === 'character') {
       if (nextX < min) {
         object.x = min
       }
@@ -1032,24 +1049,26 @@ function clearGrids() {
 }
 
 function updateGrid(object) {
-  var {x, y, width, height, district, id} = object
-  var grid = districts[district].grid
-  var rowTop = getGridIndex(y)
-  var sectionLeft = getGridIndex(x)
-  if (!grid[rowTop]) grid[rowTop] = {}
-  if (!grid[rowTop][sectionLeft]) grid[rowTop][sectionLeft] = {}
-  grid[rowTop][sectionLeft][id] = object
-  var xRight = x + width
-  var sectionRight = getGridIndex(xRight)
-  if (!grid[rowTop][sectionRight]) grid[rowTop][sectionRight] = {}
-  grid[rowTop][sectionRight][id] = object
-  var yBottom = y + height
-  var rowBottom = getGridIndex(yBottom)
-  if (!grid[rowBottom]) grid[rowBottom] = {}
-  if (!grid[rowBottom][sectionLeft]) grid[rowBottom][sectionLeft] = {}
-  grid[rowBottom][sectionLeft][id] = object
-  if (!grid[rowBottom][sectionRight]) grid[rowBottom][sectionRight] = {}
-  grid[rowBottom][sectionRight][id] = object
+  if (object.action) {
+    var {x, y, width, height, district, id} = object
+    var grid = districts[district].grid
+    var rowTop = getGridIndex(y)
+    var sectionLeft = getGridIndex(x)
+    if (!grid[rowTop]) grid[rowTop] = {}
+    if (!grid[rowTop][sectionLeft]) grid[rowTop][sectionLeft] = {}
+    grid[rowTop][sectionLeft][id] = object
+    var xRight = x + width
+    var sectionRight = getGridIndex(xRight)
+    if (!grid[rowTop][sectionRight]) grid[rowTop][sectionRight] = {}
+    grid[rowTop][sectionRight][id] = object
+    var yBottom = y + height
+    var rowBottom = getGridIndex(yBottom)
+    if (!grid[rowBottom]) grid[rowBottom] = {}
+    if (!grid[rowBottom][sectionLeft]) grid[rowBottom][sectionLeft] = {}
+    grid[rowBottom][sectionLeft][id] = object
+    if (!grid[rowBottom][sectionRight]) grid[rowBottom][sectionRight] = {}
+    grid[rowBottom][sectionRight][id] = object
+  }
 }
 
 function getGridIndex(coordinate) {
@@ -1083,17 +1102,20 @@ function detectCollisions() {
           comparedObjects.forEach(comparedObject => {
             var a = object
             var b = comparedObject
-            if (
-              a.x < b.x + b.width &&
-              a.x + a.width > b.x &&
-              a.y < b.y + b.height &&
-              a.y + a.height > b.y
-            ) {
-              var collisionID = getCollisionID(object.id, comparedObject.id)
-              if (!collisions[collisionID]) {
-                collisions[collisionID] = {}
-                collisions[collisionID][object.id] = object
-                collisions[collisionID][comparedObject.id] = comparedObject
+            if (a.type !== b.type) {
+              if (
+                a.x < b.x + b.width &&
+                a.x + a.width > b.x &&
+                a.y < b.y + b.height &&
+                a.y + a.height > b.y
+              ) {
+                var collisionID = getCollisionID(object.id, comparedObject.id)
+                if (!collisions[collisionID]) {
+                  collisions[collisionID] = {}
+                  var collision = collisions[collisionID]
+                  collision[a.type] = a
+                  collision[b.type] = b
+                }
               }
             }
           })
@@ -1110,6 +1132,22 @@ function getCollisionID(objectID, comparedObjectID) {
   if (lower === objectID) var higher = comparedObjectID
   else higher = objectID
   return lower + '_' + higher
+}
+
+function getAction(collisions) {
+  var actions = {}
+  for (var collisionID in collisions) {
+    var collision = collisions[collisionID]
+    var {character, vehicle} = collision
+    if (character.action === 'enter_vehicle') {
+      var match = character.keys.find(key => {
+        return key === vehicle.key
+      })
+      if (match) {
+        if (!actions[character.action]) actions[character.action] = {}
+        actions[character.action][collisionID] = collision
+    }
+  }
 }
 
 function broadcast() {

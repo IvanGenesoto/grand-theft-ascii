@@ -166,8 +166,8 @@ function interpolateDistrict(ratio) {
   if (ratio === 1) preservePlayerCharacterLocation(b)
   else {
     for (var objectType in district) {
-      if (objectType === 'aiCharacters' ||
-        objectType === 'vehicles'
+      if (objectType === 'aiCharacter' ||
+        objectType === 'vehicle'
       ) {
         var objects = district[objectType]
         for (var objectID in objects) {
@@ -430,9 +430,10 @@ socket.on('player', receivedPlayer => {
   camera.following = player.character
 })
 
-socket.on('character', character => {
-  createElements(character)
-  if (district) district.characters[character.id] = character
+socket.on('object', object => {
+  console.log(object);
+  createElements(object)
+  if (district) district[object.type + 's'][object.id + 's'] = object
 })
 
 socket.on('request-token', () => {
