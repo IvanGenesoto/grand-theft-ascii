@@ -8,1157 +8,123 @@ var path = require('path')
 var port = process.env.PORT || 3000
 var now = require('performance-now')
 
+var districts = require('./districts')()
+var objects = require('./objects')()
+var players = require('./players')()
+
 var _ = {
-  tick: 0,
-  id: 0,
-  playerID: 0
+  tick: 0
 }
 
-var players = {}
+function initiateDistrict() {
+  var districtID = districts.create('neon')
+  massPopulateDistrict(districtID)
+  return districtID
+}
 
-var districtsBuffer = [null, null, null, null, null, null]
-
-var districts = {
-  '1': {
-    timestamp: 0,
-    tick: 0,
-    id: 1,
-    name: 'District 1',
-    width: 32000,
-    height: 8000,
-    grid: {},
-    population: {
-      characters: 0,
-      aiCharacters: 0,
-      vehicles: 0
-    },
-    rooms: {
-      room1: {
-        id: 1,
-        key: '',
-        viewingKey: undefined,
-        x: 0,
-        y: 0,
-        width: 0,
-        height: 0,
-        element: 'canvas',
-        background: undefined,
-        foreground: undefined,
-        scenery: {
-          background: undefined,
-          foreground: undefined
-        },
-        inventory: undefined
-      }
-    },
-    characters: {},
-    aiCharacters: {
-      '1': {
-        id: 1,
-        name: '',
-        vehicle: 0,
-        room: 0,
-        keys: [],
-        x: 0,
-        y: 0,
-        width: 0,
-        height: 0,
-        direction: 'east',
-        speed: 0,
-        maxSpeed: 0,
-        acceleration: 0,
-        frames: {}
-      }
-    },
-    vehicles: {},
-    projectiles: {
-      '1': {
-        x: 0,
-        y: 0,
-        speed: 0,
-        type: undefined
-      }
-    },
-    scenery: {
-      backgrounds: {
-        '1': {
-          id: 1,
-          blueprints: [],
-          element: 'canvas',
-          width: 16000,
-          height: 8000,
-          depth: 4,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/background/far/above-top.png',
-                  width: 1024,
-                  height: 367
-                }
-              }
-            },
-            '2': {
-              id: 2,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 4,
-                  element: 'img',
-                  src: 'images/background/far/top/top.png',
-                  width: 1024,
-                  height: 260
-                },
-                '2': {
-                  id: 2,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/background/far/top/top-pink-jumbotron-left.png',
-                  width: 1024,
-                  height: 260
-                },
-                '3': {
-                  id: 3,
-                  prevalence: 2,
-                  element: 'img',
-                  src: 'images/background/far/top/top-pink-jumbotron-right.png',
-                  width: 1024,
-                  height: 260
-                }
-              }
-            },
-            '3': {
-              id: 3,
-              rows: 48,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 3,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle.png',
-                  width: 1024,
-                  height: 134
-                },
-                '2': {
-                  id: 2,
-                  prevalence: 2,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
-                  width: 1024,
-                  height: 134
-                },
-                '3': {
-                  id: 3,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
-                  width: 1024,
-                  height: 134
-                },
-                '4': {
-                  id: 4,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
-                  width: 1024,
-                  height: 134
-                },
-                '5': {
-                  id: 5,
-                  prevalence: 2,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
-                  width: 1024,
-                  height: 134
-                },
-                '6': {
-                  id: 6,
-                  prevalence: 2,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
-                  width: 1024,
-                  height: 134
-                },
-                '7': {
-                  id: 7,
-                  prevalence: 3,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
-                  width: 1024,
-                  height: 134
-                },
-                '8': {
-                  id: 8,
-                  prevalence: 2,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
-                  width: 1024,
-                  height: 134
-                },
-                '9': {
-                  id: 9,
-                  prevalence: 3,
-                  element: 'img',
-                  src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
-                  width: 1024,
-                  height: 134
-                }
-              }
-            },
-            '4': {
-              id: 4,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/background/far/bottom.png',
-                  width: 1024,
-                  height: 673
-                }
-              }
-            }
-          }
-        },
-        '2': {
-          id: 2,
-          blueprints: [],
-          y: 7050,
-          element: 'canvas',
-          width: 24000,
-          height: 8000,
-          depth: 2,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  width: 1024,
-                  height: 768,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/background/middle.png'
-                }
-              }
-            }
-          }
-        },
-        '3': {
-          id: 3,
-          blueprints: [],
-          y: 7232,
-          element: 'canvas',
-          width: 32000,
-          height: 8000,
-          depth: 1,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  width: 1408,
-                  height: 768,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/background/near.png'
-                }
-              }
-            }
-          }
-        }
-      },
-      foregrounds: {
-        '1': {
-          id: 1,
-          blueprints: [],
-          x: 0,
-          y: 7456,
-          width: 32000,
-          height: 8000,
-          depth: 0.5,
-          element: 'canvas',
-          scale: 16,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/lamp/left.png',
-                  width: 144,
-                  height: 544
-                },
-                '2': {
-                  id: 2,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/lamp/right.png',
-                  width: 144,
-                  height: 544
-                }
-              }
-            }
-          }
-        },
-        '2': {
-          id: 2,
-          blueprints: [],
-          x: 32000,
-          y: 7456,
-          width: 32000,
-          height: 8000,
-          depth: 0.5,
-          element: 'canvas',
-          scale: 16,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/lamp/left.png',
-                  width: 144,
-                  height: 544
-                },
-                '2': {
-                  id: 2,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/lamp/right.png',
-                  width: 144,
-                  height: 544
-                }
-              }
-            }
-          }
-        },
-        '3': {
-          id: 3,
-          blueprints: [],
-          x: 0,
-          y: 6800,
-          width: 32000,
-          height: 8000,
-          depth: 0.25,
-          element: 'canvas',
-          scale: 64,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/up-left.png',
-                  width: 448,
-                  height: 1248
-                },
-                '2': {
-                  id: 2,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/up-right.png',
-                  width: 448,
-                  height: 1248
-                },
-                '3': {
-                  id: 3,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/down-left.png',
-                  width: 448,
-                  height: 1248
-                },
-                '4': {
-                  id: 4,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/down-right.png',
-                  width: 448,
-                  height: 1248
-                },
-                '5': {
-                  id: 5,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/left-up.png',
-                  width: 1248,
-                  height: 448
-                },
-                '6': {
-                  id: 6,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/left-down.png',
-                  width: 1248,
-                  height: 448
-                },
-                '7': {
-                  id: 7,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/right-up.png',
-                  width: 1248,
-                  height: 448
-                },
-                '8': {
-                  id: 8,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/right-down.png',
-                  width: 1248,
-                  height: 448
-                }
-              }
-            }
-          }
-        },
-        '4': {
-          id: 4,
-          blueprints: [],
-          x: 32000,
-          y: 6800,
-          width: 32000,
-          height: 8000,
-          depth: 0.25,
-          element: 'canvas',
-          scale: 64,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/up-left.png',
-                  width: 448,
-                  height: 1248
-                },
-                '2': {
-                  id: 2,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/up-right.png',
-                  width: 448,
-                  height: 1248
-                },
-                '3': {
-                  id: 3,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/down-left.png',
-                  width: 448,
-                  height: 1248
-                },
-                '4': {
-                  id: 4,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/down-right.png',
-                  width: 448,
-                  height: 1248
-                },
-                '5': {
-                  id: 5,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/left-up.png',
-                  width: 1248,
-                  height: 448
-                },
-                '6': {
-                  id: 6,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/left-down.png',
-                  width: 1248,
-                  height: 448
-                },
-                '7': {
-                  id: 7,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/right-up.png',
-                  width: 1248,
-                  height: 448
-                },
-                '8': {
-                  id: 8,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/right-down.png',
-                  width: 1248,
-                  height: 448
-                }
-              }
-            }
-          }
-        },
-        '5': {
-          id: 5,
-          blueprints: [],
-          x: 64000,
-          y: 6800,
-          width: 32000,
-          height: 8000,
-          depth: 0.25,
-          element: 'canvas',
-          scale: 64,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/up-left.png',
-                  width: 448,
-                  height: 1248
-                },
-                '2': {
-                  id: 2,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/up-right.png',
-                  width: 448,
-                  height: 1248
-                },
-                '3': {
-                  id: 3,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/down-left.png',
-                  width: 448,
-                  height: 1248
-                },
-                '4': {
-                  id: 4,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/down-right.png',
-                  width: 448,
-                  height: 1248
-                },
-                '5': {
-                  id: 5,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/left-up.png',
-                  width: 1248,
-                  height: 448
-                },
-                '6': {
-                  id: 6,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/left-down.png',
-                  width: 1248,
-                  height: 448
-                },
-                '7': {
-                  id: 7,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/right-up.png',
-                  width: 1248,
-                  height: 448
-                },
-                '8': {
-                  id: 8,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/right-down.png',
-                  width: 1248,
-                  height: 448
-                }
-              }
-            }
-          }
-        },
-        '6': {
-          id: 6,
-          blueprints: [],
-          x: 96000,
-          y: 6800,
-          width: 32000,
-          height: 8000,
-          depth: 0.25,
-          element: 'canvas',
-          scale: 64,
-          sections: {
-            '1': {
-              id: 1,
-              rows: 1,
-              variations: {
-                '1': {
-                  id: 1,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/up-left.png',
-                  width: 448,
-                  height: 1248
-                },
-                '2': {
-                  id: 2,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/up-right.png',
-                  width: 448,
-                  height: 1248
-                },
-                '3': {
-                  id: 3,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/down-left.png',
-                  width: 448,
-                  height: 1248
-                },
-                '4': {
-                  id: 4,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/down-right.png',
-                  width: 448,
-                  height: 1248
-                },
-                '5': {
-                  id: 5,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/left-up.png',
-                  width: 1248,
-                  height: 448
-                },
-                '6': {
-                  id: 6,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/left-down.png',
-                  width: 1248,
-                  height: 448
-                },
-                '7': {
-                  id: 7,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/right-up.png',
-                  width: 1248,
-                  height: 448
-                },
-                '8': {
-                  id: 8,
-                  prevalence: 1,
-                  element: 'img',
-                  src: 'images/foreground/arrow/right-down.png',
-                  width: 1248,
-                  height: 448
-                }
-              }
-            }
-          }
-        }
-      }
+function massPopulateDistrict(districtID) {
+  var population = {
+    character: 200,
+    vehicle: 500
+  }
+  for (var objectType in population) {
+    var number = population[objectType]
+    var populated = 0
+    while (populated < number) {
+      var objectID = objects.create(objectType, districtID, districts)
+      districts.populate(objectID, objects)
+      populated++
     }
   }
-}
-
-function populateDistricts(districtID) {
-  if (!_.id) _.id = 0
-  populateWithAICharacters(districtID)
-  populateWithVehicles(districtID)
-}
-
-function populateWithAICharacters(districtID) {
-  var district = districts[districtID]
-  while (district.population.aiCharacters < 200) {
-    district.population.aiCharacters += 1
-    var aiCharacter = createAICharacter(districtID)
-    district.aiCharacters[aiCharacter.id] = aiCharacter
-  }
-}
-
-function createAICharacter(districtID) {
-  var directions = ['left', 'right']
-  var directionIndex = Math.floor(Math.random() * directions.length)
-  var aiCharacter = {
-    id: _.id += 1,
-    type: 'aiCharacter',
-    name: 'Fred',
-    district: 1,
-    room: 0,
-    keys: [],
-    vehicle: 0,
-    y: 7832,
-    width: 105,
-    height: 155,
-    direction: directions[directionIndex],
-    speed: Math.floor(Math.random() * 6),
-    maxSpeed: 0,
-    acceleration: 0,
-    action: null,
-    element: 'img',
-    src: 'images/characters/man.png'
-  }
-  aiCharacter.x = Math.floor(Math.random() * (districts[districtID].width - aiCharacter.width))
-  return aiCharacter
-}
-
-function populateWithVehicles(districtID) {
-  var district = districts[districtID]
-  if (district.population.vehicles < 500) {
-    district.population.vehicles += 1
-    var vehicle = createVehicle(districtID)
-    district.vehicles[vehicle.id] = vehicle
-    populateWithVehicles(districtID)
-  }
-}
-
-function createVehicle(districtID, key = generateKey(), x, y, speed = Math.floor(Math.random() * 76), action = null) {
-  var directions = ['left', 'right', 'left', 'right', 'left', 'right']
-  var directionIndex = Math.floor(Math.random() * directions.length)
-  var elementID = _.elementID += 1
-  var vehicle = {
-    id: _.id += 1,
-    type: 'vehicle',
-    model: 'delorean',
-    district: 1,
-    key,
-    driver: 0,
-    passengers: [],
-    width: 268,
-    height: 80,
-    direction: directions[directionIndex],
-    speed,
-    maxSpeed: 0,
-    acceleration: 0,
-    deceleration: 0,
-    armor: undefined,
-    weight: 0,
-    action,
-    element: 'img',
-    elementID: '_' + elementID,
-    src: 'images/vehicles/delorean.png'
-  }
-  if (!x) {
-    vehicle.x = Math.floor(Math.random() * (districts[districtID].width - vehicle.width))
-    vehicle.y = Math.floor(Math.random() * (districts[districtID].height -
-      districts[districtID].height / 2 - 168) + districts[districtID].height / 2)
-  }
-  else {
-    vehicle.x = x
-    vehicle.y = y
-  }
-  return vehicle
-}
-
-function generateKey() {
-  var randomNumber = Math.random()
-  var base36RandomNumber = randomNumber.toString(36)
-  return base36RandomNumber.slice(2)
-}
-
-function assignElementIDs(object) {
-  if (!_.elementID) _.elementID = 0
-  for (var property in object) {
-    if (property === 'element') {
-      var id = _.elementID += 1
-      object.elementID = '_' + id
-    }
-    else if (
-      typeof object[property] !== 'string' &&
-      typeof object[property] !== 'number' &&
-      typeof object[property] !== 'boolean'
-    ) {
-      var nestedObject = object[property]
-      assignElementIDs(nestedObject)
-    }
-  }
-}
-
-function composeScenery(type) {
-  for (var districtID in districts) {
-    var district = districts[districtID]
-    for (var sceneryType in district.scenery) {
-      if (sceneryType === type) {
-        var layers = district.scenery[sceneryType]
-        _.layerY = 0
-        for (var layerID in layers) {
-          var layer = layers[layerID]
-          for (var sectionID in layer.sections) {
-            var section = layer.sections[sectionID]
-            var rows = section.rows
-            var variationsArray = []
-            for (var variationID in section.variations) {
-              var variation = section.variations[variationID]
-              for (var i = 0; i < variation.prevalence; i++) {
-                variationsArray.push(variation)
-              }
-            }
-            createBlueprints(type, layer, section, rows, variationsArray)
-          }
-        }
-      }
-    }
-  }
-}
-
-function createBlueprints(type, layer, section, rows, variationsArray) {
-  var rowsDrawn = 0
-  function startRow() {
-    var x = 0
-    var rowY = 0
-    function createBlueprint() {
-      if (x < layer.width) {
-        var index = Math.floor(Math.random() * variationsArray.length)
-        var variation = variationsArray[index]
-        if (layer.y) _.layerY = layer.y
-        var blueprint = {section: section.id, variation: variation.id, x, y: _.layerY}
-        layer.blueprints.push(blueprint)
-        if (type === 'foregrounds') {
-          if (layer.id < 3) {
-            x += 2000
-          }
-          else {
-            var gap = Math.floor(Math.random() * (3000 - 1000) + 1000)
-            x += gap + variation.width
-          }
-        }
-        x += variation.width
-        rowY = variation.height
-        createBlueprint()
-      }
-      else {
-        rowsDrawn += 1
-        _.layerY += rowY
-        startRow()
-      }
-    }
-    if (rowsDrawn < rows) createBlueprint()
-  }
-  startRow()
 }
 
 function initiatePlayer(socket) {
-  var player = createPlayer()
-  var character = createCharacter()
-  var districtID = getDistrictID()
-  var key = generateKey()
-  var vehicle = createVehicle(districtID, key, 200, 7843, 0, 'check_for_key')
-  character.keys.push(key)
-  player.character = character.id
-  player.district = districtID
-  character.district = districtID
-  character.latencyBuffer = player.latencyBuffer
-  players[player.id] = player
-  socket.emit('player', player)
-  player.socket = socket.id
+  var playerID = players.create(socket.id)
+  var districtID = districts.choose()
+  if (!districtID) districtID = initiateDistrict()
+  var characterID = objects.create('character', districtID, districts, 20)
+  players.assignCharacter(playerID, characterID)
   socket.join(districtID.toString())
-  districts[districtID].characters[character.id] = character
-  districts[districtID].vehicles[vehicle.id] = vehicle
-  broadcastObjectToDistrict(character, districtID)
-  broadcastObjectToDistrict(vehicle, districtID)
-}
-
-function createPlayer() {
-  if (!_.playerID) _.playerID = 0
-  var player = {
-    id: _.playerID += 1,
-    predictionBuffer: [],
-    latencyBuffer: [],
-    input: {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-      accelerate: false,
-      decelerate: false,
-      shoot: false
-    }
-  }
-  return player
-}
-
-function createCharacter(name = 'Sam') {
-  var elementID = _.elementID += 1
-  var character = {
-    id: _.id += 1,
-    type: 'character',
-    name,
-    vehicle: 0,
-    room: 0,
-    keys: [],
-    x: 200,
-    y: 7832,
-    width: 105,
-    height: 155,
-    direction: 'right',
-    speed: 0,
-    maxSpeed: 0,
-    acceleration: 0,
-    action: 'enter_vehicle',
-    elementID: '_' + elementID,
-    element: 'img',
-    src: 'images/characters/man.png'
-  }
-  return character
-}
-
-function getDistrictID() {
-  for (var districtID in districts) {
-    var district = districts[districtID]
-    if (district.population.characters < 500) {
-      district.population.characters += 1
-      return districtID
-    }
-  }
+  objects.assignPlayer(characterID, playerID)
+  objects.assignDistrict(characterID, districtID)
+  var vehicleID = objects.create('vehicle', districtID, districts, 200, 7843, 0)
+  objects.own(characterID, vehicleID)
+  districts.populate(characterID, objects)
+  districts.populate(vehicleID, objects)
+  players.emit(playerID, socket)
+  districts.emit(districtID, socket)
+  broadcastObjectToDistrict(objects[characterID], districtID)
+  broadcastObjectToDistrict(objects[vehicleID], districtID)
 }
 
 function broadcastObjectToDistrict(object, districtID) {
   io.to(districtID.toString()).emit('object', object)
 }
 
-function getPlayerIDBySocketID(socketID) {
-  for (var playerID in players) {
-    if (players[playerID].socket === socketID) {
-      return playerID
-    }
-  }
-}
-
-function updatePlayerLatencyBuffer(playerID, timestamp) {
-  var newTimestamp = now()
-  var latency = (newTimestamp - timestamp)
-  var latencyBuffer = players[playerID].latencyBuffer
-  latencyBuffer.push(latency)
-  if (latencyBuffer.length > 20) latencyBuffer.shift()
-}
-
 function refresh() {
   _.refreshStartTime = now()
   _.tick += 1
-  updateCharactersSpeedDirection()
-  loopThroughObjects(updateLocations)
-  clearGrids()
-  loopThroughObjects(updateGrid)
-  var collisions = detectCollisions()
-  if (collisions) var actions = getActions(collisions)
-  if (!(_.tick % 3)) broadcast()
-  districtsBuffer.push(Object.assign({}, districts))
-  if (districtsBuffer.length > 6) districtsBuffer.shift()
+  var characterIDs = players.characterIDs
+  var active = objects.updatePlayerCharactersBehavior(characterIDs, players)
+  if (active.walkers) var checked = checkForVehicleEntries(active.walkers)
+  if (checked && checked.enterers) putCharactersInVehicles(checked.enterers)
+  if (checked && checked.walkers) districts.addToGrid(checked.walkers, objects)
+  if (active.drivers) districts.addToGrid(active.drivers, objects)
+  if (active.passengers) makeJumpOut(active.passengers)
+  var results = districts.detectCollisions(objects)
+  if (results.collisions) collideVehicles(results.collisions)
+  if (results.interactions) interactCharacters(results.collisions)
+  objects.updateLocations(districts)
+  if (!(_.tick % 3)) {
+    var latencies = players.getLatencies()
+    objects.updateLatencies(latencies)
+    objects.emit(io)
+  }
   setDelay()
 }
 
-function updateCharactersSpeedDirection() {
-  for (var playerID in players) {
-    var player = players[playerID]
-    var input = player.input
-    var characterID = player.character
-    var districtID = player.district
-    var character = districts[districtID].characters[characterID]
-    if (input.right === true) {
-      character.direction = 'right'
-      character.speed = 5
-    }
-    else if (input.left === true) {
-      character.direction = 'left'
-      character.speed = 5
-    }
-    else character.speed = 0
-  }
-}
-
-function loopThroughObjects(callback) {
-  for (var districtID in districts) {
-    var district = districts[districtID]
-    for (var objectType in district) {
-      if (
-        objectType === 'characters' ||
-        objectType === 'aiCharacters' ||
-        objectType === 'vehicles'
-      ) {
-        var objects = district[objectType]
-        for (var objectID in objects) {
-          var object = objects[objectID]
-          callback(object)
-        }
+function checkForVehicleEntries(characterIDs) {
+  var checked = {}
+  characterIDs.forEach(characterID => {
+    var character = objects[characterID]
+    var district = districts[character.district]
+    var vehicleID = character.vehicleKeys.find(vehicleID => {
+      if (district.vehicles[vehicleID]) {
+        var vehicle = objects[vehicleID]
+        if (vehicle.driver) var driver = 1
+        else driver = 0
+        return (
+          character.x < vehicle.x + vehicle.width &&
+          character.x + character.width > vehicle.x &&
+          character.y < vehicle.y + vehicle.height &&
+          character.y + character.height > vehicle.y &&
+          driver + vehicle.passengers < vehicle.seats
+        )
       }
-    }
-  }
-}
-
-function updateLocations(object) {
-  if (object.speed > 0) {
-    if (object.direction === 'left') {
-      object.x -= object.speed
-      var nextX = object.x - object.speed
-    }
-    else if (object.direction === 'right') {
-      object.x += object.speed
-      nextX = object.x + object.speed
-    }
-    var min = 0
-    var max = districts[1].width - object.width
-    if (object.type === 'character') {
-      if (nextX < min) {
-        object.x = min
-      }
-      if (nextX > max) {
-        object.x = max
-      }
+    })
+    if (vehicleID) {
+      if (!checked.enterers) checked.enterers = {}
+      checked.enterers.push(characterID)
+      checked.enterers.push(vehicleID)
     }
     else {
-      if (nextX < min) {
-        object.direction = 'right'
-      }
-      if (nextX > max) {
-        object.direction = 'left'
-      }
+      if (!checked.walkers) checked.walkers = []
+      checked.walkers.push(character.id)
     }
-  }
+  })
+  return checked
 }
 
-function clearGrids() {
-  for (var districtID in districts) {
-    var district = districts[districtID]
-    district.grid = {}
-  }
+function putCharactersInVehicles(objectIDs) {
 }
 
-function updateGrid(object) {
-  if (object.action) {
-    var {x, y, width, height, district, id} = object
-    var grid = districts[district].grid
-    var rowTop = getGridIndex(y)
-    var sectionLeft = getGridIndex(x)
-    if (!grid[rowTop]) grid[rowTop] = {}
-    if (!grid[rowTop][sectionLeft]) grid[rowTop][sectionLeft] = {}
-    grid[rowTop][sectionLeft][id] = object
-    var xRight = x + width
-    var sectionRight = getGridIndex(xRight)
-    if (!grid[rowTop][sectionRight]) grid[rowTop][sectionRight] = {}
-    grid[rowTop][sectionRight][id] = object
-    var yBottom = y + height
-    var rowBottom = getGridIndex(yBottom)
-    if (!grid[rowBottom]) grid[rowBottom] = {}
-    if (!grid[rowBottom][sectionLeft]) grid[rowBottom][sectionLeft] = {}
-    grid[rowBottom][sectionLeft][id] = object
-    if (!grid[rowBottom][sectionRight]) grid[rowBottom][sectionRight] = {}
-    grid[rowBottom][sectionRight][id] = object
-  }
+function makeJumpOut(characterIDs) {
 }
 
-function getGridIndex(coordinate) {
-  coordinate = coordinate.toString()
-  var zerosToAdd = 5 - coordinate.length
-  var zeros = ''
-  while (zerosToAdd > 0) {
-    zeros += '0'
-    zerosToAdd -= 1
-  }
-  coordinate = zeros + coordinate
-  return coordinate.slice(0, 2)
+function collideVehicles(vehicleIDs) {
 }
 
-function detectCollisions() {
-  var collisions = {}
-  for (var districtID in districts) {
-    var grid = districts[districtID].grid
-    for (var rowID in grid) {
-      var row = grid[rowID]
-      for (var sectionID in row) {
-        var section = row[sectionID]
-        var objects = []
-        for (var objectID in section) {
-          let object = section[objectID]
-          objects.push(object)
-        }
-        var comparedObjects = []
-        while (objects.length) {
-          var object = objects.shift()
-          comparedObjects.forEach(comparedObject => {
-            var a = object
-            var b = comparedObject
-            if (a.type !== b.type) {
-              if (
-                a.x < b.x + b.width &&
-                a.x + a.width > b.x &&
-                a.y < b.y + b.height &&
-                a.y + a.height > b.y
-              ) {
-                var collisionID = getCollisionID(object.id, comparedObject.id)
-                if (!collisions[collisionID]) {
-                  collisions[collisionID] = {}
-                  var collision = collisions[collisionID]
-                  collision[a.type] = a
-                  collision[b.type] = b
-                }
-              }
-            }
-          })
-          comparedObjects.push(object)
-        }
-      }
-    }
-  }
-  return collisions
-}
-
-function getCollisionID(objectID, comparedObjectID) {
-  var lower = Math.min(objectID, comparedObjectID)
-  if (lower === objectID) var higher = comparedObjectID
-  else higher = objectID
-  return lower + '_' + higher
-}
-
-function getActions(collisions) {
-  var actions = {}
-  for (var collisionID in collisions) {
-    var collision = collisions[collisionID]
-    var {character, vehicle} = collision
-    if (character.action === 'enter_vehicle') {
-      var match = character.keys.find(key => {
-        return key === vehicle.key
-      })
-      if (match) {
-        if (!actions[character.action]) actions[character.action] = {}
-        actions[character.action][collisionID] = collision
-      }
-    }
-  }
-  return actions
-}
-
-function broadcast() {
-  for (var districtID in districts) {
-    var district = districts[districtID]
-    district.timestamp = now()
-    district.tick = _.tick
-    io.to(districtID.toString()).volatile.emit('district', district)
-  }
+function interactCharacters(characterIDs) {
 }
 
 function setDelay() {
@@ -1216,27 +182,21 @@ io.on('connection', socket => {
   initiatePlayer(socket)
 
   socket.on('timestamp', timestamp => {
-    var playerID = getPlayerIDBySocketID(socket.id)
-    updatePlayerLatencyBuffer(playerID, timestamp)
+    var playerID = players.getPlayerIDBySocketID(socket.id)
+    players.updateLatencyBuffer(playerID, timestamp)
   })
 
   socket.on('input', input => {
-    var playerID = getPlayerIDBySocketID(socket.id)
-    players[playerID].input = input
+    var playerID = players.getPlayerIDBySocketID(socket.id)
+    players.updateInput(input, playerID)
   })
 })
 
-populateDistricts(1)
-assignElementIDs(districts)
-composeScenery('backgrounds')
-composeScenery('foregrounds')
+initiateDistrict()
 
 app.use(express.static(path.join(__dirname, 'public')))
 server.listen(port, () => {
   console.log('Listening on port 3000.')
 })
-
-setInterval(() => {
-}, 1000)
 
 refresh()
