@@ -2,34 +2,32 @@ var io = require('socket.io-client')
 var socket = io()
 
 var _ = {
-  imagesTotal: 0,
-  imagesLoaded: null
+  player: {},
+  camera: {
+    following: 0,
+    room: 0,
+    x: 0,
+    y: 0,
+    element: 'canvas',
+    elementID: '_0',
+    width: 1920,
+    height: 1080
+  }
 }
 
-var camera = {
-  following: 0,
-  room: 0,
-  x: 0,
-  y: 0,
-  element: 'canvas',
-  elementID: '_0',
-  width: 1920,
-  height: 1080
-}
-
-var player = null
-var district = null
-var districtBuffer = []
-
-function initiateDistrict(imagesLoaded) {
-  if (imagesLoaded) {
+function initiateDistrict(district) {
+  if (district) {
+    _.imagesTotal = 0
+    _.imagesLoaded = null
+    _.district = district
+    _.objectsBuffer = []
+    createElements(district, 'loop')
+    checkImagesLoaded()
+  }
+  else {
     drawToLayer('backgrounds')
     drawToLayer('foregrounds')
     shiftDistrictBuffer('initiateRefresh')
-  }
-  else {
-    createElements(district, 'loop')
-    checkImagesLoaded()
   }
 }
 
@@ -39,7 +37,7 @@ function createElements(object, loop) {
       var $element = document.createElement(object.element)
       $element.id = object.elementID
       document.body.appendChild($element)
-      if (object !== camera) {
+      if (object !== _.camera) {
         $element.classList.add('hidden')
       }
       if (object.width) {
@@ -70,12 +68,12 @@ function createElements(object, loop) {
 
 function checkImagesLoaded() {
   clearTimeout(_.timeout)
-  if (_.imagesLoaded === _.imagesTotal) initiateDistrict('imagesLoaded')
+  if (_.imagesLoaded === _.imagesTotal) initiateDistrict()
   else _.timeout = setTimeout(checkImagesLoaded, 50)
 }
 
 function drawToLayer(type) {
-  var layers = district.scenery[type]
+  var layers = _.district.scenery[type]
   for (var layerID in layers) {
     var layer = layers[layerID]
     var blueprints = layer.blueprints
@@ -104,11 +102,12 @@ function drawToLayer(type) {
 
 function shiftDistrictBuffer(initiatingRefresh) {
   clearTimeout(_.shiftTimeout)
-  if (districtBuffer.length > 2) {
-    while (districtBuffer.length > 2) districtBuffer.shift()
+  if (_.objectsBuffer.length > 2) {
+    while (_.objectsBuffer.length > 2) _.objectsBuffer.shift()
+    if (initiatingRefresh) _.objects = _.objectsBuffer[0]
+    preservePlayerCharacterLocation(_.objectsBuffer[0])
     _.ratioIndex = -1
-    preservePlayerCharacterLocation(districtBuffer[0])
-    if (initiatingRefresh) refresh()
+    if (initiatingRefresh) refresh('first')
   }
   else {
     _.shiftTimeout = setTimeout(() => {
@@ -117,17 +116,19 @@ function shiftDistrictBuffer(initiatingRefresh) {
   }
 }
 
-function preservePlayerCharacterLocation(bufferedDistrict) {
-  _.bufferedDistrictX = bufferedDistrict.characters[player.character].x
-  _.bufferedDistrictY = bufferedDistrict.characters[player.character].y
-  var {x, y} = district.characters[player.character]
-  district = bufferedDistrict
-  var character = district.characters[player.character]
+function preservePlayerCharacterLocation(newObjects) {
+  var index = _.player.character - 1
+  _.xFromNewObjects = newObjects[index].x
+  _.yFromNewObjects = newObjects[index].y
+  var character = _.objects[index]
+  var {x, y} = character
+  _.objects = newObjects
   character.x = x
   character.y = y
 }
 
-function refresh() {
+function refresh(first) {
+  console.log('refresh');
   _.refreshStartTime = performance.now()
   var ratio = getInterpolationRatio()
   if (ratio) interpolateDistrict(ratio)
@@ -136,12 +137,14 @@ function refresh() {
     var result = checkPredictionOutcome()
     if (result) reconcilePlayerCharacter(result)
   }
-  var input = {...player.input}
+  var input = {..._.player.input}
   socket.emit('input', input)
   updatePredictionBuffer(input)
-  updatePlayerCharacterSpeedDirection(input)
+  updatePlayerCharacterBehavior(input)
   updatePlayerCharacterLocation()
-  render()
+  updateCamera()
+  clearCanvas()
+  render(first)
   setDelay()
 }
 
@@ -161,37 +164,30 @@ function getInterpolationRatio() {
 }
 
 function interpolateDistrict(ratio) {
-  var a = districtBuffer[0]
-  var b = districtBuffer[1]
+  var a = _.objectsBuffer[0]
+  var b = _.objectsBuffer[1]
   if (ratio === 1) preservePlayerCharacterLocation(b)
   else {
-    for (var objectType in district) {
-      if (objectType === 'aiCharacter' ||
-        objectType === 'vehicle'
-      ) {
-        var objects = district[objectType]
-        for (var objectID in objects) {
-          var object = objects[objectID]
-          var properties = ['x', 'y']
-          properties.forEach(property => {
-            var difference = b[objectType][objectID][property] - a[objectType][objectID][property]
-            object[property] = a[objectType][objectID][property] + difference * ratio
-          })
-        }
+    _.objects.forEach(object => {
+      if (object.district === _.district.id && object.type !== 'room') {
+        var id = object.id
+        var properties = ['x', 'y']
+        properties.forEach(property => {
+          var difference = b[id - 1][property] - a[id - 1][property]
+          object[property] = a[id - 1][property] + difference * ratio
+        })
       }
-    }
+    })
   }
 }
 
 function checkPredictionOutcome() {
-  var {predictionBuffer} = player
+  var {predictionBuffer} = _.player
   if (!predictionBuffer[0]) return
-  var character = district.characters[player.character]
-  var {latencyBuffer} = character
-  if (!latencyBuffer[0]) return
-  var {timestamp} = district
-  var total = latencyBuffer.reduce((total, latency) => total + latency)
-  var latency = total / latencyBuffer.length
+  var characterIndex = _.player.character - 1
+  var character = _.objects[characterIndex]
+  var {latency} = character
+  var timestamp = _.objects[0].timestamp
   var differences = predictionBuffer.map((prediction) => {
     var duration = timestamp - prediction.timestamp
     return Math.abs(duration - latency)
@@ -199,33 +195,36 @@ function checkPredictionOutcome() {
   var smallest = Math.min(...differences)
   var index = differences.findIndex(difference => difference === smallest)
   var prediction = predictionBuffer[index]
-  if (prediction.x !== _.bufferedDistrictX || prediction.y !== _.bufferedDistrictY) {
+  if (prediction.x !== _.xFromNewObjects || prediction.y !== _.yFromNewObjects) {
     return index
   }
 }
 
 function reconcilePlayerCharacter(index) {
-  var {predictionBuffer} = player
-  var character = district.characters[player.character]
-  character.x = _.bufferedDistrictX
-  character.y = _.bufferedDistrictY
+  var {predictionBuffer} = _.player
+  var characterIndex = _.player.character - 1
+  var character = _.objects[characterIndex]
+  character.x = _.xFromNewObjects
+  character.y = _.yFromNewObjects
   for (var i = index; i < predictionBuffer.length; i++) {
     var input = predictionBuffer[i].input
-    updatePlayerCharacterSpeedDirection(input)
+    updatePlayerCharacterBehavior(input)
     updatePlayerCharacterLocation()
   }
 }
 
 function updatePredictionBuffer(input) {
-  var character = district.characters[player.character]
+  var index = _.player.character - 1
+  var character = _.objects[index]
   var {x, y} = character
-  var prediction = {x, y, input: {...player.input}, timestamp: performance.now()}
-  player.predictionBuffer.push(prediction)
-  if (player.predictionBuffer.length > 20) player.predictionBuffer.shift()
+  var prediction = {x, y, input, timestamp: performance.now()}
+  _.player.predictionBuffer.push(prediction)
+  if (_.player.predictionBuffer.length > 20) _.player.predictionBuffer.shift()
 }
 
-function updatePlayerCharacterSpeedDirection(input) {
-  var character = district.characters[player.character]
+function updatePlayerCharacterBehavior(input) {
+  var index = _.player.character - 1
+  var character = _.objects[index]
   if (input.right === true) {
     character.direction = 'right'
     character.speed = 5
@@ -238,7 +237,8 @@ function updatePlayerCharacterSpeedDirection(input) {
 }
 
 function updatePlayerCharacterLocation() {
-  var character = district.characters[player.character]
+  var index = _.player.character - 1
+  var character = _.objects[index]
   if (character.speed > 0) {
     if (character.direction === 'left') {
       character.x -= character.speed
@@ -249,7 +249,7 @@ function updatePlayerCharacterLocation() {
       nextX = character.x + character.speed
     }
     var min = 0
-    var max = district.width - character.width
+    var max = _.district.width - character.width
     if (nextX < min) {
       character.x = min
     }
@@ -259,82 +259,89 @@ function updatePlayerCharacterLocation() {
   }
 }
 
-function render() {
-  updateCamera()
-  clearCanvas()
+function render(first) {
+  if (first) {
+    var $camera = document.getElementById(_.camera.elementID)
+    $camera.classList.add('hidden')
+  }
   renderScenery('backgrounds')
-  renderObject('aiCharacters')
-  renderObject('characters')
-  renderObject('vehicles')
+  renderObjects('characters')
+  renderObjects('vehicles')
   renderScenery('foregrounds')
+  if (first) setTimeout(() => $camera.classList.remove('hidden'), 750)
 }
 
 function updateCamera() {
-  if (camera.following) {
-    var characterID = camera.following
-    var character = district.characters[characterID]
-    camera.x = Math.round(character.x - camera.width / 2)
-    camera.y = Math.round(character.y - camera.height / 2)
-    var cameraMaxX = district.width - camera.width
-    var cameraMaxY = district.height - camera.height
-    if (camera.x < 0) camera.x = 0
-    if (camera.x > cameraMaxX) camera.x = cameraMaxX
-    if (camera.y < 0) camera.y = 0
-    if (camera.y > cameraMaxY) camera.y = cameraMaxY
+  if (_.camera.following) {
+    var objectID = _.camera.following
+    if (
+      _.district.characters.find(item => item === objectID) ||
+      _.district.vehicles.find(item => item === objectID) ||
+      _.district.rooms.find(item => item === objectID)
+    ) {
+      var object = _.objects[objectID - 1]
+      _.camera.x = Math.round(object.x - _.camera.width / 2)
+      _.camera.y = Math.round(object.y - _.camera.height / 2)
+      var cameraMaxX = _.district.width - _.camera.width
+      var cameraMaxY = _.district.height - _.camera.height
+      if (_.camera.x < 0) _.camera.x = 0
+      if (_.camera.x > cameraMaxX) _.camera.x = _.cameraMaxX
+      if (_.camera.y < 0) _.camera.y = 0
+      if (_.camera.y > cameraMaxY) _.camera.y = cameraMaxY
+    }
   }
 }
 
 function clearCanvas() {
-  var $camera = document.getElementById(camera.elementID)
+  var $camera = document.getElementById(_.camera.elementID)
   var context = $camera.getContext('2d')
-  context.clearRect(0, 0, camera.width, camera.height)
+  context.clearRect(0, 0, _.camera.width, _.camera.height)
 }
 
 function renderScenery(type) {
-  var layers = district.scenery[type]
+  var layers = _.district.scenery[type]
   for (var layerID in layers) {
     var layer = layers[layerID]
-    var characterID = camera.following
-    var character = district.characters[characterID]
+    var objectID = _.camera.following
+    var object = _.objects[objectID - 1]
     var $layer = document.getElementById(layer.elementID)
-    var $camera = document.getElementById(camera.elementID)
+    var $camera = document.getElementById(_.camera.elementID)
     var context = $camera.getContext('2d')
     if (layer.x) var layerX = layer.x
     else layerX = 0
-    var cameraX = Math.round(character.x / layer.depth - camera.width / 2 / layer.depth - layerX)
-    var cameraMaxX = Math.round(district.width / layer.depth - camera.width / layer.depth - layerX)
+    var cameraX = Math.round(object.x / layer.depth - _.camera.width / 2 / layer.depth - layerX)
+    var cameraMaxX = Math.round(_.district.width / layer.depth - _.camera.width / layer.depth - layerX)
     if (cameraX > cameraMaxX) cameraX = cameraMaxX
     if (!layer.x && cameraX < 0) cameraX = 0
-    context.drawImage($layer, cameraX, camera.y, camera.width,
-      camera.height, 0, 0, camera.width, camera.height)
+    context.drawImage($layer, cameraX, _.camera.y, _.camera.width,
+      _.camera.height, 0, 0, _.camera.width, _.camera.height)
   }
 }
 
-function renderObject(objectType) {
-  var objects = district[objectType]
-  for (var objectID in objects) {
-    var object = objects[objectID]
-    var $object = document.getElementById(object.elementID)
-    var $camera = document.getElementById(camera.elementID)
-    var context = $camera.getContext('2d')
-    var xInCamera = object.x - camera.x
-    var yInCamera = object.y - camera.y
+function renderObjects(objectType) {
+  _.district[objectType].forEach(objectID => {
+    var object = _.objects[objectID - 1]
+    var xInCamera = object.x - _.camera.x
+    var yInCamera = object.y - _.camera.y
     if (!(
-      xInCamera > camera.width ||
-      xInCamera < 0 ||
-      yInCamera > camera.height ||
-      yInCamera < 0
+      xInCamera > _.camera.width + object.width ||
+      xInCamera < 0 - object.width ||
+      yInCamera > _.camera.height + object.height ||
+      yInCamera < 0 - object.height
     )) {
+      var $object = document.getElementById(object.elementID)
+      var $camera = document.getElementById(_.camera.elementID)
+      var context = $camera.getContext('2d')
       if (object.direction) {
         if (object.direction === 'left') {
           context.scale(-1, 1)
-          xInCamera = Math.round(-object.x + camera.x - object.width / 2)
+          xInCamera = Math.round(-object.x + _.camera.x - object.width / 2)
         }
       }
       context.drawImage($object, xInCamera, yInCamera)
       context.setTransform(1, 0, 0, 1, 0, 0)
     }
-  }
+  })
 }
 
 function setDelay() {
@@ -390,28 +397,40 @@ function setDelay() {
 
 function control(key, action) {
   if (key === 'a' || key === 'A' || key === 'ArrowLeft') {
-    if (action === 'down') player.input.left = true
-    if (action === 'up') player.input.left = false
+    if (action === 'down') _.player.input.left = true
+    if (action === 'up') _.player.input.left = false
   }
   if (key === 'd' || key === 'D' || key === 'ArrowRight') {
-    if (action === 'down') player.input.right = true
-    if (action === 'up') player.input.right = false
+    if (action === 'down') _.player.input.right = true
+    if (action === 'up') _.player.input.right = false
   }
   if (key === 'e' || key === 'E' || key === 'ArrowUp') {
-    if (action === 'down') player.input.up = true
-    if (action === 'up') player.input.up = false
+    if (action === 'down') _.player.input.up = true
+    if (action === 'up') _.player.input.up = false
   }
   if (key === 's' || key === 'S' || key === 'ArrowDown') {
-    if (action === 'down') player.input.down = true
-    if (action === 'up') player.input.down = false
+    if (action === 'down') _.player.input.down = true
+    if (action === 'up') _.player.input.down = false
+  }
+  if (key === ' ') {
+    if (action === 'down') _.player.input.action = true
+    if (action === 'up') _.player.input.action = false
+  }
+  if (key === 'n' || key === 'N') {
+    if (action === 'down') _.player.input.accelerate = true
+    if (action === 'up') _.player.input.accelerate = false
+  }
+  if (key === 'm' || key === 'M') {
+    if (action === 'down') _.player.input.decelerate = true
+    if (action === 'up') _.player.input.decelerate = false
   }
 }
 
 window.addEventListener('resize', () => {
-  if (document.getElementById(camera.elementID)) {
-    var $camera = document.getElementById(camera.elementID)
-    camera.width = innerWidth
-    camera.height = innerHeight
+  if (document.getElementById(_.camera.elementID)) {
+    var $camera = document.getElementById(_.camera.elementID)
+    _.camera.width = innerWidth
+    _.camera.height = innerHeight
     $camera.width = innerWidth
     $camera.height = innerHeight
   }
@@ -425,35 +444,34 @@ window.addEventListener('keyup', event => {
   control(event.key, 'up')
 })
 
-socket.on('player', receivedPlayer => {
-  player = receivedPlayer
-  camera.following = player.character
-})
-
-socket.on('object', object => {
-  console.log(object);
-  createElements(object)
-  if (district) district[object.type + 's'][object.id + 's'] = object
-})
-
-socket.on('request-token', () => {
-  var token = player.token
+socket.on('request_token', () => {
+  var token = _.player.token
   socket.emit('token', token)
 })
 
-socket.on('district', receivedDistrict => {
-  var {timestamp} = receivedDistrict
-  receivedDistrict.timestamp = performance.now()
-  socket.emit('timestamp', timestamp)
-  if (_.districtInitiated) districtBuffer.push(receivedDistrict)
-  else {
-    _.districtInitiated = true
-    district = receivedDistrict
-    initiateDistrict()
-  }
+socket.on('district', district => {
+  initiateDistrict(district)
 })
 
-camera.width = innerWidth
-camera.height = innerHeight
+socket.on('player', receivedPlayer => {
+  _.player = receivedPlayer
+  _.camera.following = _.player.character
+})
 
-createElements(camera)
+socket.on('object', object => {
+  createElements(object)
+  if (_.district) _.district[object.type + 's'].push(object.id)
+})
+
+socket.on('objects', objects => {
+  var timestamp = objects[0].timestamp
+  objects[0].timestamp = performance.now()
+  socket.emit('timestamp', timestamp)
+  if (!_.objects) objects.forEach(object => createElements(object))
+  if (_.objectsBuffer) _.objectsBuffer.push(objects)
+})
+
+_.camera.width = innerWidth
+_.camera.height = innerHeight
+
+createElements(_.camera)
