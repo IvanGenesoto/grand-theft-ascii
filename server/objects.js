@@ -1,5 +1,3 @@
-/* globals io */
-
 var now = require('performance-now')
 
 function Objects(_objects = []) {
@@ -14,9 +12,9 @@ function Objects(_objects = []) {
     district: undefined,
     driving: null,
     passenging: null,
+    room: null,
     vehicleKeys: [],
     vehicleWelcomes: [],
-    room: null,
     roomKeys: [],
     roomWelcomes: [],
     x: undefined,
@@ -42,10 +40,10 @@ function Objects(_objects = []) {
     status: 'operational',
     district: 1,
     owner: null,
-    keyHolders: [],
-    welcomes: [],
     seats: 2,
     driver: null,
+    keyHolders: [],
+    welcomes: [],
     passengers: [],
     blacklist: [],
     x: undefined,
@@ -69,11 +67,11 @@ function Objects(_objects = []) {
     name: 'locked',
     status: '',
     owner: null,
+    capacity: 50,
     keyHolders: [],
     welcomes: [],
     inhabitants: [],
     blacklist: [],
-    capacity: 50,
     x: 0,
     y: 0,
     width: 0,
@@ -88,9 +86,24 @@ function Objects(_objects = []) {
     inventory: undefined
   }
 
-  var standInCharacter = Object.assign({}, character)
-  var standInVehicle = Object.assign({}, vehicle)
-  var standInRoom = Object.assign({}, room)
+  var standInCharacter = {
+    vehicleKeys: [],
+    vehicleWelcomes: [],
+    roomKeys: [],
+    roomWelcomes: []
+  }
+  var standInVehicle = {
+    keyHolders: [],
+    welcomes: [],
+    passengers: [],
+    blacklist: []
+  }
+  var standInRoom = {
+    keyHolders: [],
+    welcomes: [],
+    inhabitants: [],
+    blacklist: []
+  }
 
   var objects = {
 
@@ -100,7 +113,9 @@ function Objects(_objects = []) {
 
       var directions = {
         character: ['left', 'right'],
-        vehicle: ['left', 'right', 'up', 'down', 'upLeft', 'upRight', 'downLeft', 'downRight']
+        vehicle: ['left', 'right'
+        // , 'up', 'down', 'upLeft', 'upRight', 'downLeft', 'downRight'
+        ]
       }
 
       switch (objectType) {
@@ -111,12 +126,12 @@ function Objects(_objects = []) {
       }
 
       object.district = districtID
-      object.direction = directions[Math.floor(Math.random() * directions[objectType].length)]
+      object.direction = directions[objectType][Math.floor(Math.random() * directions[objectType].length)]
       object.speed = Math.floor(Math.random() * object.maxSpeed)
       var district = districts[districtID]
       object.x = x ? x : Math.round(Math.random() * (district.width - object.width)) // eslint-disable-line
-      if (character.type === 'character') object.y = 7832
-      else object.y = y ? y : Math.round(Math.random() * (district.height - object.height)) // eslint-disable-line
+      if (object.type === 'character') object.y = 7832
+      else object.y = y ? y : Math.round(Math.random() * (district.height - object.height - 30)) // eslint-disable-line
 
       _objects.push(object)
       object.id = _objects.length
@@ -152,6 +167,14 @@ function Objects(_objects = []) {
       return standIn
     },
 
+    refresh: () => {
+      var id = 1
+      while (id <= _objects.length) {
+        objects[id] = objects.get(id)
+        id++
+      }
+    },
+
     getLength: () => _objects.length,
 
     assignPlayer: (characterID, playerID) => {
@@ -174,9 +197,9 @@ function Objects(_objects = []) {
       character[keys].push(objectID)
     },
 
-    updatePlayerCharactersBehavior: (characterIDs, players) => {
+    updatePlayerCharactersBehavior: (playerCharacterIDs, players) => {
       var active = {}
-      characterIDs.forEach(characterID => {
+      playerCharacterIDs.forEach(characterID => {
         var character = _objects[characterID - 1]
         var player = players[character.player]
         var input = player.input

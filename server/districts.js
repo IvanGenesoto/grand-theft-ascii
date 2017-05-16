@@ -619,7 +619,11 @@ function Districts(_districts = []) {
     }
   }
 
-  var standInNeon = Object.assign({}, neon)
+  var standInNeon = {
+    rooms: [],
+    characters: [],
+    vehicles: []
+  }
 
   function getGridIndex(coordinate) {
     coordinate = coordinate.toString()
@@ -771,15 +775,18 @@ function Districts(_districts = []) {
           })
         }
         else if (property === 'grid') standIn[property] = 'Use "districts.addToGrid()".'
-        else if (property === 'scenery') standIn[property] = 'Use "districts.getCopy()".'
-        else standIn[property] = null
+        else if (property === 'scenery') standIn[property] = 'Scenery standIn not implemented.'
+        else standIn[property] = 'Object found in district ' + id + '.'
       }
       return standIn
     },
 
-    getCopy: id => {
-      var district = _districts[id - 1]
-      Object.assign({}, district)
+    refresh: () => {
+      var id = 1
+      while (id <= _districts.length) {
+        districts[id] = districts.get(id)
+        id++
+      }
     },
 
     getLength: () => _districts.length,

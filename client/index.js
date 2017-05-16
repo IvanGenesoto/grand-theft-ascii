@@ -27,7 +27,7 @@ function initiateDistrict(district) {
   else {
     drawToLayer('backgrounds')
     drawToLayer('foregrounds')
-    shiftDistrictBuffer('initiateRefresh')
+    shiftObjectsBuffer('initiateRefresh')
   }
 }
 
@@ -100,18 +100,20 @@ function drawToLayer(type) {
   }
 }
 
-function shiftDistrictBuffer(initiatingRefresh) {
+function shiftObjectsBuffer(initiatingRefresh) {
   clearTimeout(_.shiftTimeout)
   if (_.objectsBuffer.length > 2) {
     while (_.objectsBuffer.length > 2) _.objectsBuffer.shift()
-    if (initiatingRefresh) _.objects = _.objectsBuffer[0]
+    if (initiatingRefresh) {
+      _.objects = _.objectsBuffer[0]
+    }
     preservePlayerCharacterLocation(_.objectsBuffer[0])
     _.ratioIndex = -1
     if (initiatingRefresh) refresh('first')
   }
-  else {
+  else if (initiatingRefresh) {
     _.shiftTimeout = setTimeout(() => {
-      shiftDistrictBuffer(initiatingRefresh)
+      shiftObjectsBuffer(initiatingRefresh)
     }, 1000 / 60)
   }
 }
@@ -123,17 +125,17 @@ function preservePlayerCharacterLocation(newObjects) {
   var character = _.objects[index]
   var {x, y} = character
   _.objects = newObjects
+  character = _.objects[index]
   character.x = x
   character.y = y
 }
 
 function refresh(first) {
-  console.log('refresh');
   _.refreshStartTime = performance.now()
   var ratio = getInterpolationRatio()
   if (ratio) interpolateDistrict(ratio)
   if (_.ratioIndex > 1) {
-    shiftDistrictBuffer()
+    shiftObjectsBuffer()
     var result = checkPredictionOutcome()
     if (result) reconcilePlayerCharacter(result)
   }
@@ -166,19 +168,20 @@ function getInterpolationRatio() {
 function interpolateDistrict(ratio) {
   var a = _.objectsBuffer[0]
   var b = _.objectsBuffer[1]
-  if (ratio === 1) preservePlayerCharacterLocation(b)
-  else {
-    _.objects.forEach(object => {
-      if (object.district === _.district.id && object.type !== 'room') {
-        var id = object.id
-        var properties = ['x', 'y']
-        properties.forEach(property => {
-          var difference = b[id - 1][property] - a[id - 1][property]
-          object[property] = a[id - 1][property] + difference * ratio
-        })
-      }
-    })
-  }
+  _.objects.forEach(object => {
+    if (
+      object.district === _.district.id &&
+      object.type !== 'room' &&
+      object.id !== _.player.character
+    ) {
+      var id = object.id
+      var properties = ['x', 'y']
+      properties.forEach(property => {
+        var difference = b[id - 1][property] - a[id - 1][property]
+        object[property] = a[id - 1][property] + difference * ratio
+      })
+    }
+  })
 }
 
 function checkPredictionOutcome() {
@@ -187,6 +190,8 @@ function checkPredictionOutcome() {
   var characterIndex = _.player.character - 1
   var character = _.objects[characterIndex]
   var {latency} = character
+  if (!latency) return
+  console.log('latency');
   var timestamp = _.objects[0].timestamp
   var differences = predictionBuffer.map((prediction) => {
     var duration = timestamp - prediction.timestamp
@@ -195,6 +200,7 @@ function checkPredictionOutcome() {
   var smallest = Math.min(...differences)
   var index = differences.findIndex(difference => difference === smallest)
   var prediction = predictionBuffer[index]
+  console.log(Math.abs(prediction.x - _.xFromNewObjects));
   if (prediction.x !== _.xFromNewObjects || prediction.y !== _.yFromNewObjects) {
     return index
   }
@@ -460,7 +466,7 @@ socket.on('player', receivedPlayer => {
 
 socket.on('object', object => {
   createElements(object)
-  if (_.district) _.district[object.type + 's'].push(object.id)
+  // if (_.district) _.district[object.type + 's'].push(object.id)
 })
 
 socket.on('objects', objects => {
@@ -468,7 +474,7 @@ socket.on('objects', objects => {
   objects[0].timestamp = performance.now()
   socket.emit('timestamp', timestamp)
   if (!_.objects) objects.forEach(object => createElements(object))
-  if (_.objectsBuffer) _.objectsBuffer.push(objects)
+  _.objectsBuffer.push(objects)
 })
 
 _.camera.width = innerWidth
