@@ -13,6 +13,7 @@ function Districts(_districts = []) {
     rooms: [],
     characters: [],
     vehicles: [],
+    unwelcomes: [],
     scenery: {
       backgrounds: {
         '1': {
@@ -622,7 +623,8 @@ function Districts(_districts = []) {
   var standInNeon = {
     rooms: [],
     characters: [],
-    vehicles: []
+    vehicles: [],
+    unwelcomes: []
   }
 
   function getGridIndex(coordinate) {
@@ -750,8 +752,8 @@ function Districts(_districts = []) {
       var grid = createGrid()
 
       district.grid = grid
-      _districts.push(district)
       district.id = _districts.length
+      _districts.push(district)
 
       districts[district.id] = districts.get(district.id)
       districts.length = districts.getLength()
@@ -760,7 +762,7 @@ function Districts(_districts = []) {
     },
 
     get: id => {
-      var district = _districts[id - 1]
+      var district = _districts[id]
       switch (district.type) {
         case 'neon': var standIn = standInNeon; break
         default: console.log('Cannot get district without type.')
@@ -782,8 +784,8 @@ function Districts(_districts = []) {
     },
 
     refresh: () => {
-      var id = 1
-      while (id <= _districts.length) {
+      var id = 0
+      while (id < _districts.length) {
         districts[id] = districts.get(id)
         id++
       }
@@ -796,20 +798,20 @@ function Districts(_districts = []) {
       return district.id
     },
 
-    emit: (districtID, socket) => socket.emit('district', _districts[districtID - 1]),
+    emit: (districtID, socket) => socket.emit('district', _districts[districtID]),
 
     populate: (objectID, objects) => {
       var object = objects[objectID]
       var {district, type} = object
       type = type + 's'
-      _districts[district - 1][type].push(objectID)
+      _districts[district][type].push(objectID)
     },
 
     addToGrid: (objectIDs, objects) => {
       objectIDs.forEach(objectID => {
         var object = objects[objectID]
         var {x, y, width, height, district} = object
-        var grid = _districts[district - 1].grid
+        var grid = _districts[district].grid
         var xRight = x + width
         var yBottom = y + height
         var rowTop = getGridIndex(y)

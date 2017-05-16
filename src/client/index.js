@@ -119,7 +119,7 @@ function shiftObjectsBuffer(initiatingRefresh) {
 }
 
 function preservePlayerCharacterLocation(newObjects) {
-  var index = _.player.character - 1
+  var index = _.player.character
   _.xFromNewObjects = newObjects[index].x
   _.yFromNewObjects = newObjects[index].y
   var character = _.objects[index]
@@ -177,8 +177,8 @@ function interpolateDistrict(ratio) {
       var id = object.id
       var properties = ['x', 'y']
       properties.forEach(property => {
-        var difference = b[id - 1][property] - a[id - 1][property]
-        object[property] = a[id - 1][property] + difference * ratio
+        var difference = b[id][property] - a[id][property]
+        object[property] = a[id][property] + difference * ratio
       })
     }
   })
@@ -187,11 +187,10 @@ function interpolateDistrict(ratio) {
 function checkPredictionOutcome() {
   var {predictionBuffer} = _.player
   if (!predictionBuffer[0]) return
-  var characterIndex = _.player.character - 1
+  var characterIndex = _.player.character
   var character = _.objects[characterIndex]
   var {latency} = character
   if (!latency) return
-  console.log('latency');
   var timestamp = _.objects[0].timestamp
   var differences = predictionBuffer.map((prediction) => {
     var duration = timestamp - prediction.timestamp
@@ -200,7 +199,6 @@ function checkPredictionOutcome() {
   var smallest = Math.min(...differences)
   var index = differences.findIndex(difference => difference === smallest)
   var prediction = predictionBuffer[index]
-  console.log(Math.abs(prediction.x - _.xFromNewObjects));
   if (prediction.x !== _.xFromNewObjects || prediction.y !== _.yFromNewObjects) {
     return index
   }
@@ -208,7 +206,7 @@ function checkPredictionOutcome() {
 
 function reconcilePlayerCharacter(index) {
   var {predictionBuffer} = _.player
-  var characterIndex = _.player.character - 1
+  var characterIndex = _.player.character
   var character = _.objects[characterIndex]
   character.x = _.xFromNewObjects
   character.y = _.yFromNewObjects
@@ -220,7 +218,7 @@ function reconcilePlayerCharacter(index) {
 }
 
 function updatePredictionBuffer(input) {
-  var index = _.player.character - 1
+  var index = _.player.character
   var character = _.objects[index]
   var {x, y} = character
   var prediction = {x, y, input, timestamp: performance.now()}
@@ -229,7 +227,7 @@ function updatePredictionBuffer(input) {
 }
 
 function updatePlayerCharacterBehavior(input) {
-  var index = _.player.character - 1
+  var index = _.player.character
   var character = _.objects[index]
   if (input.right === true) {
     character.direction = 'right'
@@ -243,7 +241,7 @@ function updatePlayerCharacterBehavior(input) {
 }
 
 function updatePlayerCharacterLocation() {
-  var index = _.player.character - 1
+  var index = _.player.character
   var character = _.objects[index]
   if (character.speed > 0) {
     if (character.direction === 'left') {
@@ -274,7 +272,7 @@ function render(first) {
   renderObjects('characters')
   renderObjects('vehicles')
   renderScenery('foregrounds')
-  if (first) setTimeout(() => $camera.classList.remove('hidden'), 750)
+  if (first) setTimeout(() => $camera.classList.remove('hidden'), 1250)
 }
 
 function updateCamera() {
@@ -285,7 +283,7 @@ function updateCamera() {
       _.district.vehicles.find(item => item === objectID) ||
       _.district.rooms.find(item => item === objectID)
     ) {
-      var object = _.objects[objectID - 1]
+      var object = _.objects[objectID]
       _.camera.x = Math.round(object.x - _.camera.width / 2)
       _.camera.y = Math.round(object.y - _.camera.height / 2)
       var cameraMaxX = _.district.width - _.camera.width
@@ -309,7 +307,7 @@ function renderScenery(type) {
   for (var layerID in layers) {
     var layer = layers[layerID]
     var objectID = _.camera.following
-    var object = _.objects[objectID - 1]
+    var object = _.objects[objectID]
     var $layer = document.getElementById(layer.elementID)
     var $camera = document.getElementById(_.camera.elementID)
     var context = $camera.getContext('2d')
@@ -326,7 +324,7 @@ function renderScenery(type) {
 
 function renderObjects(objectType) {
   _.district[objectType].forEach(objectID => {
-    var object = _.objects[objectID - 1]
+    var object = _.objects[objectID]
     var xInCamera = object.x - _.camera.x
     var yInCamera = object.y - _.camera.y
     if (!(
@@ -341,9 +339,11 @@ function renderObjects(objectType) {
       if (object.direction) {
         if (object.direction === 'left') {
           context.scale(-1, 1)
-          xInCamera = Math.round(-object.x + _.camera.x - object.width / 2)
+          xInCamera = -object.x + _.camera.x - object.width / 2
         }
       }
+      xInCamera = Math.round(xInCamera)
+      yInCamera = Math.round(yInCamera)
       context.drawImage($object, xInCamera, yInCamera)
       context.setTransform(1, 0, 0, 1, 0, 0)
     }
@@ -465,8 +465,13 @@ socket.on('player', receivedPlayer => {
 })
 
 socket.on('object', object => {
-  createElements(object)
-  // if (_.district) _.district[object.type + 's'].push(object.id)
+  if (_.district) {
+    var match = _.district[object.type + 's'].find(id => id === object.id)
+    if (!match) {
+      _.district[object.type + 's'].push(object.id)
+      createElements(object)
+    }
+  }
 })
 
 socket.on('objects', objects => {
