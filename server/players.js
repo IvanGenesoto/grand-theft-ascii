@@ -1,6 +1,6 @@
 var now = require('performance-now')
 
-function Players(_players = []) {
+function Players(_players = [], _playerCharacterIDs = []) {
 
   var player = {
     id: undefined,
@@ -19,15 +19,18 @@ function Players(_players = []) {
     }
   }
 
-  var standIn = Object.assign({}, player)
+  var standInPlayer = {
+    predictionBuffer: [],
+    latencyBuffer: [],
+    input: {}
+  }
+  var standInPlayerCharacterIDs = []
+
   var latencies = []
-  var characterIDs = []
 
   var players = {
 
-    characterIDs: characterIDs,
-
-    length: _players.length,
+    playerCharacterIDs: standInPlayerCharacterIDs,
 
     create: (socketID) => {
 
@@ -47,32 +50,43 @@ function Players(_players = []) {
       var player = _players[id - 1]
       for (var property in player) {
         var value = player[property]
-        if (typeof value !== 'object' || value === null) standIn[property] = value
+        if (typeof value !== 'object' || value === null) standInPlayer[property] = value
         else if (Array.isArray(value)) {
-          standIn[property].length = 0
+          standInPlayer[property].length = 0
           value.forEach((item, index) => {
-            standIn[property][index] = item
+            standInPlayer[property][index] = item
           })
         }
         else if (property === 'input') {
           for (var inputProperty in value) {
             var inputValue = value[inputProperty]
-            standIn[property][inputProperty] = inputValue
+            standInPlayer[property][inputProperty] = inputValue
           }
         }
-        else standIn[property] = 'Object found in player ' + id + '.'
+        else standInPlayer[property] = 'Object found in player ' + id + '.'
       }
-      return standIn
+      return standInPlayer
     },
 
-    getLength: () => _players.length,
+    refresh: () => {
+      var id = 1
+      while (id <= _players.length) {
+        players[id] = players.get(id)
+        id++
+      }
+    },
 
-    getCharacterIDs: () => [...characterIDs],
+    refreshPlayerCharacterIDs: () => {
+      standInPlayerCharacterIDs.length = 0
+      _playerCharacterIDs.forEach(item => {
+        standInPlayerCharacterIDs.push(item)
+      })
+    },
 
     assignCharacter: (playerID, characterID) => {
       _players[playerID - 1].character = characterID
-      characterIDs.push(characterID)
-      players.characterIDs = players.getCharacterIDs()
+      _playerCharacterIDs[playerID - 1] = characterID
+      standInPlayerCharacterIDs[playerID - 1] = characterID
     },
 
     getPlayerIDBySocketID: socketID => {
@@ -81,6 +95,8 @@ function Players(_players = []) {
       })
       return player.id
     },
+
+    getLength: () => _players.length,
 
     emit: (playerID, socket) => socket.emit('player', _players[playerID - 1]),
 
@@ -97,13 +113,6 @@ function Players(_players = []) {
       if (latencyBuffer.length > 20) latencyBuffer.shift()
     },
 
-    getLatency: id => {
-      var player = players[id]
-      var latencyBuffer = player.latencyBuffer
-      var total = latencyBuffer.reduce((total, latency) => total + latency, 0)
-      return total / latencyBuffer.length
-    },
-
     getLatencies: () => {
       latencies.length = 0
       _players.forEach(player => {
@@ -113,6 +122,13 @@ function Players(_players = []) {
         }
       })
       return latencies
+    },
+
+    getLatency: id => {
+      var player = _players[id - 1]
+      var latencyBuffer = player.latencyBuffer
+      var total = latencyBuffer.reduce((total, latency) => total + latency, 0)
+      return total / latencyBuffer.length
     }
   }
 

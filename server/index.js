@@ -64,8 +64,11 @@ function broadcastObjectToDistrict(object, districtID) {
 function refresh() {
   _.refreshStartTime = now()
   _.tick += 1
-  var characterIDs = players.characterIDs
-  var active = objects.updatePlayerCharactersBehavior(characterIDs, players)
+  districts.refresh()
+  players.refresh()
+  objects.refresh()
+  var playerCharacterIDs = players.playerCharacterIDs
+  var active = objects.updatePlayerCharactersBehavior(playerCharacterIDs, players)
   if (active.walkers) var checked = checkForVehicleEntries(active.walkers)
   if (checked && checked.enterers) putCharactersInVehicles(checked.enterers)
   if (checked && checked.walkers) districts.addToGrid(checked.walkers, objects)
@@ -76,16 +79,16 @@ function refresh() {
   if (results.interactions) interactCharacters(results.collisions)
   objects.updateLocations(districts)
   if (!(_.tick % 3)) {
-    var latencies = players.getLatencies()
-    objects.updateLatencies(latencies)
+    // var latencies = players.getLatencies()
+    // objects.updateLatencies(latencies)
     objects.emit(io)
   }
   setDelay()
 }
 
-function checkForVehicleEntries(characterIDs) {
+function checkForVehicleEntries(playerCharacterIDs) {
   var checked = {}
-  characterIDs.forEach(characterID => {
+  playerCharacterIDs.forEach(characterID => {
     var character = objects[characterID]
     var district = districts[character.district]
     var vehicleID = character.vehicleKeys.find(vehicleID => {
@@ -118,13 +121,13 @@ function checkForVehicleEntries(characterIDs) {
 function putCharactersInVehicles(objectIDs) {
 }
 
-function makeJumpOut(characterIDs) {
+function makeJumpOut(playerCharacterIDs) {
 }
 
 function collideVehicles(vehicleIDs) {
 }
 
-function interactCharacters(characterIDs) {
+function interactCharacters(playerCharacterIDs) {
 }
 
 function setDelay() {
