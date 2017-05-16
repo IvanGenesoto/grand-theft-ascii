@@ -37,8 +37,8 @@ function Players(_players = [], _playerCharacterIDs = []) {
       player = Object.assign({}, player)
       player.socket = socketID
 
-      _players.push(player)
       player.id = _players.length
+      _players.push(player)
 
       players[player.id] = players.get(player.id)
       players.length = players.getLength()
@@ -47,7 +47,7 @@ function Players(_players = [], _playerCharacterIDs = []) {
     },
 
     get: id => {
-      var player = _players[id - 1]
+      var player = _players[id]
       for (var property in player) {
         var value = player[property]
         if (typeof value !== 'object' || value === null) standInPlayer[property] = value
@@ -69,8 +69,8 @@ function Players(_players = [], _playerCharacterIDs = []) {
     },
 
     refresh: () => {
-      var id = 1
-      while (id <= _players.length) {
+      var id = 0
+      while (id < _players.length) {
         players[id] = players.get(id)
         id++
       }
@@ -84,9 +84,9 @@ function Players(_players = [], _playerCharacterIDs = []) {
     },
 
     assignCharacter: (playerID, characterID) => {
-      _players[playerID - 1].character = characterID
-      _playerCharacterIDs[playerID - 1] = characterID
-      standInPlayerCharacterIDs[playerID - 1] = characterID
+      _players[playerID].character = characterID
+      _playerCharacterIDs[playerID] = characterID
+      standInPlayerCharacterIDs[playerID] = characterID
     },
 
     getPlayerIDBySocketID: socketID => {
@@ -98,17 +98,17 @@ function Players(_players = [], _playerCharacterIDs = []) {
 
     getLength: () => _players.length,
 
-    emit: (playerID, socket) => socket.emit('player', _players[playerID - 1]),
+    emit: (playerID, socket) => socket.emit('player', _players[playerID]),
 
     updateInput: (input, playerID) => {
-      var player = _players[playerID - 1]
+      var player = _players[playerID]
       player.input = input
     },
 
     updateLatencyBuffer: (id, timestamp) => {
       var newTimestamp = now()
       var latency = (newTimestamp - timestamp)
-      var latencyBuffer = _players[id - 1].latencyBuffer
+      var latencyBuffer = _players[id].latencyBuffer
       latencyBuffer.push(latency)
       if (latencyBuffer.length > 20) latencyBuffer.shift()
     },
@@ -125,7 +125,7 @@ function Players(_players = [], _playerCharacterIDs = []) {
     },
 
     getLatency: id => {
-      var player = _players[id - 1]
+      var player = _players[id]
       var latencyBuffer = player.latencyBuffer
       var total = latencyBuffer.reduce((total, latency) => total + latency, 0)
       return total / latencyBuffer.length

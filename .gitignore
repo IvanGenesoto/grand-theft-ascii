@@ -1,9 +1,9 @@
 .DS_Store
 node_modules
 scratchpad
+build
 server/public/.DS_Store
-server/public/main.js
-server/public/images/.DS_Store
-server/public/images/foreground/.DS_Store
-server/public/images/foreground/arrow/.DS_Store
-server/public/images/foreground/arrow/arrow-original-size/
+src/server/public/images/.DS_Store
+src/server/public/images/foreground/.DS_Store
+src/server/public/images/foreground/arrow/.DS_Store
+src/server/public/images/foreground/arrow/arrow-original-size/

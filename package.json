@@ -2,13 +2,14 @@
   "name": "anarch-city",
   "version": "1.0.0",
   "description": "A massively multiplayer persistent online world for people who want to experience a simulated anarchic society.",
-  "main": "server/index.js",
+  "main": "build/server/index.js",
   "dependencies": {
     "express": "^4.15.2",
     "performance-now": "^2.1.0",
     "socket.io": "^1.7.3"
   },
   "devDependencies": {
+    "babel-cli": "^6.24.1",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
     "babelify": "^7.3.0",
     "browserify": "^14.3.0",
@@ -25,11 +26,13 @@
     "watchify": "^3.9.0"
   },
   "scripts": {
-    "bundle": "browserify client/index.js -v --transform babelify -o server/public/main.js",
-    "start": "npm run bundle && node .",
+    "build": "babel src -v -d build --copy-files",
+    "bundle": "browserify build/client/index.js -v --transform babelify -o build/server/public/main.js",
+    "prestart": "npm run build && npm run bundle",
+    "start": "node .",
     "watch:server": "nodemon .",
-    "watch:client": "watchify client/index.js -vd --transform babelify -o server/public/main.js",
-    "watch": "run-p watch:client watch:server",
+    "watch:client": "watchify build/client/index.js -vd --transform babelify -o build/server/public/main.js",
+    "watch": "npm run prestart && run-p watch:client watch:server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
