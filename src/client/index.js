@@ -325,27 +325,30 @@ function renderScenery(type) {
 function renderObjects(objectType) {
   _.district[objectType].forEach(objectID => {
     var object = _.objects[objectID]
-    var xInCamera = object.x - _.camera.x
-    var yInCamera = object.y - _.camera.y
-    if (!(
-      xInCamera > _.camera.width + object.width ||
-      xInCamera < 0 - object.width ||
-      yInCamera > _.camera.height + object.height ||
-      yInCamera < 0 - object.height
-    )) {
-      var $object = document.getElementById(object.elementID)
-      var $camera = document.getElementById(_.camera.elementID)
-      var context = $camera.getContext('2d')
-      if (object.direction) {
-        if (object.direction === 'left') {
-          context.scale(-1, 1)
-          xInCamera = -object.x + _.camera.x - object.width / 2
+    var {driving, passenging, occupying} = object
+    if (!(driving || passenging || occupying)) {
+      var xInCamera = object.x - _.camera.x
+      var yInCamera = object.y - _.camera.y
+      if (!(
+        xInCamera > _.camera.width + object.width ||
+        xInCamera < 0 - object.width ||
+        yInCamera > _.camera.height + object.height ||
+        yInCamera < 0 - object.height
+      )) {
+        var $object = document.getElementById(object.elementID)
+        var $camera = document.getElementById(_.camera.elementID)
+        var context = $camera.getContext('2d')
+        if (object.direction) {
+          if (object.direction === 'left') {
+            context.scale(-1, 1)
+            xInCamera = -object.x + _.camera.x - object.width / 2
+          }
         }
+        xInCamera = Math.round(xInCamera)
+        yInCamera = Math.round(yInCamera)
+        context.drawImage($object, xInCamera, yInCamera)
+        context.setTransform(1, 0, 0, 1, 0, 0)
       }
-      xInCamera = Math.round(xInCamera)
-      yInCamera = Math.round(yInCamera)
-      context.drawImage($object, xInCamera, yInCamera)
-      context.setTransform(1, 0, 0, 1, 0, 0)
     }
   })
 }
@@ -459,8 +462,8 @@ socket.on('district', district => {
   initiateDistrict(district)
 })
 
-socket.on('player', receivedPlayer => {
-  _.player = receivedPlayer
+socket.on('player', player => {
+  _.player = player
   _.camera.following = _.player.character
 })
 

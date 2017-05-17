@@ -1,102 +1,126 @@
-var now = require('performance-now')
+const now = require('performance-now')
 
-function Players(_players = [], _playerCharacterIDs = []) {
+function Players(_players = []) {
 
-  var player = {
-    id: undefined,
-    status: 'on',
-    predictionBuffer: [],
-    latencyBuffer: [],
-    character: null,
-    input: {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-      accelerate: false,
-      decelerate: false,
-      action: false
+  const all = []
+
+  const multiple = []
+
+  const latencies = []
+
+  function createPlayer() {
+
+    const playerPrototype = {
+      id: undefined,
+      status: 'on',
+      socket: undefined,
+      character: null,
+      predictionBuffer: [],
+      latencyBuffer: [],
+      input: {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+        accelerate: false,
+        decelerate: false,
+        action: false
+      }
     }
+
+    var player = {...playerPrototype}
+
+    for (var property in playerPrototype) {
+      var value = playerPrototype[property]
+      if (Array.isArray(value)) player[property] = [...value]
+      else if (typeof value === 'object' && value !== null) {
+        for (var nestedProperty in value) {
+          var nestedValue = value[nestedProperty]
+          player[property][nestedProperty] = {...nestedValue}
+        }
+      }
+    }
+
+    return player
   }
 
-  var standInPlayer = {
-    predictionBuffer: [],
-    latencyBuffer: [],
-    input: {}
-  }
-  var standInPlayerCharacterIDs = []
+  const players = {
 
-  var latencies = []
+    create: socketID => {
 
-  var players = {
+      var player = createPlayer()
+      var playerClone = createPlayer()
 
-    playerCharacterIDs: standInPlayerCharacterIDs,
-
-    create: (socketID) => {
-
-      player = Object.assign({}, player)
       player.socket = socketID
 
       player.id = _players.length
       _players.push(player)
 
-      players[player.id] = players.get(player.id)
-      players.length = players.getLength()
+      const id = player.id
+      players[id] = playerClone
+      players.clone(id)
+      players.refreshLength()
 
-      return player.id
+      return id
     },
 
-    get: id => {
-      var player = _players[id]
+    clone: id => {
+      const playerClone = players[id]
+      const player = _players[id]
+
+      Object.assign = (playerClone, player)
       for (var property in player) {
         var value = player[property]
-        if (typeof value !== 'object' || value === null) standInPlayer[property] = value
-        else if (Array.isArray(value)) {
-          standInPlayer[property].length = 0
-          value.forEach((item, index) => {
-            standInPlayer[property][index] = item
-          })
+        if (Array.isArray(value)) {
+          playerClone[property].length = 0
+          playerClone[property] = [...value]
         }
-        else if (property === 'input') {
-          for (var inputProperty in value) {
-            var inputValue = value[inputProperty]
-            standInPlayer[property][inputProperty] = inputValue
+        else if (typeof value === 'object' && value !== null) {
+          for (var nestedProperty in value) {
+            var nestedValue = value[nestedProperty]
+            player[property][nestedProperty] = {...nestedValue}
           }
         }
-        else standInPlayer[property] = 'Object found in player ' + id + '.'
       }
-      return standInPlayer
+
+      players[id] = playerClone
+      return playerClone
     },
 
-    refresh: () => {
-      var id = 0
-      while (id < _players.length) {
-        players[id] = players.get(id)
-        id++
-      }
+    cloneMultiple: (...ids) => {
+      multiple.length = 0
+      ids.forEach(id => {
+        var player = players.clone(id)
+        multiple.push(player)
+      })
+      return multiple
     },
 
-    refreshPlayerCharacterIDs: () => {
-      standInPlayerCharacterIDs.length = 0
-      _playerCharacterIDs.forEach(item => {
-        standInPlayerCharacterIDs.push(item)
+    cloneAll: () => {
+      all.length = 0
+      _players.forEach((item, id) => {
+        var player = players.clone(id)
+        all.push(player)
       })
     },
 
     assignCharacter: (playerID, characterID) => {
       _players[playerID].character = characterID
-      _playerCharacterIDs[playerID] = characterID
-      standInPlayerCharacterIDs[playerID] = characterID
+      players[playerID].character = characterID
+    },
+
+    getPlayerCharacterIDs: () => {
+      return _players.map(player => player.character)
     },
 
     getPlayerIDBySocketID: socketID => {
-      var player = _players.find(player => {
-        return (player.socket === socketID)
-      })
+      var player = _players.find(player => (player.socket === socketID))
       return player.id
     },
 
-    getLength: () => _players.length,
+    refreshLength: () => {
+      players.length = _players.length
+    },
 
     emit: (playerID, socket) => socket.emit('player', _players[playerID]),
 

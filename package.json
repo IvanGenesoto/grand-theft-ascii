@@ -26,7 +26,7 @@
     "watchify": "^3.9.0"
   },
   "scripts": {
-    "build": "babel src -v -d build --copy-files",
+    "build": "babel src -vd -d build --copy-files",
     "bundle": "browserify build/client/index.js -v --transform babelify -o build/server/public/main.js",
     "prestart": "npm run build && npm run bundle",
     "start": "node .",
