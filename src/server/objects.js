@@ -4,285 +4,287 @@ var now = require('performance-now')
 
 function Objects(_objects = []) {
 
-  var character = {
-    id: undefined,
-    type: 'character',
-    name: 'Fred',
-    status: 'alive',
-    player: undefined,
-    latency: undefined,
-    district: undefined,
-    driving: null,
-    passenging: null,
-    room: null,
-    vehicles: [],
-    vehicleKeys: [],
-    vehicleWelcomes: [],
-    rooms: [],
-    roomKeys: [],
-    roomWelcomes: [],
-    x: undefined,
-    y: undefined,
-    width: 105,
-    height: 155,
-    depth: 1,
-    direction: undefined,
-    speed: undefined,
-    maxSpeed: 6,
-    acceleration: 2,
-    deceleration: 5,
-    action: null,
-    element: 'img',
-    elementID: undefined,
-    src: 'images/characters/man.png'
+  const all = []
+
+  const multiple = []
+
+  const putted = {
+    charactersPutInVehicles: [],
+    vehiclesCharactersWerePutIn: [],
+    strandedWalkers: []
   }
 
-  var vehicle = {
-    id: undefined,
-    type: 'vehicle',
-    model: 'delorean',
-    status: 'operational',
-    district: 1,
-    owner: null,
-    seats: 2,
-    driver: null,
-    keyHolders: [],
-    welcomes: [],
-    passengers: [],
-    x: undefined,
-    y: undefined,
-    width: 268,
-    height: 80,
-    direction: undefined,
-    speed: undefined,
-    maxSpeed: 80,
-    acceleration: 0,
-    deceleration: 0,
-    armor: undefined,
-    weight: 0,
-    element: 'img',
-    elementID: undefined,
-    src: 'images/vehicles/delorean.png'
-  }
+  function createObject(type) {
 
-  var room = {
-    id: undefined,
-    name: 'locked',
-    status: '',
-    owner: null,
-    capacity: 50,
-    occupants: [],
-    keyHolders: [],
-    welcomes: [],
-    unwelcomes: [],
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-    element: 'canvas',
-    background: undefined,
-    foreground: undefined,
-    scenery: {
+    const characterPrototype = {
+      id: undefined,
+      type: 'character',
+      name: 'Fred',
+      status: 'alive',
+      player: undefined,
+      latency: undefined,
+      district: undefined,
+      driving: null,
+      passenging: null,
+      occupying: null,
+      vehicleMasterKeys: [],
+      vehicleKeys: [],
+      vehicleWelcomes: [],
+      roomMasterKeys: [],
+      roomKeys: [],
+      x: undefined,
+      y: undefined,
+      width: 105,
+      height: 155,
+      depth: 1,
+      direction: undefined,
+      speed: undefined,
+      maxSpeed: 6,
+      acceleration: 2,
+      deceleration: 5,
+      action: false,
+      element: 'img',
+      elementID: undefined,
+      src: 'images/characters/man.png'
+    }
+
+    const vehiclePrototype = {
+      id: undefined,
+      type: 'vehicle',
+      model: 'delorean',
+      status: 'operational',
+      district: undefined,
+      seats: 2,
+      driver: null,
+      masterKeyHolders: [],
+      keyHolders: [],
+      welcomes: [],
+      passengers: [],
+      x: undefined,
+      y: undefined,
+      width: 268,
+      height: 80,
+      direction: undefined,
+      speed: undefined,
+      maxSpeed: 80,
+      acceleration: 0,
+      deceleration: 0,
+      armor: undefined,
+      weight: 0,
+      element: 'img',
+      elementID: undefined,
+      src: 'images/vehicles/delorean.png'
+    }
+
+    const roomPrototype = {
+      id: undefined,
+      type: 'room',
+      name: 'Pad',
+      status: 'locked',
+      district: undefined,
+      capacity: 50,
+      occupants: [],
+      masterKeyHolders: [],
+      keyHolders: [],
+      unwelcomes: [],
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      element: 'canvas',
       background: undefined,
-      foreground: undefined
-    },
-    inventory: undefined
+      foreground: undefined,
+      inventory: undefined,
+      scenery: {
+        background: undefined,
+        foreground: undefined
+      }
+    }
+
+    switch (type) {
+      case 'character': var objectPrototype = characterPrototype; break
+      case 'vehicle': objectPrototype = vehiclePrototype; break
+      case 'room': objectPrototype = roomPrototype; break
+      default:
+    }
+
+    var object = {...objectPrototype}
+
+    for (var property in objectPrototype) {
+      var value = objectPrototype[property]
+      if (Array.isArray(value)) object[property] = [...value]
+      else if (typeof value === 'object' && value !== null) {
+        for (var nestedProperty in value) {
+          var nestedValue = value[nestedProperty]
+          object[property][nestedProperty] = {...nestedValue}
+        }
+      }
+    }
+
+    return object
   }
 
-  var standInCharacter = {
-    vehicles: [],
-    vehicleKeys: [],
-    vehicleWelcomes: [],
-    rooms: [],
-    roomKeys: [],
-    roomWelcomes: []
-  }
-  var standInVehicle = {
-    keyHolders: [],
-    passengers: [],
-    welcomes: []
-  }
-  var standInRoom = {
-    keyHolders: [],
-    inhabitants: [],
-    welcomes: [],
-    unwelcomes: []
-  }
-
-  var objects = {
+  const objects = {
 
     length: _objects.length,
 
-    create: (objectType, districtID, districts, x, y, speed) => {
-
-      var directions = {
+    create: (type, districtID, x, y, speed, districtWidth = 3200, districtHeight = 8000) => {
+      const directions = {
         character: ['left', 'right'],
         vehicle: ['left', 'right', 'up', 'down', 'up-left', 'up-right', 'down-left', 'down-right']
       }
 
-      switch (objectType) {
-        case 'character':
-          var object = {
-            ...character,
-            vehicles: [],
-            vehicleKeys: [],
-            vehicleWelcomes: [],
-            rooms: [],
-            roomKeys: [],
-            roomWelcomes: []
-          }
-          break
-        case 'vehicle':
-          object = {
-            ...vehicle,
-            keyHolders: [],
-            welcomes: [],
-            passengers: []
-          }
-          break
-        case 'room':
-          object = {
-            ...room,
-            occupants: [],
-            keyHolders: [],
-            welcomes: [],
-            unwelcomes: [],
-            scenery: {
-              background: undefined,
-              foreground: undefined
-            }
-          }
-          break
-        default: console.log('Cannot create object without type.')
-      }
+      const object = createObject(type)
+      const objectClone = createObject(type)
 
       object.district = districtID
-      object.direction = directions[objectType][Math.floor(Math.random() * directions[objectType].length)]
-      if (speed || speed === 0) object.speed = speed
-      object.speed = (speed || speed === 0) ? speed : Math.round(Math.random() * object.maxSpeed)
-      var district = districts[districtID]
-      object.x = x ? x : Math.random() * (district.width - object.width) // eslint-disable-line no-unneeded-ternary
-      if (object.type === 'character') object.y = district.height - 168
-      else if (object.type === 'vehicle') object.y = y ? y : Math.random() * (district.height - object.height - 77) // eslint-disable-line no-unneeded-ternary
+
+      if (type !== 'room') {
+        object.direction = directions[type][Math.floor(Math.random() * directions[type].length)]
+        object.speed = (speed || speed === 0) ? speed : Math.round(Math.random() * object.maxSpeed)
+        object.x = x ? x : Math.random() * (districtWidth - object.width) // eslint-disable-line no-unneeded-ternary
+      }
+      if (type === 'character') object.y = districtHeight - 168
+      else if (object.type === 'vehicle') object.y = y ? y : Math.random() * (districtHeight - object.height - 77) // eslint-disable-line no-unneeded-ternary
 
       object.id = _objects.length
       object.elementID = 'o' + object.id
       _objects.push(object)
 
-      objects[object.id] = objects.get(object.id)
-      objects.length = objects.getLength()
+      const id = object.id
+      objects[id] = objectClone
+      objects.clone(id)
+      objects.refreshLength()
 
-      return object.id
+      return id
     },
 
-    get: id => {
-      var object = _objects[id]
-      switch (object.type) {
-        case 'character': var standIn = standInCharacter; break
-        case 'vehicle': standIn = standInVehicle; break
-        case 'room': standIn = standInRoom; break
-        default: console.log('Cannot get object without type.')
-      }
+    clone: id => {
+      const objectClone = objects[id]
+      const object = _objects[id]
+
+      Object.assign = (objectClone, object)
       for (var property in object) {
         var value = object[property]
-        if (typeof value !== 'object' || value === null) standIn[property] = value
-        else if (Array.isArray(value)) {
-          standIn[property].length = 0
-          value.forEach((item, index) => {
-            standIn[property][index] = item
-          })
+        if (Array.isArray(value)) {
+          objectClone[property].length = 0
+          objectClone[property] = [...value]
         }
-        else {
-          standIn[property] = 'Object found in object ' + id + '.'
+        else if (typeof value === 'object' && value !== null) {
+          for (var nestedProperty in value) {
+            var nestedValue = value[nestedProperty]
+            object[property][nestedProperty] = {...nestedValue}
+          }
         }
       }
-      return standIn
+
+      objects[id] = objectClone
+      return objectClone
     },
 
-    refresh: () => {
-      var id = 0
-      while (id < _objects.length) {
-        objects[id] = objects.get(id)
-        id++
-      }
+    cloneMultiple: (...idArrays) => {
+      multiple.length = 0
+      idArrays.forEach(idArray => {
+        idArray.forEach((id) => {
+          var objectClone = objects.clone(id)
+          multiple.push(objectClone)
+        })
+      })
+      return multiple
     },
 
-    getLength: () => _objects.length,
+    cloneAll: () => {
+      all.length = 0
+      _objects.forEach((item, id) => {
+        var object = objects.clone(id)
+        all.push(object)
+      })
+    },
+
+    refreshLength: () => {
+      objects.length = _objects.length
+    },
 
     assignPlayer: (characterID, playerID) => {
       _objects[characterID].player = playerID
+      objects[characterID].player = playerID
     },
 
-    assignDistrict: (characterID, districtID) => {
-      _objects[characterID].district = districtID
+    assignDistrict: (objectID, districtID) => {
+      _objects[objectID].district = districtID
+      objects[objectID].district = districtID
     },
 
-    makeOwner: (characterID, objectID) => {
-      var object = _objects[objectID]
-      if (object.type === 'vehicle' || object.type === 'room') {
-        object.owner = characterID
-      }
-    },
-
-    giveKey: (characterID, objectID) => {
+    giveKey: (characterID, objectID, masterKey) => {
       var character = _objects[characterID]
       var object = _objects[objectID]
-      if (object.type === 'vehicle') var keys = 'vehicleKeys'
-      else keys = 'roomKeys'
-      character[keys].push(objectID)
+      var type = object.type
+
+      switch (true) {
+        case type === 'vehicle': var keysType = 'vehicleKeys'
+        case type === 'vehicle' && masterKey: keysType = 'vehicleMasterKeys'; break
+        case type === 'room': keysType = 'roomKeys'
+        case type === 'room' && masterKey: keysType = 'roomMasterKeys'; break
+        default:
+      }
+
+      var keys = character[keysType]
+      var duplicateKey = keys.find(key => key === objectID)
+      if (!duplicateKey) keys.push(objectID)
+      if (masterKey) var keyHoldersType = 'masterKeyHolders'
+      else keyHoldersType = 'keyHolders'
+      var keyHolders = object[keyHoldersType]
+      var duplicateKeyHolder = keyHolders.find(keyHolder => keyHolder === characterID)
+      if (!duplicateKeyHolder) keyHolders.push(characterID)
+      if (masterKey) objects.giveKey(characterID, objectID)
     },
 
-    updatePlayerCharactersBehavior: (playerCharacterIDs, players) => {
-      var active = {}
+    putCharactersInVehicles: (characterIDs, vehicleIDs) => {
+      console.log('putCharactersInVehicles');
+      var {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = putted
+      charactersPutInVehicles.length = 0
+      vehiclesCharactersWerePutIn.length = 0
+      strandedWalkers.length = 0
+      characterIDs.forEach((characterID, index) => {
+
+        var character = _objects[characterID]
+        var vehicleID = vehicleIDs[index]
+        var vehicle = _objects[vehicleID]
+        var {driver, passengers, seats} = vehicle
+        if (driver) {
+          driver = 1
+
+          if (driver + passengers.length < seats) {
+            character.passenging = vehicleID
+            vehicle.passengers.push(characterID)
+            charactersPutInVehicles.push(characterID)
+            vehiclesCharactersWerePutIn.push(vehicleID)
+          }
+          else strandedWalkers.push(characterID)
+        }
+        else {
+          character.driving = vehicleID
+          vehicle.driver = characterID
+        }
+      })
+      return putted
+    },
+
+    walk: (playerCharacterIDs, players) => {
       playerCharacterIDs.forEach(characterID => {
         var character = _objects[characterID]
         var player = players[character.player]
         var input = player.input
-        if (character.driving) var driver = objects.drive(characterID, input)
-        else {
-          if (input.right) {
-            character.direction = 'right'
-            character.speed = 5
-          }
-          else if (input.left) {
-            character.direction = 'left'
-            character.speed = 5
-          }
-          else character.speed = 0
-          character.action = input.action
-          if (character.action) {
-            if (!active) active = {}
-            else if (character.passenging) {
-              if (!active.passengers) active.passengers = []
-              active.passengers.push(character.id)
-            }
-            else {
-              if (!active.walkers) active.walkers = []
-              active.walkers.push(character.id)
-            }
-          }
+        if (input.right) {
+          character.direction = 'right'
+          character.speed = 5
         }
-        if (driver) {
-          if (!active.drivers) active.drivers = []
-          active.drivers.push(driver)
+        else if (input.left) {
+          character.direction = 'left'
+          character.speed = 5
         }
-      })
-      return active
-    },
-
-    putCharactersInVehicles: (characterIDs, vehicleIDs) => {
-      characterIDs.forEach((characterID, index) => {
-        var character = _objects[characterID]
-        var vehicleID = vehicleIDs[index]
-        var vehicle = _objects[vehicleID]
-        if (!vehicle.driver) {
-          character.driving = vehicleID
-          vehicle.driver = characterID
-        }
-        else if (vehicle.passengers < vehicle.seats - 1) {
-          character.passenging = vehicle.id
-          vehicle.passengers.push(characterID)
-        }
+        else character.speed = 0
+        character.action = input.action
       })
     },
 
@@ -313,12 +315,26 @@ function Objects(_objects = []) {
 
     updateLocations: (districts) => {
       _objects.forEach(object => {
-        if (object.type === 'vehicle') objects.updateVehicleLocation(object, districts)
-        else if (object.type === 'character') objects.updateCharacterLocation(object, districts)
+        var {driving, passenging, occupying, type} = object
+        if (driving || passenging) objects.updateTravelingCharacterLocation(object)
+        else if (occupying) objects.updateOccupyingCharacterLocation(object, districts)
+        else if (type === 'character') objects.updateWalkingCharacterLocation(object, districts)
+        else if (type === 'vehicle') objects.updateVehicleLocation(object, districts)
       })
     },
 
-    updateCharacterLocation: (character, districts) => {
+    updateTravelingCharacterLocation: (object) => {
+      var {driving, passenging} = object
+      var vehicle = driving ? _objects[driving] : _objects[passenging]
+      var {x, y, width, height} = vehicle
+      object.x = x + width / 2
+      object.y = y + height / 2
+    },
+
+    updateOccupyingCharacterLocation: (object, districts) => {
+    },
+
+    updateWalkingCharacterLocation: (character, districts) => {
       var {speed, direction, district, width} = character
       if (speed > 0) {
         if (direction === 'left') {
@@ -353,76 +369,98 @@ function Objects(_objects = []) {
     updateVehicleLocation: (vehicle, districts) => {
       var {speed, direction, district, width, height, driver} = vehicle
       var distance = Math.pow((speed / 2), 2)
+
       switch (direction) {
         case 'up':
           vehicle.y -= speed
           var nextY = vehicle.y - speed
+          var directions = ['left', 'right', 'down', 'down-left', 'down-right', 'down-left', 'down-right']
           break
         case 'down':
           vehicle.y += speed
           nextY = vehicle.y + speed
+          directions = ['left', 'right', 'up', 'up-left', 'up-right', 'up-left', 'up-right']
           break
         case 'left':
           vehicle.x -= speed
           var nextX = vehicle.x - speed
+          directions = ['up', 'down', 'right', 'up-right', 'down-right', 'right', 'up-right', 'down-right']
           break
         case 'right':
           vehicle.x += speed
           nextX = vehicle.x + speed
+          directions = ['up', 'down', 'up-left', 'down-left', 'left', 'up-left', 'down-left', 'left']
           break
         case 'up-right':
           vehicle.y -= distance
           vehicle.x += distance
           nextY = vehicle.y - distance
           nextX = vehicle.x + distance
+          directions = ['left', 'up-left', 'down-left', 'down-right']
           break
         case 'down-right':
           vehicle.y += distance
           vehicle.x += distance
           nextY = vehicle.y + distance
           nextX = vehicle.x + distance
+          directions = ['left', 'up-left', 'up-right', 'down-left']
           break
         case 'up-left':
           vehicle.y -= distance
           vehicle.x -= distance
           nextY = vehicle.y - distance
           nextX = vehicle.x - distance
+          directions = ['right', 'up-right', 'down-left', 'down-right']
           break
         case 'down-left':
           vehicle.y += distance
           vehicle.x -= distance
           nextY = vehicle.y + distance
           nextX = vehicle.x - distance
+          directions = ['right', 'up-left', 'up-right', 'down-right']
           break
         default:
       }
+
       var min = 0
       var maxX = districts[district].width - width
-      var maxY = districts[district].height - height
-      if (driver) {
-        var character = objects[character.id]
-        if (character.player) {
-          if (nextX < min) {
-            vehicle.x = min
-            vehicle.speed = 0
-          }
-          if (nextX > maxX) {
-            vehicle.x = maxX
-            vehicle.speed = 0
-          }
-          if (nextY < min) {
-            vehicle.y = min
-            vehicle.speed = 0
-          }
-          if (nextY > maxY) {
-            vehicle.y = maxY
-            vehicle.speed = 0
-          }
+      var maxY = districts[district].height - height - 77
+      if (driver) var character = _objects[driver]
+      if (driver && character.player) {
+        if (nextX < min) {
+          vehicle.x = min
+          vehicle.speed = 0
         }
-        else {
-          var directions = ['left', 'right', 'up', 'down', 'up-left', 'up-right', 'down-left', 'down-right']
-          if (nextX < min || nextX > maxX || nextY < min || nextY > maxY) {
-            vehicle.direction = directions[Math.floor(Math.random() * directions.length)]
+        if (nextX > maxX) {
+          vehicle.x = maxX
+          vehicle.speed = 0
+        }
+        if (nextY < min) {
+          vehicle.y = min
+          vehicle.speed = 0
+        }
+        if (nextY > maxY) {
+          vehicle.y = maxY
+          vehicle.speed = 0
+        }
+      }
+
+      else {
+        if (nextX < min || nextX > maxX || nextY < min || nextY > maxY) {
+          vehicle.direction = directions[Math.floor(Math.random() * directions.length)]
+          switch (true) {
+            case nextX < min:
+              vehicle.x = min
+              break
+            case nextX > maxX:
+              vehicle.x = maxX; break
+            case nextY < min:
+              vehicle.y = min
+              break
+            case nextY > maxY:
+              vehicle.y = maxY
+              break
+            default:
           }
         }
       }

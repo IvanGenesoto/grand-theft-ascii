@@ -1,8 +1,9 @@
 .DS_Store
 node_modules
+npm-debug.log
 scratchpad
 build
-server/public/.DS_Store
+src/server/public/.DS_Store
 src/server/public/images/.DS_Store
 src/server/public/images/foreground/.DS_Store
 src/server/public/images/foreground/arrow/.DS_Store
