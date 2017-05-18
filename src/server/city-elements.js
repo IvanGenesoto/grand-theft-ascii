@@ -44,7 +44,7 @@ function CityElements(_cityElements = []) {
       direction: undefined,
       speed: undefined,
       maxSpeed: 6,
-      action: false,
+      active: 0,
       element: 'img',
       elementID: undefined,
       src: 'images/characters/man.png'
@@ -67,6 +67,7 @@ function CityElements(_cityElements = []) {
       width: 268,
       height: 80,
       direction: undefined,
+      previousDirection: undefined,
       speed: undefined,
       maxSpeed: 80,
       acceleration: 2,
@@ -325,9 +326,21 @@ function CityElements(_cityElements = []) {
       return putted
     },
 
+    active: function(characterID) {
+      // console.log('before ' + _cityElements[characterID].active);
+      _cityElements[characterID].active += 1
+      // console.log('activated ' + _cityElements[characterID].active);
+    },
+
+    inactive: function(characterID) {
+      // console.log('before ' + _cityElements[characterID].active);
+      _cityElements[characterID].active = 0
+      // console.log('inactivated ' + _cityElements[characterID].active);
+    },
+
     walk: (characterID, input) => {
       var character = _cityElements[characterID]
-      var {right, left, action} = input
+      var {right, left} = input
       if (right) {
         character.direction = 'right'
         character.speed = 5
@@ -337,14 +350,18 @@ function CityElements(_cityElements = []) {
         character.speed = 5
       }
       else character.speed = 0
-      character.action = action
     },
 
     drive: (characterID, input) => {
       var character = _cityElements[characterID]
       var vehicleID = character.driving
       var vehicle = _cityElements[vehicleID]
-      var {up, down, left, right, accelerate, decelerate, action} = input
+      var {up, down, left, right, accelerate, decelerate} = input
+      var {direction} = vehicle
+      if (direction !== 'up' && direction !== 'down') {
+        vehicle.previousDirection = direction
+      }
+
       switch (true) {
         case up && left: vehicle.direction = 'up-left'; break
         case up && right : vehicle.direction = 'up-right'; break
@@ -360,7 +377,6 @@ function CityElements(_cityElements = []) {
       if (decelerate) vehicle.speed -= vehicle.deceleration / 100
       if (vehicle.speed > vehicle.maxSpeed) vehicle.speed = vehicle.maxSpeed
       if (vehicle.speed < 0) vehicle.speed = 0
-      character.action = action
     },
 
     updateLocations: (districts) => {

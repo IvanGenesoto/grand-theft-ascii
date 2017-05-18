@@ -16,13 +16,12 @@ const _ = {
   tick: 0,
   connectionQueue: [],
   timestampQueue: [],
-  inputQueue: []
-}
-
-const active = {
-  walkers: [],
-  drivers: [],
-  passengers: []
+  inputQueue: [],
+  activated: {
+    walkers: [],
+    drivers: [],
+    passengers: []
+  }
 }
 
 function createMayor() {
@@ -113,9 +112,9 @@ function refresh() {
 
   var playerCharacterIDs = players.getPlayerCharacterIDs()
   var playerCharacters = cityElements.cloneMultiple(playerCharacterIDs)
-  checkIfActive(playerCharacters)
-
-  if (active) var {walkers, drivers, passengers} = active
+  var activated = checkIfActive(playerCharacters)
+  var {walkers, drivers, passengers} = activated
+  // console.log(walkers);
   if (passengers && passengers.length) var jumpers = makeJumpOut(passengers)
   var walkerClones = cityElements.cloneMultiple(walkers)
   if (walkerClones && walkerClones.length) var matches = districts.checkVehicleKeyMatches(walkerClones)
@@ -140,6 +139,7 @@ function refresh() {
   playerCharacters = cityElements.cloneMultiple(playerCharacterIDs)
   cityElements.cloneAll()
   var allPlayers = players.cloneAll()
+  updateActive(allPlayers)
   walkOrDrive(playerCharacters, allPlayers)
   var allDistricts = districts.cloneAll()
   cityElements.updateLocations(allDistricts)
@@ -153,22 +153,19 @@ function refresh() {
 }
 
 function checkIfActive(playerCharacters) {
-  var {walkers, drivers, passengers} = active
+  var {walkers, drivers, passengers} = _.activated
   walkers.length = 0
   drivers.length = 0
   passengers.length = 0
   playerCharacters.forEach(playerCharacter => {
-    var {action, driving, passenging, id} = playerCharacter
-    switch (true) {
-      case action && driving: drivers.push(id); break
-      case action && passenging: passengers.push(id); break
-      case action:
-        walkers.push(id)
-        break
-      default:
-    }
+
+    var {active, driving, passenging, id} = playerCharacter
+    if (active && driving) drivers.push(id)
+    else if (active && passenging) passengers.push(id)
+    else if (active) walkers.push(id)
   })
-  return active
+
+  return _.activated
 }
 
 function makeJumpOut(playerCharacterIDs) {
@@ -178,6 +175,17 @@ function collideVehicles({vehiclesA, vehiclesB}) {
 }
 
 function makeCharactersInteract({charactersA, charactersB}) {
+}
+
+function updateActive(allPlayers) {
+  allPlayers.forEach(player => {
+    var {id, input, character} = player
+    if (id) {
+      if (input.action) cityElements.active(character)
+      else cityElements.inactive(character)
+      cityElements.clone(character)
+    }
+  })
 }
 
 function walkOrDrive(playerCharacters, allPlayers) {

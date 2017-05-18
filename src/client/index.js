@@ -336,15 +336,28 @@ function renderCityElements(cityElementType) {
         yInCamera > _.camera.height + cityElement.height ||
         yInCamera < 0 - cityElement.height
       )) {
+
         var $cityElement = document.getElementById(cityElement.elementID)
         var $camera = document.getElementById(_.camera.elementID)
         var context = $camera.getContext('2d')
         if (cityElement.direction) {
-          if (cityElement.direction === 'left') {
+          var {direction, previousDirection} = cityElement
+          if (
+            direction === 'left' ||
+            direction === 'up-left' ||
+            direction === 'down-left' ||
+            (direction === 'up' && previousDirection === 'left') ||
+            (direction === 'up' && previousDirection === 'up-left') ||
+            (direction === 'up' && previousDirection === 'down-left') ||
+            (direction === 'down' && previousDirection === 'left') ||
+            (direction === 'down' && previousDirection === 'up-left') ||
+            (direction === 'down' && previousDirection === 'down-left')
+          ) {
             context.scale(-1, 1)
             xInCamera = -cityElement.x + _.camera.x - cityElement.width / 2
           }
         }
+
         xInCamera = Math.round(xInCamera)
         yInCamera = Math.round(yInCamera)
         context.drawImage($cityElement, xInCamera, yInCamera)
