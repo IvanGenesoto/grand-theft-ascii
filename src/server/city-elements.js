@@ -1,12 +1,16 @@
-/* eslint-disable no-fallthrough */
-
 var now = require('performance-now')
 
-function Objects(_objects = []) {
+function CityElements(_cityElements = []) {
 
   const all = []
 
   const multiple = []
+
+  const checked = {
+    charactersToEnter: [],
+    vehiclesToBeEntered: [],
+    nonEntereringWalkers: []
+  }
 
   const putted = {
     charactersPutInVehicles: [],
@@ -14,7 +18,7 @@ function Objects(_objects = []) {
     strandedWalkers: []
   }
 
-  function createObject(type) {
+  function createCityElement(type) {
 
     const characterPrototype = {
       id: undefined,
@@ -40,8 +44,6 @@ function Objects(_objects = []) {
       direction: undefined,
       speed: undefined,
       maxSpeed: 6,
-      acceleration: 2,
-      deceleration: 5,
       action: false,
       element: 'img',
       elementID: undefined,
@@ -67,8 +69,8 @@ function Objects(_objects = []) {
       direction: undefined,
       speed: undefined,
       maxSpeed: 80,
-      acceleration: 0,
-      deceleration: 0,
+      acceleration: 2,
+      deceleration: 5,
       armor: undefined,
       weight: 0,
       element: 'img',
@@ -102,154 +104,207 @@ function Objects(_objects = []) {
     }
 
     switch (type) {
-      case 'character': var objectPrototype = characterPrototype; break
-      case 'vehicle': objectPrototype = vehiclePrototype; break
-      case 'room': objectPrototype = roomPrototype; break
+      case 'character': var cityElementPrototype = characterPrototype; break
+      case 'vehicle': cityElementPrototype = vehiclePrototype; break
+      case 'room': cityElementPrototype = roomPrototype; break
       default:
     }
 
-    var object = {...objectPrototype}
+    var cityElement = {...cityElementPrototype}
 
-    for (var property in objectPrototype) {
-      var value = objectPrototype[property]
-      if (Array.isArray(value)) object[property] = [...value]
+    for (var property in cityElementPrototype) {
+      var value = cityElementPrototype[property]
+      if (Array.isArray(value)) cityElement[property] = [...value]
       else if (typeof value === 'object' && value !== null) {
         for (var nestedProperty in value) {
           var nestedValue = value[nestedProperty]
-          object[property][nestedProperty] = {...nestedValue}
+          if (typeof nestedValue !== 'object' || nestedValue === null) {
+            cityElement[property][nestedProperty] = nestedValue
+          }
+          else cityElement[property][nestedProperty] = null
         }
       }
     }
 
-    return object
+    return cityElement
   }
 
-  const objects = {
+  const cityElements = {
 
-    length: _objects.length,
+    length: _cityElements.length,
 
     create: (type, districtID, x, y, speed, districtWidth = 3200, districtHeight = 8000) => {
       const directions = {
         character: ['left', 'right'],
         vehicle: ['left', 'right', 'up', 'down', 'up-left', 'up-right', 'down-left', 'down-right']
       }
+      const percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 0.1, 0.2,
+        0.3, 0.4, 0.5, 0.6, 0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.3, 0.4]
 
-      const object = createObject(type)
-      const objectClone = createObject(type)
+      const cityElement = createCityElement(type)
+      const cityElementClone = createCityElement(type)
 
-      object.district = districtID
+      cityElement.district = districtID
 
       if (type !== 'room') {
-        object.direction = directions[type][Math.floor(Math.random() * directions[type].length)]
-        object.speed = (speed || speed === 0) ? speed : Math.round(Math.random() * object.maxSpeed)
-        object.x = x ? x : Math.random() * (districtWidth - object.width) // eslint-disable-line no-unneeded-ternary
+        cityElement.direction = directions[type][Math.floor(Math.random() * directions[type].length)]
+        cityElement.x = x ? x : Math.random() * (districtWidth - cityElement.width) // eslint-disable-line no-unneeded-ternary
       }
-      if (type === 'character') object.y = districtHeight - 168
-      else if (object.type === 'vehicle') object.y = y ? y : Math.random() * (districtHeight - object.height - 77) // eslint-disable-line no-unneeded-ternary
+      if (type === 'vehicle') {
+        var index = Math.floor(Math.random() * percentages.length)
+        var percentage = percentages[index]
+        cityElement.speed = (speed || speed === 0) ? speed : Math.round(Math.random() * cityElement.maxSpeed * percentage)
+        cityElement.y = y ? y : Math.random() * (districtHeight - cityElement.height - 77) // eslint-disable-line no-unneeded-ternary
+      }
+      if (type === 'character') {
+        cityElement.y = districtHeight - 168
+        cityElement.speed = (speed || speed === 0) ? speed : Math.round(Math.random() * cityElement.maxSpeed)
+      }
 
-      object.id = _objects.length
-      object.elementID = 'o' + object.id
-      _objects.push(object)
+      cityElement.id = _cityElements.length
+      cityElementClone.id = cityElement.id
+      cityElement.elementID = 'o' + cityElement.id
+      _cityElements.push(cityElement)
 
-      const id = object.id
-      objects[id] = objectClone
-      objects.clone(id)
-      objects.refreshLength()
+      const id = cityElement.id
+      cityElements[id] = cityElementClone
+      cityElements.clone(id)
+      cityElements.refreshLength()
 
       return id
     },
 
     clone: id => {
-      const objectClone = objects[id]
-      const object = _objects[id]
+      const cityElementClone = cityElements[id]
+      const cityElement = _cityElements[id]
 
-      Object.assign = (objectClone, object)
-      for (var property in object) {
-        var value = object[property]
-        if (Array.isArray(value)) {
-          objectClone[property].length = 0
-          objectClone[property] = [...value]
+      for (var property in cityElement) {
+        var value = cityElement[property]
+        if (typeof value !== 'object' || value === null) {
+          cityElementClone[property] = value
+        }
+        else if (Array.isArray(value)) {
+          cityElementClone[property].length = 0
+          value.forEach(item => cityElementClone[property].push(item))
         }
         else if (typeof value === 'object' && value !== null) {
           for (var nestedProperty in value) {
             var nestedValue = value[nestedProperty]
-            object[property][nestedProperty] = {...nestedValue}
+            if (typeof nestedValue !== 'object' || nestedValue === null) {
+              cityElementClone[property][nestedProperty] = nestedValue
+            }
           }
         }
       }
 
-      objects[id] = objectClone
-      return objectClone
+      cityElements[id] = cityElementClone
+      return cityElementClone
     },
 
     cloneMultiple: (...idArrays) => {
       multiple.length = 0
-      idArrays.forEach(idArray => {
-        idArray.forEach((id) => {
-          var objectClone = objects.clone(id)
-          multiple.push(objectClone)
+      if (idArrays.length) {
+        idArrays.forEach(idArray => {
+          if (idArray) {
+            idArray.forEach(id => {
+              if (id) {
+                var cityElementClone = cityElements.clone(id)
+                multiple.push(cityElementClone)
+              }
+            })
+          }
         })
-      })
+      }
       return multiple
     },
 
     cloneAll: () => {
       all.length = 0
-      _objects.forEach((item, id) => {
-        var object = objects.clone(id)
-        all.push(object)
+      _cityElements.forEach((item, id) => {
+        var cityElement = cityElements.clone(id)
+        all.push(cityElement)
       })
+      return all
     },
 
     refreshLength: () => {
-      objects.length = _objects.length
+      cityElements.length = _cityElements.length
     },
 
     assignPlayer: (characterID, playerID) => {
-      _objects[characterID].player = playerID
-      objects[characterID].player = playerID
+      _cityElements[characterID].player = playerID
+      cityElements[characterID].player = playerID
     },
 
-    assignDistrict: (objectID, districtID) => {
-      _objects[objectID].district = districtID
-      objects[objectID].district = districtID
+    assignDistrict: (cityElementID, districtID) => {
+      _cityElements[cityElementID].district = districtID
+      cityElements[cityElementID].district = districtID
     },
 
-    giveKey: (characterID, objectID, masterKey) => {
-      var character = _objects[characterID]
-      var object = _objects[objectID]
-      var type = object.type
+    giveKey: (characterID, cityElementID, masterKey) => {
+      var character = _cityElements[characterID]
+      var cityElement = _cityElements[cityElementID]
+      var type = cityElement.type
 
       switch (true) {
-        case type === 'vehicle': var keysType = 'vehicleKeys'
-        case type === 'vehicle' && masterKey: keysType = 'vehicleMasterKeys'; break
-        case type === 'room': keysType = 'roomKeys'
+        case type === 'vehicle' && masterKey: var keysType = 'vehicleMasterKeys'; break
+        case type === 'vehicle': keysType = 'vehicleKeys'; break
         case type === 'room' && masterKey: keysType = 'roomMasterKeys'; break
+        case type === 'room': keysType = 'roomKeys'; break
         default:
       }
 
       var keys = character[keysType]
-      var duplicateKey = keys.find(key => key === objectID)
-      if (!duplicateKey) keys.push(objectID)
+      var duplicateKey = keys.find(key => key === cityElementID)
+      if (!duplicateKey) keys.push(cityElementID)
       if (masterKey) var keyHoldersType = 'masterKeyHolders'
       else keyHoldersType = 'keyHolders'
-      var keyHolders = object[keyHoldersType]
+      var keyHolders = cityElement[keyHoldersType]
       var duplicateKeyHolder = keyHolders.find(keyHolder => keyHolder === characterID)
       if (!duplicateKeyHolder) keyHolders.push(characterID)
-      if (masterKey) objects.giveKey(characterID, objectID)
+      if (masterKey) cityElements.giveKey(characterID, cityElementID)
+    },
+
+    checkForVehicleEntries: (characters, vehicles) => {
+      var {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = checked
+
+      charactersToEnter.length = 0
+      vehiclesToBeEntered.length = 0
+      nonEntereringWalkers.length = 0
+
+      vehicles.forEach((vehicleID, index) => {
+        var vehicle = _cityElements[vehicleID]
+        var characterID = characters[index]
+        var character = _cityElements[characterID]
+        if (vehicle.driver) var driver = 1
+        else driver = 0
+
+        if (
+          driver + vehicle.passengers.length < vehicle.seats &&
+          character.x < vehicle.x + vehicle.width &&
+          character.x + character.width > vehicle.x &&
+          character.y < vehicle.y + vehicle.height &&
+          character.y + character.height > vehicle.y
+        ) {
+
+          charactersToEnter.push(characterID)
+          checked.vehiclesToBeEntered.push(vehicleID)
+        }
+        else checked.nonEntereringWalkers.push(character.id)
+      })
+      return checked
     },
 
     putCharactersInVehicles: (characterIDs, vehicleIDs) => {
-      console.log('putCharactersInVehicles');
       var {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = putted
       charactersPutInVehicles.length = 0
       vehiclesCharactersWerePutIn.length = 0
       strandedWalkers.length = 0
       characterIDs.forEach((characterID, index) => {
 
-        var character = _objects[characterID]
+        var character = _cityElements[characterID]
         var vehicleID = vehicleIDs[index]
-        var vehicle = _objects[vehicleID]
+        var vehicle = _cityElements[vehicleID]
         var {driver, passengers, seats} = vehicle
         if (driver) {
           driver = 1
@@ -270,68 +325,65 @@ function Objects(_objects = []) {
       return putted
     },
 
-    walk: (playerCharacterIDs, players) => {
-      playerCharacterIDs.forEach(characterID => {
-        var character = _objects[characterID]
-        var player = players[character.player]
-        var input = player.input
-        if (input.right) {
-          character.direction = 'right'
-          character.speed = 5
-        }
-        else if (input.left) {
-          character.direction = 'left'
-          character.speed = 5
-        }
-        else character.speed = 0
-        character.action = input.action
-      })
+    walk: (characterID, input) => {
+      var character = _cityElements[characterID]
+      var {right, left, action} = input
+      if (right) {
+        character.direction = 'right'
+        character.speed = 5
+      }
+      else if (left) {
+        character.direction = 'left'
+        character.speed = 5
+      }
+      else character.speed = 0
+      character.action = action
     },
 
     drive: (characterID, input) => {
-      var character = _objects[characterID]
+      var character = _cityElements[characterID]
       var vehicleID = character.driving
-      var vehicle = _objects[vehicleID]
-      var {up, down, left, right, action, accelerate, decelerate} = input
+      var vehicle = _cityElements[vehicleID]
+      var {up, down, left, right, accelerate, decelerate, action} = input
       switch (true) {
-        case right: vehicle.direction = 'right'
-        case up && right : vehicle.direction = 'up-right'
-        case down && right : vehicle.direction = 'down-right'; break
-        case left: vehicle.direction = 'left'
-        case up && left: vehicle.direction = 'up-left'
+        case up && left: vehicle.direction = 'up-left'; break
+        case up && right : vehicle.direction = 'up-right'; break
         case down && left: vehicle.direction = 'down-left'; break
+        case down && right : vehicle.direction = 'down-right'; break
         case up: vehicle.direction = 'up'; break
         case down: vehicle.direction = 'down'; break
-        default: vehicle.direction = 'right'
+        case left: vehicle.direction = 'left'; break
+        case right: vehicle.direction = 'right'; break
+        default:
       }
       if (accelerate) vehicle.speed += vehicle.acceleration / 100
       if (decelerate) vehicle.speed -= vehicle.deceleration / 100
       if (vehicle.speed > vehicle.maxSpeed) vehicle.speed = vehicle.maxSpeed
       if (vehicle.speed < 0) vehicle.speed = 0
-      if (action) {
-        return characterID
-      }
+      character.action = action
     },
 
     updateLocations: (districts) => {
-      _objects.forEach(object => {
-        var {driving, passenging, occupying, type} = object
-        if (driving || passenging) objects.updateTravelingCharacterLocation(object)
-        else if (occupying) objects.updateOccupyingCharacterLocation(object, districts)
-        else if (type === 'character') objects.updateWalkingCharacterLocation(object, districts)
-        else if (type === 'vehicle') objects.updateVehicleLocation(object, districts)
+      _cityElements.forEach(cityElement => {
+        if (cityElement.id) {
+          var {driving, passenging, occupying, type} = cityElement
+          if (driving || passenging) cityElements.updateTravelingCharacterLocation(cityElement)
+          else if (occupying) cityElements.updateOccupyingCharacterLocation(cityElement, districts)
+          else if (type === 'character') cityElements.updateWalkingCharacterLocation(cityElement, districts)
+          else if (type === 'vehicle') cityElements.updateVehicleLocation(cityElement, districts)
+        }
       })
     },
 
-    updateTravelingCharacterLocation: (object) => {
-      var {driving, passenging} = object
-      var vehicle = driving ? _objects[driving] : _objects[passenging]
+    updateTravelingCharacterLocation: (character) => {
+      var {driving, passenging} = character
+      var vehicle = driving ? _cityElements[driving] : _cityElements[passenging]
       var {x, y, width, height} = vehicle
-      object.x = x + width / 2
-      object.y = y + height / 2
+      character.x = x + width / 2
+      character.y = y + height / 2
     },
 
-    updateOccupyingCharacterLocation: (object, districts) => {
+    updateOccupyingCharacterLocation: (character, districts) => {
     },
 
     updateWalkingCharacterLocation: (character, districts) => {
@@ -425,23 +477,20 @@ function Objects(_objects = []) {
       var min = 0
       var maxX = districts[district].width - width
       var maxY = districts[district].height - height - 77
-      if (driver) var character = _objects[driver]
+      if (driver) var character = _cityElements[driver]
       if (driver && character.player) {
+
         if (nextX < min) {
           vehicle.x = min
-          vehicle.speed = 0
         }
         if (nextX > maxX) {
           vehicle.x = maxX
-          vehicle.speed = 0
         }
         if (nextY < min) {
           vehicle.y = min
-          vehicle.speed = 0
         }
         if (nextY > maxY) {
           vehicle.y = maxY
-          vehicle.speed = 0
         }
       }
 
@@ -473,7 +522,7 @@ function Objects(_objects = []) {
         if (!(index % 2) || index === 0) characterID = item
         else latency = item
         if (characterID && latency) {
-          _objects[characterID].latency = latency
+          _cityElements[characterID].latency = latency
           characterID = null
           latency = null
         }
@@ -481,12 +530,12 @@ function Objects(_objects = []) {
     },
 
     emit: (io) => {
-      _objects[0].timestamp = now()
-      io.volatile.emit('objects', _objects)
+      _cityElements[0].timestamp = now()
+      io.volatile.emit('cityElements', _cityElements)
     }
   }
 
-  return objects
+  return cityElements
 }
 
-module.exports = Objects
+module.exports = CityElements

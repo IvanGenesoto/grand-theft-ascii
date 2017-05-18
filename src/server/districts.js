@@ -6,7 +6,9 @@ function Districts(_districts = []) {
 
   const matches = {
     characters: [],
-    vehicles: []
+    vehicles: [],
+    checkedWalkers: [],
+    matchesForCharacter: []
   }
 
   const detected = {
@@ -656,7 +658,10 @@ function Districts(_districts = []) {
       else if (typeof value === 'object' && value !== null) {
         for (var nestedProperty in value) {
           var nestedValue = value[nestedProperty]
-          district[property][nestedProperty] = {...nestedValue}
+          if (typeof nestedValue !== 'object' || nestedValue === null) {
+            district[property][nestedProperty] = nestedValue
+          }
+          else district[property][nestedProperty] = null
         }
       }
     }
@@ -703,19 +708,19 @@ function Districts(_districts = []) {
     return coordinate.slice(0, 2)
   }
 
-  function assignElementIDsToScenery(object) {
-    for (var property in object) {
+  function assignElementIDsToScenery(cityElement) {
+    for (var property in cityElement) {
       if (property === 'element') {
         var id = elementID += 1
-        object.elementID = 's' + id
+        cityElement.elementID = 's' + id
       }
       else if (
-        typeof object[property] !== 'string' &&
-        typeof object[property] !== 'number' &&
-        typeof object[property] !== 'boolean'
+        typeof cityElement[property] !== 'string' &&
+        typeof cityElement[property] !== 'number' &&
+        typeof cityElement[property] !== 'boolean'
       ) {
-        var nestedObject = object[property]
-        assignElementIDsToScenery(nestedObject)
+        var nestedCityElement = cityElement[property]
+        assignElementIDsToScenery(nestedCityElement)
       }
     }
   }
@@ -811,17 +816,21 @@ function Districts(_districts = []) {
       const districtClone = districts[id]
       const district = _districts[id]
 
-      Object.assign = (districtClone, district)
       for (var property in district) {
         var value = district[property]
-        if (Array.isArray(value)) {
+        if (typeof value !== 'object' || value === null) {
+          districtClone[property] = value
+        }
+        else if (Array.isArray(value)) {
           districtClone[property].length = 0
-          districtClone[property] = [...value]
+          value.forEach(item => districtClone[property].push(item))
         }
         else if (typeof value === 'object' && value !== null) {
           for (var nestedProperty in value) {
             var nestedValue = value[nestedProperty]
-            district[property][nestedProperty] = {...nestedValue}
+            if (typeof nestedValue !== 'object' || nestedValue === null) {
+              districtClone[property][nestedProperty] = nestedValue
+            }
           }
         }
       }
@@ -845,22 +854,24 @@ function Districts(_districts = []) {
         var district = districts.clone(id)
         all.push(district)
       })
+      return all
     },
 
-    cloneLength: () => {
+    refreshLength: () => {
       districts.length = _districts.length
     },
 
     choose: () => {
       var district = _districts.find(district => (district.characters.length < 500 && district.id))
-      return district.id
+      if (district) return district.id
+      else return undefined
     },
 
     emit: (districtID, socket) => socket.emit('district', _districts[districtID]),
 
-    addToDistrict: (...objects) => {
-      objects.forEach(object => {
-        var {district, type, id} = object
+    addToDistrict: (...things) => {
+      things.forEach(cityElement => {
+        var {district, type, id} = cityElement
         type = type + 's'
         _districts[district][type].push(id)
         districts[district][type].push(id)
@@ -868,28 +879,32 @@ function Districts(_districts = []) {
     },
 
     checkVehicleKeyMatches: (walkers) => {
-      console.log('checkVehicleKeyMatches');
-      var {characters, vehicles} = matches
+      var {characters, vehicles, matchesForCharacter, checkedWalkers} = matches
       characters.length = 0
       vehicles.length = 0
+      checkedWalkers.length = 0
+      matchesForCharacter.length = 0
+
       walkers.forEach(character => {
+        matchesForCharacter.length = 0
         var {district, vehicleKeys, id} = character
-        var vehiclesInDistrict = _districts[district].vehicles
+        var vehiclesInCharacterDistrict = _districts[district].vehicles
         vehicleKeys.forEach(key => {
-          var vehicleID = vehiclesInDistrict.find(vehicle => vehicle === key)
+          var vehicleID = vehiclesInCharacterDistrict.find(vehicle => vehicle === key)
           if (vehicleID) {
             characters.push(id)
             vehicles.push(vehicleID)
+            matchesForCharacter.push(id)
           }
         })
+        if (!matchesForCharacter.length) checkedWalkers.push(id)
       })
       return matches
     },
 
-    addToGrid: (objectIDs, objects) => {
-      objectIDs.forEach(objectID => {
-        var object = objects[objectID]
-        var {x, y, width, height, district} = object
+    addToGrid: (cityElements) => {
+      cityElements.forEach(cityElement => {
+        var {x, y, width, height, district, id} = cityElement
         var grid = _districts[district].grid
         var xRight = x + width
         var yBottom = y + height
@@ -897,20 +912,20 @@ function Districts(_districts = []) {
         var rowBottom = getGridIndex(yBottom)
         var sectionLeft = getGridIndex(x)
         var sectionRight = getGridIndex(xRight)
-        grid[rowTop][sectionLeft].a.push(objectID)
+        grid[rowTop][sectionLeft].a.push(id)
         if (sectionLeft !== sectionRight) {
-          grid[rowTop][sectionRight].a.push(objectID)
+          grid[rowTop][sectionRight].a.push(id)
         }
         if (rowTop !== rowBottom) {
-          grid[rowBottom][sectionLeft][objectID].a.push(objectID)
+          grid[rowBottom][sectionLeft].a.push(id)
           if (sectionLeft !== sectionRight) {
-            grid[rowBottom][sectionRight][objectID].a.push(objectID)
+            grid[rowBottom][sectionRight].a.push(id)
           }
         }
       })
     },
 
-    detectCollisions: objects => {
+    detectCollisions: cityElements => {
       var {collisions: {vehiclesA, vehiclesB}, interactions: {charactersA, charactersB}} = detected
       vehiclesA.length = 0
       vehiclesB.length = 0
@@ -923,18 +938,18 @@ function Districts(_districts = []) {
           var row = grid[rowID]
           for (var sectionID in row) {
             var section = row[sectionID]
-            var objectsToCompare = section.a
-            var comparedObjects = section.b
+            var cityElementsToCompare = section.a
+            var comparedCityElements = section.b
 
-            comparedObjects.length = 0
-            while (objectsToCompare.length) {
-              var objectToCompareID = objectsToCompare.shift()
-              var objectToCompare = objects[objectToCompareID]
-              var {x, y, width, height, type} = objectToCompare
+            comparedCityElements.length = 0
+            while (cityElementsToCompare.length) {
+              var cityElementToCompareID = cityElementsToCompare.shift()
+              var cityElementToCompare = cityElements[cityElementToCompareID]
+              if (cityElementToCompare) var {x, y, width, height, type} = cityElementToCompare
 
-              comparedObjects.forEach(comparedObjectID => {
-                var comparedObject = objects[comparedObjectID]
-                var {x: X, y: Y, width: WIDTH, height: HEIGHT, type: TYPE} = comparedObject
+              comparedCityElements.forEach(comparedCityElementID => {
+                var comparedCityElement = cityElements[comparedCityElementID]
+                var {x: X, y: Y, width: WIDTH, height: HEIGHT, type: TYPE} = comparedCityElement
 
                 if (
                   type === TYPE &&
@@ -945,16 +960,16 @@ function Districts(_districts = []) {
                 ) {
 
                   if (type === 'vehicle') {
-                    vehiclesA.push(objectToCompare)
-                    vehiclesB.push(comparedObject)
+                    vehiclesA.push(cityElementToCompare)
+                    vehiclesB.push(comparedCityElement)
                   }
                   else {
-                    charactersA.push(objectToCompare)
-                    charactersB.push(comparedObjectID)
+                    charactersA.push(cityElementToCompare)
+                    charactersB.push(comparedCityElement)
                   }
                 }
               })
-              comparedObjects.push(objectToCompare)
+              comparedCityElements.push(cityElementToCompare)
             }
           }
         }

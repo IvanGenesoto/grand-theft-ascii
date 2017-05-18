@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000
 const now = require('performance-now')
 
 const districts = require('./districts')()
-const objects = require('./objects')()
+const cityElements = require('./city-elements')()
 const players = require('./players')()
 
 const _ = {
@@ -27,11 +27,11 @@ const active = {
 
 function createMayor() {
   var playerID = players.create()
-  var characterID = objects.create('character')
+  var characterID = cityElements.create('character')
   var districtID = districts.create()
   players.assignCharacter(playerID, characterID)
-  objects.assignPlayer(characterID, playerID)
-  objects.assignDistrict(characterID, districtID)
+  cityElements.assignPlayer(characterID, playerID)
+  cityElements.assignDistrict(characterID, districtID)
 }
 
 function initiateDistrict() {
@@ -42,15 +42,15 @@ function initiateDistrict() {
 
 function massPopulateDistrict(districtID) {
   var population = {
-    character: 200,
+    character: 100,
     vehicle: 500
   }
   for (var objectType in population) {
     var number = population[objectType]
     var populated = 0
     while (populated < number) {
-      var objectID = objects.create(objectType, districtID)
-      var object = objects.clone(objectID)
+      var objectID = cityElements.create(objectType, districtID)
+      var object = cityElements.clone(objectID)
       districts.addToDistrict(object)
       populated++
     }
@@ -68,27 +68,31 @@ function runQueues() {
     var playerID = players.getPlayerIDBySocketID(socket.id)
     players.updateInput(input, playerID)
   })
+  _.connectionQueue.length = 0
+  _.timestampQueue.length = 0
+  _.inputQueue.length = 0
 }
 
 function initiatePlayer(socket) {
   var playerID = players.create(socket.id)
   var districtID = districts.choose()
   if (!districtID) districtID = initiateDistrict()
-  var characterID = objects.create('character', districtID)
+  var characterID = cityElements.create('character', districtID)
   players.assignCharacter(playerID, characterID)
   socket.join(districtID.toString())
-  objects.assignPlayer(characterID, playerID)
-  var character = objects.clone(characterID)
+  cityElements.assignPlayer(characterID, playerID)
+  var character = cityElements.clone(characterID)
   var vehicleX = getVehicleX(character)
-  var vehicleID = objects.create('vehicle', districtID, vehicleX, 7843, 0)
-  objects.giveKey(characterID, vehicleID, 'masterKey')
-  var vehicle = objects.clone(vehicleID)
-  character = objects.clone(characterID)
-  districts.addToDistrict(character, vehicle)
+  var vehicleID = cityElements.create('vehicle', districtID, vehicleX, 7843, 0)
+  cityElements.giveKey(characterID, vehicleID, 'masterKey')
+  var vehicle = cityElements.clone(vehicleID)
+  character = cityElements.clone(characterID)
+  districts.addToDistrict(character)
+  districts.addToDistrict(vehicle)
   players.emit(playerID, socket)
   districts.emit(districtID, socket)
-  emitObjectToDistrict(character, districtID)
-  emitObjectToDistrict(vehicle, districtID)
+  emitCityElementToDistrict(character, districtID)
+  emitCityElementToDistrict(vehicle, districtID)
 }
 
 function getVehicleX(character) {
@@ -98,8 +102,8 @@ function getVehicleX(character) {
   return (side === 'left') ? character.x - distance : character.x + distance
 }
 
-function emitObjectToDistrict(object, districtID) {
-  io.to(districtID.toString()).emit('object', object)
+function emitCityElementToDistrict(cityElement, districtID) {
+  io.to(districtID.toString()).emit('cityElement', cityElement)
 }
 
 function refresh() {
@@ -108,66 +112,83 @@ function refresh() {
   runQueues()
 
   var playerCharacterIDs = players.getPlayerCharacterIDs()
-  var playerCharacters = objects.cloneMultiple(playerCharacterIDs)
+  var playerCharacters = cityElements.cloneMultiple(playerCharacterIDs)
   checkIfActive(playerCharacters)
-  var {walkers, drivers, passengers} = active
-  var jumpers = makeJumpOut(passengers)
-  var walkerClones = objects.cloneMultiple(walkers)
-  var matches = districts.checkVehicleKeyMatches(walkerClones)
-  var checked = checkForVehicleEntries(matches)
-  var {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = checked
-  var putted = objects.putCharactersInVehicles(charactersToEnter, vehiclesToBeEntered)
-  var {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = putted
-  var collection = objects.cloneMultiple(drivers, walkers, nonEntereringWalkers, strandedWalkers)
+
+  if (active) var {walkers, drivers, passengers} = active
+  if (passengers && passengers.length) var jumpers = makeJumpOut(passengers)
+  var walkerClones = cityElements.cloneMultiple(walkers)
+  if (walkerClones && walkerClones.length) var matches = districts.checkVehicleKeyMatches(walkerClones)
+  if (matches) var {characters, vehicles} = matches
+  if (characters && characters.length) var checked = cityElements.checkForVehicleEntries(characters, vehicles)
+  if (checked) var {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = checked
+  if (charactersToEnter && charactersToEnter.length) {
+    var putted = cityElements.putCharactersInVehicles(charactersToEnter, vehiclesToBeEntered)
+  }
+
+  if (putted) var {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = putted
+  var collection = cityElements.cloneMultiple(drivers, nonEntereringWalkers, strandedWalkers)
   districts.addToGrid(collection)
-  var allObjects = objects.cloneAll()
-  var detected = districts.detectCollisions(allObjects)
-  var {collisions, interactions} = detected
-  var collidedVehicles = collideVehicles(collisions)
-  var interacted = makeCharactersInteract(interactions)
-  collection = objects.cloneMultiple(jumpers, charactersPutInVehicles,
+  var detected = districts.detectCollisions(collection)
+  if (detected) var {collisions, interactions} = detected
+  if (collisions && collisions.length) var collidedVehicles = collideVehicles(collisions)
+  if (interactions && interactions.length) var interacted = makeCharactersInteract(interactions)
+  cityElements.cloneMultiple(jumpers, charactersPutInVehicles,
     vehiclesCharactersWerePutIn, collidedVehicles, interacted)
 
-  objects.walk()
-  objects.drive()
-  objects.updateLocations(districts)
+  playerCharacterIDs = players.getPlayerCharacterIDs()
+  playerCharacters = cityElements.cloneMultiple(playerCharacterIDs)
+  cityElements.cloneAll()
+  var allPlayers = players.cloneAll()
+  walkOrDrive(playerCharacters, allPlayers)
+  var allDistricts = districts.cloneAll()
+  cityElements.updateLocations(allDistricts)
+
   if (!(_.tick % 3)) {
     var latencies = players.getLatencies()
-    objects.updateLatencies(latencies)
-    objects.emit(io)
+    cityElements.updateLatencies(latencies)
+    cityElements.emit(io)
   }
   setDelay()
 }
 
-function checkIfActive(playerCharacterID) {
+function checkIfActive(playerCharacters) {
   var {walkers, drivers, passengers} = active
-
   walkers.length = 0
   drivers.length = 0
   passengers.length = 0
-
-  playerCharacterID.forEach(playerCharacter => {
-    var {active, driving, passenging, id} = playerCharacter
+  playerCharacters.forEach(playerCharacter => {
+    var {action, driving, passenging, id} = playerCharacter
     switch (true) {
-      case active && driving: drivers.push(id); break
-      case active && passenging: passengers.push(id); break
-      case active: walkers.push(id); break
+      case action && driving: drivers.push(id); break
+      case action && passenging: passengers.push(id); break
+      case action:
+        walkers.push(id)
+        break
       default:
     }
   })
   return active
 }
 
-function checkForVehicleEntries(matches) {
-}
-
 function makeJumpOut(playerCharacterIDs) {
 }
 
-function collideVehicles(vehicleIDs) {
+function collideVehicles({vehiclesA, vehiclesB}) {
 }
 
-function makeCharactersInteract(playerCharacterIDs) {
+function makeCharactersInteract({charactersA, charactersB}) {
+}
+
+function walkOrDrive(playerCharacters, allPlayers) {
+  playerCharacters.forEach(character => {
+    var {player, driving, passenging, id} = character
+    var input = allPlayers[player].input
+    if (driving) cityElements.drive(id, input)
+    else if (!passenging) {
+      cityElements.walk(id, input)
+    }
+  })
 }
 
 function setDelay() {
