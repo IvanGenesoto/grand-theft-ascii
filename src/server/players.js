@@ -36,7 +36,10 @@ function Players(_players = []) {
       else if (typeof value === 'object' && value !== null) {
         for (var nestedProperty in value) {
           var nestedValue = value[nestedProperty]
-          player[property][nestedProperty] = {...nestedValue}
+          if (typeof nestedValue !== 'object' || nestedValue === null) {
+            player[property][nestedProperty] = nestedValue
+          }
+          else player[property][nestedProperty] = null
         }
       }
     }
@@ -68,17 +71,21 @@ function Players(_players = []) {
       const playerClone = players[id]
       const player = _players[id]
 
-      Object.assign = (playerClone, player)
       for (var property in player) {
         var value = player[property]
-        if (Array.isArray(value)) {
+        if (typeof value !== 'object' || value === null) {
+          playerClone[property] = value
+        }
+        else if (Array.isArray(value)) {
           playerClone[property].length = 0
-          playerClone[property] = [...value]
+          value.forEach(item => playerClone[property].push(item))
         }
         else if (typeof value === 'object' && value !== null) {
           for (var nestedProperty in value) {
             var nestedValue = value[nestedProperty]
-            player[property][nestedProperty] = {...nestedValue}
+            if (typeof nestedValue !== 'object' || nestedValue === null) {
+              playerClone[property][nestedProperty] = nestedValue
+            }
           }
         }
       }
@@ -102,6 +109,7 @@ function Players(_players = []) {
         var player = players.clone(id)
         all.push(player)
       })
+      return all
     },
 
     assignCharacter: (playerID, characterID) => {

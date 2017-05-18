@@ -20,34 +20,34 @@ function initiateDistrict(district) {
     _.imagesTotal = 0
     _.imagesLoaded = null
     _.district = district
-    _.objectsBuffer = []
+    _.cityElementsBuffer = []
     createElements(district, 'loop')
     checkImagesLoaded()
   }
   else {
     drawToLayer('backgrounds')
     drawToLayer('foregrounds')
-    shiftObjectsBuffer('initiateRefresh')
+    shiftCityElementsBuffer('initiateRefresh')
   }
 }
 
-function createElements(object, loop) {
-  for (var property in object) {
+function createElements(cityElement, loop) {
+  for (var property in cityElement) {
     if (property === 'element') {
-      var $element = document.createElement(object.element)
-      $element.id = object.elementID
+      var $element = document.createElement(cityElement.element)
+      $element.id = cityElement.elementID
       document.body.appendChild($element)
-      if (object !== _.camera) {
+      if (cityElement !== _.camera) {
         $element.classList.add('hidden')
       }
-      if (object.width) {
-        $element.width = object.width
-        $element.height = object.height
+      if (cityElement.width) {
+        $element.width = cityElement.width
+        $element.height = cityElement.height
       }
-      if (object.src) {
+      if (cityElement.src) {
         if (!_.imagesTotal) _.imagesTotal = 0
         _.imagesTotal += 1
-        $element.src = object.src
+        $element.src = cityElement.src
         $element.onload = () => {
           if (!_.imagesLoaded) _.imagesLoaded = 0
           _.imagesLoaded += 1
@@ -56,11 +56,11 @@ function createElements(object, loop) {
     }
     else if (
       loop &&
-      typeof object[property] !== 'string' &&
-      typeof object[property] !== 'number' &&
-      typeof object[property] !== 'boolean'
+      typeof cityElement[property] !== 'string' &&
+      typeof cityElement[property] !== 'number' &&
+      typeof cityElement[property] !== 'boolean'
     ) {
-      var nestedObject = object[property]
+      var nestedObject = cityElement[property]
       createElements(nestedObject, 'loop')
     }
   }
@@ -100,32 +100,32 @@ function drawToLayer(type) {
   }
 }
 
-function shiftObjectsBuffer(initiatingRefresh) {
+function shiftCityElementsBuffer(initiatingRefresh) {
   clearTimeout(_.shiftTimeout)
-  if (_.objectsBuffer.length > 2) {
-    while (_.objectsBuffer.length > 2) _.objectsBuffer.shift()
+  if (_.cityElementsBuffer.length > 2) {
+    while (_.cityElementsBuffer.length > 2) _.cityElementsBuffer.shift()
     if (initiatingRefresh) {
-      _.objects = _.objectsBuffer[0]
+      _.cityElements = _.cityElementsBuffer[0]
     }
-    preservePlayerCharacterLocation(_.objectsBuffer[0])
+    preservePlayerCharacterLocation(_.cityElementsBuffer[0])
     _.ratioIndex = -1
     if (initiatingRefresh) refresh('first')
   }
   else if (initiatingRefresh) {
     _.shiftTimeout = setTimeout(() => {
-      shiftObjectsBuffer(initiatingRefresh)
+      shiftCityElementsBuffer(initiatingRefresh)
     }, 1000 / 60)
   }
 }
 
-function preservePlayerCharacterLocation(newObjects) {
+function preservePlayerCharacterLocation(newCityElements) {
   var index = _.player.character
-  _.xFromNewObjects = newObjects[index].x
-  _.yFromNewObjects = newObjects[index].y
-  var character = _.objects[index]
+  _.xFromNewCityElements = newCityElements[index].x
+  _.yFromNewCityElements = newCityElements[index].y
+  var character = _.cityElements[index]
   var {x, y} = character
-  _.objects = newObjects
-  character = _.objects[index]
+  _.cityElements = newCityElements
+  character = _.cityElements[index]
   character.x = x
   character.y = y
 }
@@ -135,7 +135,7 @@ function refresh(first) {
   var ratio = getInterpolationRatio()
   if (ratio) interpolateDistrict(ratio)
   if (_.ratioIndex > 1) {
-    shiftObjectsBuffer()
+    shiftCityElementsBuffer()
     var result = checkPredictionOutcome()
     if (result) reconcilePlayerCharacter(result)
   }
@@ -166,19 +166,19 @@ function getInterpolationRatio() {
 }
 
 function interpolateDistrict(ratio) {
-  var a = _.objectsBuffer[0]
-  var b = _.objectsBuffer[1]
-  _.objects.forEach(object => {
+  var a = _.cityElementsBuffer[0]
+  var b = _.cityElementsBuffer[1]
+  _.cityElements.forEach(cityElement => {
     if (
-      object.district === _.district.id &&
-      object.type !== 'room' &&
-      object.id !== _.player.character
+      cityElement.district === _.district.id &&
+      cityElement.type !== 'room' &&
+      cityElement.id !== _.player.character
     ) {
-      var id = object.id
+      var id = cityElement.id
       var properties = ['x', 'y']
       properties.forEach(property => {
         var difference = b[id][property] - a[id][property]
-        object[property] = a[id][property] + difference * ratio
+        cityElement[property] = a[id][property] + difference * ratio
       })
     }
   })
@@ -188,10 +188,10 @@ function checkPredictionOutcome() {
   var {predictionBuffer} = _.player
   if (!predictionBuffer[0]) return
   var characterIndex = _.player.character
-  var character = _.objects[characterIndex]
+  var character = _.cityElements[characterIndex]
   var {latency} = character
   if (!latency) return
-  var timestamp = _.objects[0].timestamp
+  var timestamp = _.cityElements[0].timestamp
   var differences = predictionBuffer.map((prediction) => {
     var duration = timestamp - prediction.timestamp
     return Math.abs(duration - latency)
@@ -199,7 +199,7 @@ function checkPredictionOutcome() {
   var smallest = Math.min(...differences)
   var index = differences.findIndex(difference => difference === smallest)
   var prediction = predictionBuffer[index]
-  if (prediction.x !== _.xFromNewObjects || prediction.y !== _.yFromNewObjects) {
+  if (prediction.x !== _.xFromNewCityElements || prediction.y !== _.yFromNewCityElements) {
     return index
   }
 }
@@ -207,9 +207,9 @@ function checkPredictionOutcome() {
 function reconcilePlayerCharacter(index) {
   var {predictionBuffer} = _.player
   var characterIndex = _.player.character
-  var character = _.objects[characterIndex]
-  character.x = _.xFromNewObjects
-  character.y = _.yFromNewObjects
+  var character = _.cityElements[characterIndex]
+  character.x = _.xFromNewCityElements
+  character.y = _.yFromNewCityElements
   for (var i = index; i < predictionBuffer.length; i++) {
     var input = predictionBuffer[i].input
     updatePlayerCharacterBehavior(input)
@@ -219,7 +219,7 @@ function reconcilePlayerCharacter(index) {
 
 function updatePredictionBuffer(input) {
   var index = _.player.character
-  var character = _.objects[index]
+  var character = _.cityElements[index]
   var {x, y} = character
   var prediction = {x, y, input, timestamp: performance.now()}
   _.player.predictionBuffer.push(prediction)
@@ -228,7 +228,7 @@ function updatePredictionBuffer(input) {
 
 function updatePlayerCharacterBehavior(input) {
   var index = _.player.character
-  var character = _.objects[index]
+  var character = _.cityElements[index]
   if (input.right === true) {
     character.direction = 'right'
     character.speed = 5
@@ -242,7 +242,7 @@ function updatePlayerCharacterBehavior(input) {
 
 function updatePlayerCharacterLocation() {
   var index = _.player.character
-  var character = _.objects[index]
+  var character = _.cityElements[index]
   if (character.speed > 0) {
     if (character.direction === 'left') {
       character.x -= character.speed
@@ -269,23 +269,24 @@ function render(first) {
     $camera.classList.add('hidden')
   }
   renderScenery('backgrounds')
-  renderObjects('characters')
-  renderObjects('vehicles')
+  renderCityElements('characters')
+  renderCityElements('vehicles')
   renderScenery('foregrounds')
   if (first) setTimeout(() => $camera.classList.remove('hidden'), 1250)
 }
 
 function updateCamera() {
   if (_.camera.following) {
-    var objectID = _.camera.following
+    var cityElementID = _.camera.following
     if (
-      _.district.characters.find(item => item === objectID) ||
-      _.district.vehicles.find(item => item === objectID) ||
-      _.district.rooms.find(item => item === objectID)
+      _.district.characters.find(item => item === cityElementID) ||
+      _.district.vehicles.find(item => item === cityElementID) ||
+      _.district.rooms.find(item => item === cityElementID)
     ) {
-      var object = _.objects[objectID]
-      _.camera.x = Math.round(object.x - _.camera.width / 2)
-      _.camera.y = Math.round(object.y - _.camera.height / 2)
+      var cityElement = _.cityElements[cityElementID]
+      if (cityElement.driving) cityElement = _.cityElements[cityElement.driving]
+      _.camera.x = Math.round(cityElement.x - _.camera.width / 2)
+      _.camera.y = Math.round(cityElement.y - _.camera.height / 2)
       var cameraMaxX = _.district.width - _.camera.width
       var cameraMaxY = _.district.height - _.camera.height
       if (_.camera.x < 0) _.camera.x = 0
@@ -306,14 +307,14 @@ function renderScenery(type) {
   var layers = _.district.scenery[type]
   for (var layerID in layers) {
     var layer = layers[layerID]
-    var objectID = _.camera.following
-    var object = _.objects[objectID]
+    var cityElementID = _.camera.following
+    var cityElement = _.cityElements[cityElementID]
     var $layer = document.getElementById(layer.elementID)
     var $camera = document.getElementById(_.camera.elementID)
     var context = $camera.getContext('2d')
     if (layer.x) var layerX = layer.x
     else layerX = 0
-    var cameraX = Math.round(object.x / layer.depth - _.camera.width / 2 / layer.depth - layerX)
+    var cameraX = Math.round(cityElement.x / layer.depth - _.camera.width / 2 / layer.depth - layerX)
     var cameraMaxX = Math.round(_.district.width / layer.depth - _.camera.width / layer.depth - layerX)
     if (cameraX > cameraMaxX) cameraX = cameraMaxX
     if (!layer.x && cameraX < 0) cameraX = 0
@@ -322,31 +323,31 @@ function renderScenery(type) {
   }
 }
 
-function renderObjects(objectType) {
-  _.district[objectType].forEach(objectID => {
-    var object = _.objects[objectID]
-    var {driving, passenging, occupying} = object
+function renderCityElements(cityElementType) {
+  _.district[cityElementType].forEach(cityElementID => {
+    var cityElement = _.cityElements[cityElementID]
+    var {driving, passenging, occupying} = cityElement
     if (!(driving || passenging || occupying)) {
-      var xInCamera = object.x - _.camera.x
-      var yInCamera = object.y - _.camera.y
+      var xInCamera = cityElement.x - _.camera.x
+      var yInCamera = cityElement.y - _.camera.y
       if (!(
-        xInCamera > _.camera.width + object.width ||
-        xInCamera < 0 - object.width ||
-        yInCamera > _.camera.height + object.height ||
-        yInCamera < 0 - object.height
+        xInCamera > _.camera.width + cityElement.width ||
+        xInCamera < 0 - cityElement.width ||
+        yInCamera > _.camera.height + cityElement.height ||
+        yInCamera < 0 - cityElement.height
       )) {
-        var $object = document.getElementById(object.elementID)
+        var $cityElement = document.getElementById(cityElement.elementID)
         var $camera = document.getElementById(_.camera.elementID)
         var context = $camera.getContext('2d')
-        if (object.direction) {
-          if (object.direction === 'left') {
+        if (cityElement.direction) {
+          if (cityElement.direction === 'left') {
             context.scale(-1, 1)
-            xInCamera = -object.x + _.camera.x - object.width / 2
+            xInCamera = -cityElement.x + _.camera.x - cityElement.width / 2
           }
         }
         xInCamera = Math.round(xInCamera)
         yInCamera = Math.round(yInCamera)
-        context.drawImage($object, xInCamera, yInCamera)
+        context.drawImage($cityElement, xInCamera, yInCamera)
         context.setTransform(1, 0, 0, 1, 0, 0)
       }
     }
@@ -413,7 +414,7 @@ function control(key, action) {
     if (action === 'down') _.player.input.right = true
     if (action === 'up') _.player.input.right = false
   }
-  if (key === 'e' || key === 'E' || key === 'ArrowUp') {
+  if (key === 'w' || key === 'W' || key === 'ArrowUp') {
     if (action === 'down') _.player.input.up = true
     if (action === 'up') _.player.input.up = false
   }
@@ -467,22 +468,22 @@ socket.on('player', player => {
   _.camera.following = _.player.character
 })
 
-socket.on('object', object => {
+socket.on('cityElement', cityElement => {
   if (_.district) {
-    var match = _.district[object.type + 's'].find(id => id === object.id)
+    var match = _.district[cityElement.type + 's'].find(id => id === cityElement.id)
     if (!match) {
-      _.district[object.type + 's'].push(object.id)
-      createElements(object)
+      _.district[cityElement.type + 's'].push(cityElement.id)
+      createElements(cityElement)
     }
   }
 })
 
-socket.on('objects', objects => {
-  var timestamp = objects[0].timestamp
-  objects[0].timestamp = performance.now()
+socket.on('cityElements', cityElements => {
+  var timestamp = cityElements[0].timestamp
+  cityElements[0].timestamp = performance.now()
   socket.emit('timestamp', timestamp)
-  if (!_.objects) objects.forEach(object => createElements(object))
-  _.objectsBuffer.push(objects)
+  if (!_.cityElements) cityElements.forEach(cityElement => createElements(cityElement))
+  _.cityElementsBuffer.push(cityElements)
 })
 
 _.camera.width = innerWidth
