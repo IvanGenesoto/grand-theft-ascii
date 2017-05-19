@@ -41,8 +41,8 @@ function initiateDistrict() {
 
 function massPopulateDistrict(districtID) {
   var population = {
-    character: 100,
-    vehicle: 500
+    character: 50,
+    vehicle: 250
   }
   for (var objectType in population) {
     var number = population[objectType]
@@ -114,8 +114,7 @@ function refresh() {
   var playerCharacters = cityElements.cloneMultiple(playerCharacterIDs)
   var activated = checkIfActive(playerCharacters)
   var {walkers, drivers, passengers} = activated
-  // console.log(walkers);
-  if (passengers && passengers.length) var jumpers = makeJumpOut(passengers)
+
   var walkerClones = cityElements.cloneMultiple(walkers)
   if (walkerClones && walkerClones.length) var matches = districts.checkVehicleKeyMatches(walkerClones)
   if (matches) var {characters, vehicles} = matches
@@ -126,13 +125,17 @@ function refresh() {
   }
 
   if (putted) var {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = putted
+  var driverClones = cityElements.cloneMultiple(drivers)
+  if (passengers && passengers.length) cityElements.exitVehicles(passengers)
+  if (driverClones && driverClones.length) cityElements.exitVehicles(drivers)
   var collection = cityElements.cloneMultiple(drivers, nonEntereringWalkers, strandedWalkers)
   districts.addToGrid(collection)
+
   var detected = districts.detectCollisions(collection)
   if (detected) var {collisions, interactions} = detected
   if (collisions && collisions.length) var collidedVehicles = collideVehicles(collisions)
   if (interactions && interactions.length) var interacted = makeCharactersInteract(interactions)
-  cityElements.cloneMultiple(jumpers, charactersPutInVehicles,
+  cityElements.cloneMultiple(charactersPutInVehicles,
     vehiclesCharactersWerePutIn, collidedVehicles, interacted)
 
   playerCharacterIDs = players.getPlayerCharacterIDs()
@@ -160,15 +163,21 @@ function checkIfActive(playerCharacters) {
   playerCharacters.forEach(playerCharacter => {
 
     var {active, driving, passenging, id} = playerCharacter
-    if (active && driving) drivers.push(id)
-    else if (active && passenging) passengers.push(id)
-    else if (active) walkers.push(id)
+    if (active >= 30 && driving) {
+      playerCharacter.active = 0
+      drivers.push(id)
+    }
+    else if (active >= 30 && passenging) {
+      playerCharacter.active = 0
+      passengers.push(id)
+    }
+    else if (active >= 30) {
+      playerCharacter.active = 0
+      walkers.push(id)
+    }
   })
 
   return _.activated
-}
-
-function makeJumpOut(playerCharacterIDs) {
 }
 
 function collideVehicles({vehiclesA, vehiclesB}) {
