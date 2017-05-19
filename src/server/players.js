@@ -94,12 +94,20 @@ function Players(_players = []) {
       return playerClone
     },
 
-    cloneMultiple: (...ids) => {
+    cloneMultiple: (...idArrays) => {
       multiple.length = 0
-      ids.forEach(id => {
-        var player = players.clone(id)
-        multiple.push(player)
-      })
+      if (idArrays.length) {
+        idArrays.forEach(idArray => {
+          if (idArray) {
+            idArray.forEach(id => {
+              if (id) {
+                var playerClone = players.clone(id)
+                multiple.push(playerClone)
+              }
+            })
+          }
+        })
+      }
       return multiple
     },
 

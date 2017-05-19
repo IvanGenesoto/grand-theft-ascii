@@ -839,12 +839,20 @@ function Districts(_districts = []) {
       return districtClone
     },
 
-    cloneMultiple: (...ids) => {
+    cloneMultiple: (...idArrays) => {
       multiple.length = 0
-      ids.forEach(id => {
-        var district = districts.clone(id)
-        multiple.push(district)
-      })
+      if (idArrays.length) {
+        idArrays.forEach(idArray => {
+          if (idArray) {
+            idArray.forEach(id => {
+              if (id) {
+                var districtClone = districts.clone(id)
+                multiple.push(districtClone)
+              }
+            })
+          }
+        })
+      }
       return multiple
     },
 

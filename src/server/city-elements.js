@@ -44,7 +44,7 @@ function CityElements(_cityElements = []) {
       direction: undefined,
       speed: undefined,
       maxSpeed: 6,
-      action: false,
+      active: 0,
       element: 'img',
       elementID: undefined,
       src: 'images/characters/man.png'
@@ -57,7 +57,7 @@ function CityElements(_cityElements = []) {
       status: 'operational',
       district: undefined,
       seats: 2,
-      driver: null,
+      driver: 0,
       masterKeyHolders: [],
       keyHolders: [],
       welcomes: [],
@@ -67,10 +67,13 @@ function CityElements(_cityElements = []) {
       width: 268,
       height: 80,
       direction: undefined,
+      previousDirection: undefined,
       speed: undefined,
       maxSpeed: 80,
-      acceleration: 2,
-      deceleration: 5,
+      slowing: false,
+      falling: false,
+      acceleration: 4,
+      deceleration: 10,
       armor: undefined,
       weight: 0,
       element: 'img',
@@ -311,6 +314,7 @@ function CityElements(_cityElements = []) {
 
           if (driver + passengers.length < seats) {
             character.passenging = vehicleID
+            character.active = 0
             vehicle.passengers.push(characterID)
             charactersPutInVehicles.push(characterID)
             vehiclesCharactersWerePutIn.push(vehicleID)
@@ -319,15 +323,59 @@ function CityElements(_cityElements = []) {
         }
         else {
           character.driving = vehicleID
+          character.active = 0
           vehicle.driver = characterID
         }
       })
       return putted
     },
 
+    active: function(characterID) {
+      _cityElements[characterID].active += 1
+    },
+
+    inactive: function(characterID) {
+      _cityElements[characterID].active = 0
+    },
+
+    exitVehicles: characterIDs => {
+      characterIDs.forEach(characterID => {
+        var {active, id} = _cityElements[characterID]
+        if (active >= 30) cityElements.exitVehicle(id)
+      })
+    },
+
+    exitVehicle: characterID => {
+      var character = _cityElements[characterID]
+      var {driving} = character
+      var vehicle = _cityElements[driving]
+      character.driving = 0
+      character.passenging = 0
+      character.active = 0
+      vehicle.driver = 0
+      vehicle.slowing = true
+      vehicle.falling = true
+    },
+
+    graduallyStopVehicle: vehicle => {
+      vehicle.speed -= vehicle.deceleration / 100
+      if (vehicle.speed < 0) {
+        vehicle.speed = 0
+        vehicle.slowing = false
+      }
+    },
+
+    fallVehicle: vehicle => {
+      vehicle.y += 2
+      if (vehicle.y < 7843) {
+        vehicle.falling = false
+        vehicle.y = 7843
+      }
+    },
+
     walk: (characterID, input) => {
       var character = _cityElements[characterID]
-      var {right, left, action} = input
+      var {right, left} = input
       if (right) {
         character.direction = 'right'
         character.speed = 5
@@ -337,14 +385,18 @@ function CityElements(_cityElements = []) {
         character.speed = 5
       }
       else character.speed = 0
-      character.action = action
     },
 
     drive: (characterID, input) => {
       var character = _cityElements[characterID]
       var vehicleID = character.driving
       var vehicle = _cityElements[vehicleID]
-      var {up, down, left, right, accelerate, decelerate, action} = input
+      var {up, down, left, right, accelerate, decelerate} = input
+      var {direction} = vehicle
+      if (direction !== 'up' && direction !== 'down') {
+        vehicle.previousDirection = direction
+      }
+
       switch (true) {
         case up && left: vehicle.direction = 'up-left'; break
         case up && right : vehicle.direction = 'up-right'; break
@@ -360,17 +412,20 @@ function CityElements(_cityElements = []) {
       if (decelerate) vehicle.speed -= vehicle.deceleration / 100
       if (vehicle.speed > vehicle.maxSpeed) vehicle.speed = vehicle.maxSpeed
       if (vehicle.speed < 0) vehicle.speed = 0
-      character.action = action
     },
 
     updateLocations: (districts) => {
       _cityElements.forEach(cityElement => {
         if (cityElement.id) {
-          var {driving, passenging, occupying, type} = cityElement
+          var {driving, passenging, occupying, type, slowing, falling} = cityElement
           if (driving || passenging) cityElements.updateTravelingCharacterLocation(cityElement)
           else if (occupying) cityElements.updateOccupyingCharacterLocation(cityElement, districts)
           else if (type === 'character') cityElements.updateWalkingCharacterLocation(cityElement, districts)
-          else if (type === 'vehicle') cityElements.updateVehicleLocation(cityElement, districts)
+          else if (type === 'vehicle') {
+            if (falling) cityElements.fallVehicle(cityElement)
+            if (slowing) cityElements.graduallyStopVehicle(cityElement)
+            cityElements.updateVehicleLocation(cityElement, districts)
+          }
         }
       })
     },
@@ -387,7 +442,11 @@ function CityElements(_cityElements = []) {
     },
 
     updateWalkingCharacterLocation: (character, districts) => {
-      var {speed, direction, district, width} = character
+      var {speed, direction, district, width, y} = character
+      if (y < 7832) {
+        character.y += 6
+      }
+      else if (y > 7832) character.y = 7832
       if (speed > 0) {
         if (direction === 'left') {
           character.x -= speed
@@ -419,8 +478,10 @@ function CityElements(_cityElements = []) {
     },
 
     updateVehicleLocation: (vehicle, districts) => {
-      var {speed, direction, district, width, height, driver} = vehicle
+      var {speed, direction, district, width, height, driver, y} = vehicle
       var distance = Math.pow((speed / 2), 2)
+      var maxY = districts[district].height - height - 77
+      if (y > maxY) vehicle.y = maxY
 
       switch (direction) {
         case 'up':
@@ -476,7 +537,6 @@ function CityElements(_cityElements = []) {
 
       var min = 0
       var maxX = districts[district].width - width
-      var maxY = districts[district].height - height - 77
       if (driver) var character = _cityElements[driver]
       if (driver && character.player) {
 
