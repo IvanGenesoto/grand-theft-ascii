@@ -44,8 +44,41 @@ function Characters(_characters = {
 
   }
 
-  function createSetterPrototype() {
-
+  function createAccessorPrototype(_characters) {
+    const accessorPrototype = Object.create(null)
+    accessorPrototype.standinArray = []
+    const standinArray = accessorPrototype.standinArray
+    const attributeNames = Object.keys(_characters)
+    attributeNames.forEach(attributeName => {
+      const attribute = _characters[attributeName]
+      const defaultValue = attribute[0]
+      if (Array.isArray(defaultValue)) {
+        Object.defineProperty(accessorPrototype, [attributeName], {
+          get: function() {
+            standinArray.length = 0
+            const array = _characters[attributeName][this.index]
+            array.forEach((value, index) => {
+              standinArray[index] = value
+            })
+            return standinArray
+          },
+          set: function(value) {
+            characters[attributeName](this.index, value)
+          }
+        })
+      }
+      else if (typeof defaultValue !== 'object') {
+        Object.defineProperty(accessorPrototype, [attributeName], {
+          get: function() {
+            return attribute[this.index]
+          },
+          set: function(value) {
+            characters[attributeName](this.index, value)
+          }
+        })
+      }
+      else throw console.log('No objects or null in default character')
+    })
   }
 
   function createSetters() {
@@ -58,8 +91,8 @@ function Characters(_characters = {
 
   }
 
-  const setterPrototype = createSetterPrototype()
-  createSetters(setterPrototype)
+  const accessorPrototype = createAccessorPrototype(_characters)
+  createSetters(characters)
 
   return Object.freeze(characters)
 }
