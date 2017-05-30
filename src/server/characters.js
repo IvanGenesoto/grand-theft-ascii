@@ -41,7 +41,9 @@ function Characters(_characters = {
   }
 
   function createAccessor(index) {
-
+    characters[index] = Object.create(accessorPrototype, {index: {value: index}})
+    Object.freeze(characters[index])
+    return index
   }
 
   function createAccessorPrototype(_characters) {
