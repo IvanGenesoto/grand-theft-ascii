@@ -28,6 +28,30 @@ function Characters(_characters = {
   src: ['images/characters/man.png']
 }) {
 
+  function createCharacter(name) {
+
+  }
+
+  function createAccessor(index) {
+
+  }
+
+  function createSetterPrototype() {
+
+  }
+
+  function createSetters() {
+
+  }
+
+  const characters = {
+
+  }
+
+  const setterPrototype = createSetterPrototype()
+  createSetters(setterPrototype)
+
+  return Object.freeze(characters)
 }
 
 module.exports = Characters
