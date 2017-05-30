@@ -29,7 +29,15 @@ function Characters(_characters = {
 }) {
 
   function createCharacter(name) {
-
+    const index = _characters.name.length
+    const attributes = Object.values(_characters)
+    attributes.forEach(attribute => {
+      const defaultValue = attribute[0]
+      if (Array.isArray(defaultValue)) attribute[index] = []
+      else if (typeof defaultValue !== 'object') attribute[index] = defaultValue
+      else throw console.log('No objects or null in default character')
+    })
+    return index
   }
 
   function createAccessor(index) {
@@ -45,6 +53,8 @@ function Characters(_characters = {
   }
 
   const characters = {
+
+    create: name => createAccessor(createCharacter(name))
 
   }
 
