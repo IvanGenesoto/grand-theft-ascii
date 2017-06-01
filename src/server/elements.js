@@ -1,9 +1,35 @@
-let _characters = {
+const _zones = {
+  status: '',
+  established: undefined,
+  rooms: [[0]],
+  characters: [[0]],
+  vehicles: [[0]],
+  unwelcomes: [[0]]
+}
+
+const _players = {
+  status: ['on'],
+  socket: [''],
+  character: [0],
+  predictionBuffer: [undefined],
+  latencyBuffer: [[0.1]],
+  up: [false],
+  down: [false],
+  left: [false],
+  right: [false],
+  accelerate: [false],
+  decelerate: [false],
+  enter: [false],
+  exit: [false]
+}
+
+const _characters = {
   name: [''],
   status: [''],
   player: [0],
   latency: [0.1], // test 0.0
   district: [0],
+  zone: [0],
   driving: [0],
   passenging: [0],
   occupying: [0],
@@ -28,9 +54,68 @@ let _characters = {
   src: ['images/characters/man.png']
 }
 
+const _vehicles = {
+  status: 'operational',
+  model: 'delorean',
+  district: [0],
+  zone: [0],
+  seats: [2],
+  driver: [0],
+  masterKeyHolders: [[0]],
+  keyHolders: [[0]],
+  welcomes: [[0]],
+  passengers: [[0]],
+  x: [0.1],
+  y: [0.1],
+  width: [268],
+  height: [80],
+  direction: ['right'],
+  previousDirection: ['right'],
+  speed: [0],
+  maxSpeed: [80],
+  slowing: [false],
+  falling: [false],
+  acceleration: [4],
+  deceleration: [10],
+  armor: [0],
+  weight: [0],
+  element: ['img'],
+  elementID: [''],
+  src: ['images/vehicles/delorean.png']
+}
+
+const _rooms = {
+  status: ['locked'],
+  name: ['Pad'],
+  district: [0],
+  zone: [0],
+  capacity: [50],
+  occupants: [[0]],
+  masterKeyHolders: [[0]],
+  keyHolders: [[0]],
+  unwelcomes: [[0]],
+  x: [0.1],
+  y: [0.1],
+  width: [0],
+  height: [0],
+  element: ['canvas'],
+  background: [0],
+  foreground: [0],
+  inventory: [[0]]
+}
+
 function Elements(_elements) {
 
-  if (typeof _elements === 'string' && _elements === '_characters') _elements = _characters
+  if (typeof _elements === 'string') {
+    switch (_elements) {
+      case '_characters': _elements = _characters; break
+      case '_vehicles': _elements = _vehicles; break
+      case '_rooms': _elements = _rooms; break
+      case '_players': _elements = _players; break
+      case '_districts': _elements = _zones; break
+      default: throw console.log('Element type not found')
+    }
+  }
 
   function createCharacter(name) {
     const index = _elements.status.length
@@ -104,7 +189,7 @@ function Elements(_elements) {
     attributeNames.forEach(attributeName => {
       const attribute = _elements[attributeName]
       const defaultValue = attribute[0]
-      if (Array.isArray(defaultValue)) createArraySetter(attributeName)
+      if (Array.isArray(defaultValue)) createArraySetter(attributeName, defaultValue)
       else if (Number.isInteger(defaultValue)) createIntegerSetter(attributeName)
       else if (typeof defaultValue !== 'object') createDefaultSetter(attributeName)
       else throw console.log('Object or null found in default element')
@@ -129,22 +214,35 @@ function Elements(_elements) {
     }
   }
 
-  function createArraySetter(attributeName) {
-    const attribute = _elements[attributeName]
-    let defaultValue = attribute[0]
-    defaultValue = defaultValue[0]
-    if (Number.isInteger(defaultValue)) createArrayIntegerSetter(attributeName)
+  function createArraySetter(attributeName, defaultValue) {
+    const typeofDefaultValue = typeof defaultValue
+    if (Number.isInteger(defaultValue)) createIntegerArraySetter(attributeName)
+    else if (typeofDefaultValue !== 'object') createDefaultArraySetter(attributeName, typeofDefaultValue)
     else throw console.log('Non-integer found in default _elements.' + attributeName)
   }
 
-  function createArrayIntegerSetter(attributeName) {
+  function createDefaultArraySetter(attributeName, typeofDefaultValue) {
+    const attribute = _elements[attributeName]
+    elements[attributeName] = function(index, value) {
+      const array = attribute[index]
+      const typofValue = typeof value
+      if (typofValue === typeofDefaultValue) {
+        if (value > 0) return push(value, array)
+        else if (value < 0) return array.shift()
+        else return array.length
+      }
+      else throw console.log('elements[' + index + '].' + attributeName + ' must be a ' + typeofDefaultValue)
+    }
+  }
+
+  function createIntegerArraySetter(attributeName) {
     const attribute = _elements[attributeName]
     elements[attributeName] = function(index, value) {
       const array = attribute[index]
       if (Number.isInteger(value)) {
         if (value > 0) return push(value, array)
         else if (value < 0) return remove(value, array)
-        else throw console.log('elements[' + index + '].' + attributeName + ' cannot be 0')
+        else return array.length
       }
       else throw console.log('elements[' + index + '].' + attributeName + ' must be an integer')
     }
