@@ -1,24 +1,31 @@
 const _districts = {
   status: [''],
-  established: [0],
   rooms: [[0]],
   characters: [[0]],
   vehicles: [[0]],
   unwelcomes: [[0]],
   scenery: [
-    [ // stratum 0
-      [ // layer 0
-        [ // row 0
-          'images/background/far/above-top.png' // column 0 scenery
+    [ // district
+      [ // stratum
+        [ // layer
+          [ // row
+            [ // column
+              'images/background/far/above-top.png'
+            ]
+          ]
         ]
       ]
     ]
   ],
   collision: [
-    [ // stratum 0
-      [ // layer 0
-        [ // row 0
-          [0] // column 0 collision
+    [ // district
+      [ // stratum
+        [ // layer
+          [ // row
+            [ // column
+              [0]
+            ]
+          ]
         ]
       ]
     ]
@@ -122,13 +129,11 @@ const _rooms = {
   inventory: [[0]]
 }
 
-const standinArray = []
-
 function Elements(_elements) {
 
   if (typeof _elements === 'string') {
     switch (_elements) {
-      case '_zones': _elements = _districts; break
+      case '_districts': _elements = _districts; break
       case '_players': _elements = _players; break
       case '_characters': _elements = _characters; break
       case '_vehicles': _elements = _vehicles; break
@@ -142,11 +147,25 @@ function Elements(_elements) {
     const attributes = Object.values(_elements)
     attributes.forEach(attribute => {
       const defaultValue = attribute[0]
-      if (Array.isArray(defaultValue)) attribute[index] = []
+      if (Array.isArray(defaultValue)) attribute[index] = createArrayAttribute(defaultValue)
       else if (typeof defaultValue !== 'object') attribute[index] = defaultValue
       else throw console.log('Object or null found in default element')
     })
     return index
+  }
+
+  function createArrayAttribute(array) {
+    const newArray = []
+    function loopThrough(array) {
+      if (Array.isArray(array[0])) {
+        array.forEach((nestedArray, index) => {
+          newArray[index] = []
+          loopThrough(nestedArray)
+        })
+      }
+    }
+    loopThrough(array)
+    return newArray
   }
 
   function createAccessor(index) {
@@ -179,33 +198,30 @@ function Elements(_elements) {
   }
 
   function defineDefaultProperty(accessorPrototype, attributeName) {
-    const propertyDescriptor = createDefaultPropertyDescriptor(attributeName)
-    return Object.defineProperty(accessorPrototype, attributeName, propertyDescriptor)
+    const descriptor = createDefaultDescriptor(attributeName)
+    return Object.defineProperty(accessorPrototype, attributeName, descriptor)
   }
 
   function defineArrayProperty(accessorPrototype, standinArray, attributeName) {
     const attribute = _elements[attributeName]
     const defaultValue = attribute[0]
-    if (!Array.isArray(defaultValue[0])) {
-      var propertyDescriptor = createNestedArrayPropertyDescriptor(attributeName)
+    if (Array.isArray(defaultValue[0])) {
+      var descriptor = createNestedArrayDescriptor(attributeName, attribute)
     }
-    else propertyDescriptor = createArrayPropertyDescriptor(attributeName, standinArray)
-    return Object.defineProperty(accessorPrototype, attributeName, propertyDescriptor)
+    else descriptor = createArrayDescriptor(attributeName, standinArray)
+    return Object.defineProperty(accessorPrototype, attributeName, descriptor)
   }
 
-  function createDefaultPropertyDescriptor(attributeName) {
-    const attribute = _elements[attributeName]
+  function createDefaultDescriptor(attributeName) {
     return {
-      get: function() {
-        return attribute[this.index]
-      },
+      get: () => _elements[attributeName][this.index],
       set: function(value) {
         elements[attributeName](this.index, value)
       }
     }
   }
 
-  function createArrayPropertyDescriptor(attributeName, standinArray) {
+  function createArrayDescriptor(attributeName, standinArray) {
     return {
       get: function() {
         standinArray.length = 0
@@ -221,79 +237,72 @@ function Elements(_elements) {
     }
   }
 
-  function createNestedArrayPropertyDescriptor(attributeName) {
-    const attribute = _elements[attributeName]
-    const defaultValue = attribute[[[[0]]]]
+  function createNestedArrayDescriptor(attributeName, attribute) {
+    while (Array.isArray(attribute)) attribute = attribute[0]
+    const defaultValue = attribute
     if (Number.isInteger(defaultValue)) {
-      return createNestedIntegerPropertyDescriptor(attributeName)
+      return createNestedArrayIntegerDescriptor(attributeName)
     }
     else if (typeof defaultValue === 'string') {
-      return createNestedStringPropertyDescriptor(attributeName)
+      return createNestedArrayStringDescriptor(attributeName)
     }
     else throw console.log('Cannot create nested property descriptor of non-integer or -string')
   }
 
-  function createNestedIntegerPropertyDescriptor(attributeName) {
-    return {
-      get: () => console.log('Use setter'),
-      set: function(value) {
-        return elements[attributeName](value)
-      }
-    }
-  }
-
-  function createNestedStringPropertyDescriptor(attributeName) {
+  function createNestedArrayIntegerDescriptor(attributeName) {
     return {
       get: function() {
-        return console.log('Scenery getter not implemented')
+        return elements.standinArray
       },
       set: function(value) {
-        return console.log('Scenery setter not implemented')
+        return elements[attributeName](this.index, value)
       }
     }
   }
 
-  function createSetters(elements) {
-    const attributeNames = Object.keys(_elements)
-    attributeNames.forEach(attributeName => {
-      const attribute = _elements[attributeName]
-      const defaultValue = attribute[0]
-      if (Array.isArray(defaultValue)) createArraySetter(attributeName, defaultValue)
-      else if (Number.isInteger(defaultValue)) createIntegerSetter(attributeName)
-      else if (typeof defaultValue !== 'object') createDefaultSetter(attributeName)
-      else throw console.log('Object or null found in default element')
-    })
+  function createNestedArrayStringDescriptor(attributeName) {
+    return {
+      get: () => console.log('Scenery getter not implemented'),
+      set: value => console.log('Scenery setter not implemented')
+    }
   }
 
-  function createDefaultSetter(attributeName) {
+  function createSetter(attributeName) {
     const attribute = _elements[attributeName]
+    const defaultValue = attribute[0]
+    if (Array.isArray(defaultValue)) return createArraySetter(attributeName, attribute)
+    else if (Number.isInteger(defaultValue)) return createIntegerSetter(attributeName, attribute)
+    else if (typeof defaultValue !== 'object') return createDefaultSetter(attributeName, attribute)
+    else throw console.log('Object or null found in default element')
+  }
+
+  function createDefaultSetter(attributeName, attribute) {
     const typeofDefaultValue = typeof attribute[0]
-    elements[attributeName] = function(index, value) {
+    return function (index, value) {
       const typofValue = typeof value
       if (typofValue === typeofDefaultValue) attribute[index] = value
       else throw console.log('elements[' + index + '].' + attributeName + ' must be a ' + typeofDefaultValue)
     }
   }
 
-  function createIntegerSetter(attributeName) {
-    const attribute = _elements[attributeName]
-    elements[attributeName] = function(index, value) {
+  function createIntegerSetter(attributeName, attribute) {
+    return function (index, value) {
       if (Number.isInteger(value)) attribute[index] = value
       else throw console.log('elements[' + index + '].' + attributeName + ' must be an integer')
     }
   }
 
-  function createArraySetter(attributeName, defaultValue) {
+  function createArraySetter(attributeName, attribute) {
+    const defaultValue = attribute[0]
     const typeofDefaultValue = typeof defaultValue
-    if (Array.isArray(typeofDefaultValue)) createNestedArraySetter(attributeName)
-    else if (Number.isInteger(defaultValue)) createIntegerArraySetter(attributeName)
-    else if (typeofDefaultValue !== 'object') createDefaultArraySetter(attributeName, typeofDefaultValue)
-    else throw console.log('Non-integer found in default _elements.' + attributeName)
+    if (Array.isArray(defaultValue)) return createNestedArraySetter(attribute)
+    else if (Number.isInteger(defaultValue)) return createIntegerArraySetter(attributeName, attribute)
+    else if (typeofDefaultValue !== 'object') return createDefaultArraySetter(attributeName, attribute, typeofDefaultValue)
+    else throw console.log('Object or null found in default _elements.' + attributeName)
   }
 
-  function createDefaultArraySetter(attributeName, typeofDefaultValue) {
-    const attribute = _elements[attributeName]
-    elements[attributeName] = function(index, value) {
+  function createDefaultArraySetter(attributeName, attribute, typeofDefaultValue) {
+    return function (index, value) {
       const array = attribute[index]
       const typofValue = typeof value
       if (typofValue === typeofDefaultValue) {
@@ -307,9 +316,8 @@ function Elements(_elements) {
     }
   }
 
-  function createIntegerArraySetter(attributeName) {
-    const attribute = _elements[attributeName]
-    elements[attributeName] = function(index, value) {
+  function createIntegerArraySetter(attributeName, attribute) {
+    return function (index, value) {
       const array = attribute[index]
       if (Number.isInteger(value)) {
         if (value > 0) return push(value, array)
@@ -322,24 +330,26 @@ function Elements(_elements) {
     }
   }
 
-  function createNestedArraySetter(attributeName) {
-    const attribute = _elements[attributeName]
-    elements[attributeName] = function(joinedValue) {
-      if (joinedValue === 'clear') return clear(attributeName)
+  function createNestedArraySetter(attribute) {
+    return function (index, joinedValue) {
+      if (joinedValue === 'clear') return clear(attribute)
       const [stratum, layer, row, collumn, value] = joinedValue.split('.')
-      const array = attribute[stratum][layer][row][collumn]
-      if (value) return set(array)
+      const array = attribute[index][stratum][layer][row][collumn]
+      console.log(array);
+      if (value) return set(value, array)
       else return get(array)
     }
   }
 
   function push(value, array) {
+    console.log('push');
     const duplicate = array.find(item => item === value)
     if (!duplicate) array.push(value)
     else return 'duplicate'
   }
 
   function remove(value, array) {
+    console.log('remove');
     const match = array.find((item, index) => {
       if (item === value) return index
     })
@@ -350,16 +360,21 @@ function Elements(_elements) {
     }
   }
 
-  function get(array) {
+  function get(array, index, attributeName) {
+    console.log('get');
+    const standinArray = elements.standinArray
     standinArray.length = 0
     array.forEach((value, index) => {
       standinArray[index] = value
     })
+    console.log('standinArray', standinArray);
     return standinArray
   }
 
   function set(value, array) {
-    if (Number.isInteger(value)) {
+    console.log('set');
+    if (Number.isInteger(+value)) {
+      value = +value
       if (value > 0) return push(value, array)
       else if (value < 0) return remove(value, array)
       else throw console.log('Cannot push 0')
@@ -369,8 +384,7 @@ function Elements(_elements) {
     else throw console.log('element must be an integer')
   }
 
-  function clear(attributeName) {
-    const array = _elements[attributeName]
+  function clear(array) {
     loopThrough(array)
     function loopThrough(array) {
       array.forEach(array => {
@@ -384,12 +398,17 @@ function Elements(_elements) {
 
     length: _elements.length,
 
-    create: name => createAccessor(createElement(name))
+    create: name => createAccessor(createElement(name), accessorPrototype),
+
+    standinArray: []
 
   }
 
   const accessorPrototype = createAccessorPrototype(_elements)
-  createSetters(elements)
+  const attributeNames = Object.keys(_elements)
+  attributeNames.forEach(function (attributeName) {
+    elements[attributeName] = createSetter(attributeName)
+  })
 
   return Object.freeze(Object.create(elements))
 }
