@@ -4,27 +4,23 @@ const _districts = {
   characters: [[0]],
   vehicles: [[0]],
   unwelcomes: [[0]],
-  scenery: [
-    [ // district
-      [ // stratum
-        [ // layer
-          [ // row
-            [ // column
-              'images/background/far/above-top.png'
-            ]
+  scenery: [ // district
+    [ // stratum
+      [ // layer
+        [ // row
+          [ // column
+            'images/background/far/above-top.png'
           ]
         ]
       ]
     ]
   ],
-  collision: [
-    [ // district
-      [ // stratum
-        [ // layer
-          [ // row
-            [ // column
-              [0]
-            ]
+  collision: [ // district
+    [ // stratum
+      [ // layer
+        [ // row
+          [ // column
+            [0]
           ]
         ]
       ]
@@ -154,18 +150,9 @@ function Elements(_elements) {
     return index
   }
 
-  function createArrayAttribute(array) {
-    const newArray = []
-    function loopThrough(array) {
-      if (Array.isArray(array[0])) {
-        array.forEach((nestedArray, index) => {
-          newArray[index] = []
-          loopThrough(nestedArray)
-        })
-      }
-    }
-    loopThrough(array)
-    return newArray
+  function createArrayAttribute(defaultArray) {
+    if (Array.isArray(defaultArray[0])) return defaultArray
+    else return []
   }
 
   function createAccessor(index) {
@@ -251,9 +238,7 @@ function Elements(_elements) {
 
   function createNestedArrayIntegerDescriptor(attributeName) {
     return {
-      get: function() {
-        return elements.standinArray
-      },
+      get: () => elements.standinArray,
       set: function(value) {
         return elements[attributeName](this.index, value)
       }
@@ -320,7 +305,7 @@ function Elements(_elements) {
     return function (index, value) {
       const array = attribute[index]
       if (Number.isInteger(value)) {
-        if (value > 0) return push(value, array)
+        if (value > 0) return push(-value, array)
         else if (value < 0) return remove(value, array)
         else throw console.log('Cannot push 0 to ' + attributeName)
       }
@@ -333,27 +318,25 @@ function Elements(_elements) {
   function createNestedArraySetter(attribute) {
     return function (index, joinedValue) {
       if (joinedValue === 'clear') return clear(attribute)
-      const [stratum, layer, row, collumn, value] = joinedValue.split('.')
-      const array = attribute[index][stratum][layer][row][collumn]
-      console.log(array);
+      const [stratum, layer, row, column, value] = joinedValue.split('.')
+      const array = attribute[index][stratum][layer][row][column]
       if (value) return set(value, array)
       else return get(array)
     }
   }
 
   function push(value, array) {
-    console.log('push');
     const duplicate = array.find(item => item === value)
     if (!duplicate) array.push(value)
     else return 'duplicate'
   }
 
   function remove(value, array) {
-    console.log('remove');
-    const match = array.find((item, index) => {
-      if (item === value) return index
-    })
-    if (match) array[match] = 0
+    const match = array.find(item => (item === value))
+    if (match) {
+      const index = array.indexOf(value)
+      array[index] = 0
+    }
     else {
       console.log('Could not remove ' + value + ' from elements index attribute. Item not found.')
       return 'no match'
@@ -361,22 +344,19 @@ function Elements(_elements) {
   }
 
   function get(array, index, attributeName) {
-    console.log('get');
     const standinArray = elements.standinArray
     standinArray.length = 0
     array.forEach((value, index) => {
       standinArray[index] = value
     })
-    console.log('standinArray', standinArray);
     return standinArray
   }
 
   function set(value, array) {
-    console.log('set');
     if (Number.isInteger(+value)) {
       value = +value
       if (value > 0) return push(value, array)
-      else if (value < 0) return remove(value, array)
+      else if (value < 0) return remove(-value, array)
       else throw console.log('Cannot push 0')
     }
     else if (value === 'length') return array.length
