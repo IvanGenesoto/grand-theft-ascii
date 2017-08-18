@@ -1,4 +1,4 @@
-module.exports = function createAccessorPrototype(_entities, entities) {
+module.exports = function createAccessorPrototype(_entities, entities, entity) {
   const $ = require
   let accessorPrototype = Object.create(null)
   accessorPrototype.standinArray = []
@@ -7,6 +7,10 @@ module.exports = function createAccessorPrototype(_entities, entities) {
   attributeNames.forEach(attributeName => {
     const args = [standinArray, attributeName, _entities, entities]
     accessorPrototype = $('../define/property')(accessorPrototype, ...args)
+  })
+  const methods = $('object.entries')($('../../methods/exclusive/' + entity)())
+  methods.forEach(method => {
+    accessorPrototype[method[0]] = method[1]
   })
   return accessorPrototype
 }

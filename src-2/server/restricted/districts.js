@@ -1,5 +1,3 @@
-const Entities = require('./entities')
-
 module.exports = function Districts(
   _districts = {
     status: [''],
@@ -31,6 +29,10 @@ module.exports = function Districts(
     ]
   }
 ) {
-  const districts = Entities(_districts)
+
+  const $ = require
+
+  const districts = $('./entities')(_districts, 'district')
+
   return Object.freeze(Object.create(districts))
 }

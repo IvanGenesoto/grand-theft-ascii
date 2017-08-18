@@ -1,5 +1,3 @@
-const Entities = require('./entities')
-
 module.exports = function Players(
   _players = {
     status: ['on'],
@@ -17,6 +15,10 @@ module.exports = function Players(
     exit: [false]
   }
 ) {
-  const players = Entities(_players)
+
+  const $ = require
+
+  const players = $('./entities')(_players, 'player')
+
   return Object.freeze(Object.create(players))
 }

@@ -1,8 +1,4 @@
-module.exports = function Entities(_entities) {
-
-  const createEntity = require('./create/entity')
-  const createAccessor = require('./create/accessor')
-  const createAccessorPrototype = require('./create/accessor-prototype')
+module.exports = function Entities(_entities, entity) {
 
   function createSetter(attributeName) {
     const attribute = _entities[attributeName]
@@ -138,22 +134,25 @@ module.exports = function Entities(_entities) {
     }
   }
 
-  const entities = {
+  const $ = require
 
-    length: _entities.status.length,
+  const entities = Object.create(null, {
 
-    create: function() {
-      const accessor = createAccessor(createEntity(_entities), accessorPrototype, entities)
+    length: {value: _entities.status.length},
+
+    create: {value: function() {
+      const createEntity = $('./create/entity')(_entities)
+      const args = [createEntity, accessorPrototype, entities]
+      const accessor = $('./create/accessor')(...args)
       return accessor.index
-    },
+    }},
 
-    standinArray: []
-
-  }
+    standinArray: {value: []}
+  })
 
   const log = ['']
   Object.defineProperty(entities, 'log', {get: () => log[0]})
-  const accessorPrototype = createAccessorPrototype(_entities, entities)
+  const accessorPrototype = $('./create/accessor-prototype')(_entities, entities, entity)
   const attributeNames = Object.keys(_entities)
   attributeNames.forEach(function (attributeName) {
     entities[attributeName] = createSetter(attributeName)

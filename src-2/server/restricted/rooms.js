@@ -1,5 +1,3 @@
-const Entities = require('./entities')
-
 module.exports = function Rooms(
   _rooms = {
     status: ['locked'],
@@ -21,6 +19,10 @@ module.exports = function Rooms(
     inventory: [[0]]
   }
 ) {
-  const rooms = Entities(_rooms)
+
+  const $ = require
+
+  const rooms = $('./entities')(_rooms, 'room')
+
   return Object.freeze(Object.create(rooms))
 }
