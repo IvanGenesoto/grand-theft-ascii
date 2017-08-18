@@ -1,4 +1,4 @@
-const Entities = require('./entities-new')
+const Entities = require('./entities')
 
 module.exports = function Characters(
   _characters = {
@@ -29,11 +29,9 @@ module.exports = function Characters(
     maxSpeed: [0],
     element: ['img'],
     elementID: [''],
-    src: ['images/characters/man.png'],
-    log: ['']
+    src: ['images/characters/man.png']
   }
 ) {
   const characters = Entities(_characters)
-
   return Object.freeze(Object.create(characters))
 }
