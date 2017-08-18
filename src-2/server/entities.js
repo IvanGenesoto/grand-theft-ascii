@@ -1,123 +1,8 @@
-Object.values = require('object.values')
-
 module.exports = function Entities(_entities) {
 
-  function createEntity() {
-    const index = _entities.status.length
-    const attributes = Object.values(_entities)
-    attributes.forEach(attribute => {
-      const defaultValue = attribute[0]
-      if (Array.isArray(defaultValue)) attribute[index] = createArrayAttribute(defaultValue)
-      else if (typeof defaultValue !== 'object') attribute[index] = defaultValue
-      else throw console.log('Object or null found in default entity')
-    })
-    return index
-  }
-
-  function createArrayAttribute(defaultArray) {
-    if (Array.isArray(defaultArray[0])) return defaultArray
-    else return []
-  }
-
-  function createAccessor(index, accessorPrototype) {
-    entities[index] = Object.create(accessorPrototype, {index: {value: index}})
-    return Object.freeze(entities[index])
-  }
-
-  function createAccessorPrototype(_entities) {
-    let accessorPrototype = Object.create(null)
-    accessorPrototype.standinArray = []
-    const standinArray = accessorPrototype.standinArray
-    const attributeNames = Object.keys(_entities)
-    attributeNames.forEach(attributeName => {
-      accessorPrototype = defineProperty(accessorPrototype, standinArray, attributeName)
-    })
-    return accessorPrototype
-  }
-
-  function defineProperty(accessorPrototype, standinArray, attributeName) {
-    const attribute = _entities[attributeName]
-    const defaultValue = attribute[0]
-    if (Array.isArray(defaultValue)) {
-      return defineArrayProperty(accessorPrototype, standinArray, attributeName)
-    }
-    else if (typeof defaultValue !== 'object') {
-      return defineDefaultProperty(accessorPrototype, attributeName)
-    }
-    else throw console.log('Object or null found in default entity')
-  }
-
-  function defineDefaultProperty(accessorPrototype, attributeName) {
-    const descriptor = createDefaultDescriptor(attributeName)
-    return Object.defineProperty(accessorPrototype, attributeName, descriptor)
-  }
-
-  function defineArrayProperty(accessorPrototype, standinArray, attributeName) {
-    const attribute = _entities[attributeName]
-    const defaultValue = attribute[0]
-    if (Array.isArray(defaultValue[0])) {
-      var descriptor = createNestedArrayDescriptor(attributeName, attribute)
-    }
-    else descriptor = createArrayDescriptor(attributeName, standinArray)
-    return Object.defineProperty(accessorPrototype, attributeName, descriptor)
-  }
-
-  function createDefaultDescriptor(attributeName) {
-    return {
-      get: function() {
-        return _entities[attributeName][this.index]
-      },
-      set: function(value) {
-        entities[attributeName](this.index, value)
-      }
-    }
-  }
-
-  function createArrayDescriptor(attributeName, standinArray) {
-    return {
-      get: function() {
-        standinArray.length = 0
-        const array = _entities[attributeName][this.index]
-        array.forEach((value, index) => {
-          standinArray[index] = value
-        })
-        return standinArray
-      },
-      set: function(value) {
-        entities[attributeName](this.index, value)
-      }
-    }
-  }
-
-  function createNestedArrayDescriptor(attributeName, attribute) {
-    while (Array.isArray(attribute)) attribute = attribute[0]
-    const defaultValue = attribute
-    if (Number.isInteger(defaultValue)) {
-      return createNestedArrayIntegerDescriptor(attributeName)
-    }
-    else if (typeof defaultValue === 'string') {
-      return createNestedArrayStringDescriptor(attributeName)
-    }
-    else throw console.log('Cannot create nested property descriptor of non-integer or -string')
-  }
-
-  function createNestedArrayIntegerDescriptor(attributeName) {
-    return {
-      get: function() {
-        return entities.standinArray
-      },
-      set: function(value) {
-        return entities[attributeName](this.index, value)
-      }
-    }
-  }
-
-  function createNestedArrayStringDescriptor(attributeName) {
-    return {
-      get: () => console.log('Scenery getter not implemented'),
-      set: value => console.log('Scenery setter not implemented')
-    }
-  }
+  const createEntity = require('./create/entity')
+  const createAccessor = require('./create/accessor')
+  const createAccessorPrototype = require('./create/accessor-prototype')
 
   function createSetter(attributeName) {
     const attribute = _entities[attributeName]
@@ -258,7 +143,7 @@ module.exports = function Entities(_entities) {
     length: _entities.status.length,
 
     create: function() {
-      const accessor = createAccessor(createEntity(), accessorPrototype)
+      const accessor = createAccessor(createEntity(_entities), accessorPrototype, entities)
       return accessor.index
     },
 
@@ -268,7 +153,7 @@ module.exports = function Entities(_entities) {
 
   const log = ['']
   Object.defineProperty(entities, 'log', {get: () => log[0]})
-  const accessorPrototype = createAccessorPrototype(_entities)
+  const accessorPrototype = createAccessorPrototype(_entities, entities)
   const attributeNames = Object.keys(_entities)
   attributeNames.forEach(function (attributeName) {
     entities[attributeName] = createSetter(attributeName)
