@@ -1,5 +1,3 @@
-const Entities = require('./entities')
-
 module.exports = function Vehicles(
   _vehicles = {
     status: 'operational',
@@ -31,6 +29,10 @@ module.exports = function Vehicles(
     src: ['images/vehicles/delorean.png']
   }
 ) {
-  const vehicles = Entities(_vehicles)
+
+  const $ = require
+
+  const vehicles = $('./entities')(_vehicles, 'vehicle')
+
   return Object.freeze(Object.create(vehicles))
 }

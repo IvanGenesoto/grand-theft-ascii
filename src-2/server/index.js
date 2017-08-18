@@ -8,19 +8,15 @@ const path = require('path')
 const port = process.env.PORT || 3000
 const now = require('performance-now') // eslint-disable-line no-unused-vars
 
-const state = require('./state')
+const state = require('./restricted/state')
 
 const {
   players, // eslint-disable-line no-unused-vars
   districts, // eslint-disable-line no-unused-vars
   rooms, // eslint-disable-line no-unused-vars
-  characters,
+  characters, // eslint-disable-line no-unused-vars
   vehicles // eslint-disable-line no-unused-vars
 } = state
-
-var bob = characters.create()
-characters[bob].name = 'Bob'
-console.log(characters[bob].name)
 
 app.use(express.static(path.join(__dirname, 'public')))
 server.listen(port, () => {
