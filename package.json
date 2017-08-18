@@ -21,6 +21,7 @@
     "htmlhint": "^0.9.13",
     "nodemon": "^1.11.0",
     "npm-run-all": "^4.0.2",
+    "object.values": "^1.0.4",
     "stylelint": "^7.10.1",
     "stylelint-config-standard": "^16.0.0",
     "watchify": "^3.9.0"

@@ -1,3 +1,5 @@
+Object.values = require('object.values')
+
 module.exports = function Entities(_entities) {
 
   function createEntity() {
@@ -82,7 +84,7 @@ module.exports = function Entities(_entities) {
         return standinArray
       },
       set: function(value) {
-        return entities[attributeName](this.index, value)
+        entities[attributeName](this.index, value)
       }
     }
   }
@@ -174,8 +176,14 @@ module.exports = function Entities(_entities) {
         else if (value < 0) remove(value, array, index)
         else throw console.log('Cannot push 0 to ' + attributeName)
       }
-      else if (value === 'length') _entities.log[index] = array.length
-      else if (value === 'clear') array.length = 0
+      else if (value === 'length') log[0] = array.length
+      else if (value === 'clear') {
+        if (array.length) {
+          array.length = 0
+          log[0] = 'cleared'
+        }
+        else log[0] = 'nothing to clear'
+      }
       else throw console.log('entities[' + index + '].' + attributeName + ' must be an integer')
     }
   }
@@ -194,11 +202,11 @@ module.exports = function Entities(_entities) {
     const duplicate = array.find(item => item === value)
     if (!duplicate) {
       array.push(value)
-      _entities.log[index] = 'added'
+      log[0] = 'added'
     }
     else {
-      _entities.log[index] = 'duplicate'
-      console.log('Could not add ' + value + ' to array. Duplicate found.')
+      log[0] = 'duplicate'
+      console.log('Could not add ' + value + ' to array ' + index + '. Duplicate found.')
     }
   }
 
@@ -206,11 +214,11 @@ module.exports = function Entities(_entities) {
     const match = array.findIndex(item => (item === value))
     if (match) {
       array.splice(match, 1)
-      _entities.log[index] = 'removed'
+      log[0] = 'removed'
     }
     else {
-      _entities.log[index] = 'not found'
-      console.log('Could not remove ' + value + ' from array. Item not found.')
+      log[0] = 'not found'
+      console.log('Could not remove ' + value + ' from array ' + index + '. Item not found.')
     }
   }
 
@@ -258,6 +266,8 @@ module.exports = function Entities(_entities) {
 
   }
 
+  const log = ['']
+  Object.defineProperty(entities, 'log', {get: () => log[0]})
   const accessorPrototype = createAccessorPrototype(_entities)
   const attributeNames = Object.keys(_entities)
   attributeNames.forEach(function (attributeName) {
