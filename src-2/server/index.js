@@ -1,14 +1,23 @@
-const express = require('express')
-const app = express()
-const http = require('http')
-const server = http.Server(app)
-const socket = require('socket.io')
-const io = socket(server) // eslint-disable-line no-unused-vars
-const path = require('path')
-const port = process.env.PORT || 3000
-const now = require('performance-now') // eslint-disable-line no-unused-vars
+const district = 1
 
-const state = require('./restricted/state')
+const $ = require
+const express = $('express')
+const app = express()
+const server = $('http').Server(app)
+const socket = $('socket.io')
+const io = socket(server) // eslint-disable-line no-unused-vars
+const path = $('path')
+const port = process.env.PORT || 3000
+const now = $('performance-now') // eslint-disable-line no-unused-vars
+
+const state = $('./secure/state')(district)
+
+const {
+  entityCounts, // eslint-disable-line no-unused-vars
+  entityDistricts, // eslint-disable-line no-unused-vars
+  entityIndexes, // eslint-disable-line no-unused-vars
+  entities
+} = state
 
 const {
   players, // eslint-disable-line no-unused-vars
@@ -16,7 +25,7 @@ const {
   rooms, // eslint-disable-line no-unused-vars
   characters, // eslint-disable-line no-unused-vars
   vehicles // eslint-disable-line no-unused-vars
-} = state
+} = entities
 
 app.use(express.static(path.join(__dirname, 'public')))
 server.listen(port, () => {
