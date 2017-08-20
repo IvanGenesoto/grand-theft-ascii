@@ -1,4 +1,4 @@
-module.exports = function Characters(...args) {
+module.exports = function Characters(arg) {
 
   const propertyDescriptor = {
     configurable: true,
@@ -8,8 +8,8 @@ module.exports = function Characters(...args) {
 
   const _ = propertyDescriptor
 
-  const [_characters = Object.create(null, {
-    entityType: {value: ['character'], ..._},
+  const _characters = arg || Object.create(null, {
+    entityType: {value: ['characters'], ..._},
     indexInDistrict: {value: [0], ..._},
     status: {value: [''], ..._},
     name: {value: [''], ..._},
@@ -39,7 +39,7 @@ module.exports = function Characters(...args) {
     element: {value: ['img'], ..._},
     elementID: {value: [''], ..._},
     src: {value: ['images/characters/man.png'], ..._}
-  })] = args
+  })
 
   const $ = require
 
