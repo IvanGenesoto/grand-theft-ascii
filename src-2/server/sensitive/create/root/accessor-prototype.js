@@ -12,14 +12,14 @@ function createDefaultSetter(attributeName, attribute) {
   return function (index, value) {
     const typofValue = typeof value
     if (typofValue === typeofDefaultValue) attribute[index] = value
-    else throw console.log('entitiesPrototype[' + index + '].' + attributeName + ' must be a ' + typeofDefaultValue)
+    else throw console.log('rootAccessorPrototype[' + index + '].' + attributeName + ' must be a ' + typeofDefaultValue)
   }
 }
 
 function createIntegerSetter(attributeName, attribute) {
   return function (index, value) {
     if (Number.isInteger(value)) attribute[index] = value
-    else throw console.log('entitiesPrototype[' + index + '].' + attributeName + ' must be an integer')
+    else throw console.log('rootAccessorPrototype[' + index + '].' + attributeName + ' must be an integer')
   }
 }
 
@@ -43,7 +43,7 @@ function createDefaultArraySetter(attributeName, defaultArray, typeofDefaultValu
     }
     else if (value === 'length') return array.length
     else if (value === 'clear') array.length = 0
-    else throw console.log('entitiesPrototype[' + index + '].' + attributeName + ' must be a ' + typeofDefaultValue)
+    else throw console.log('rootAccessorPrototype[' + index + '].' + attributeName + ' must be a ' + typeofDefaultValue)
   }
 }
 
@@ -63,7 +63,7 @@ function createIntegerArraySetter(attributeName, _entities) {
       }
       else log[0] = 'nothing to clear'
     }
-    else throw console.log('entitiesPrototype[' + index + '].' + attributeName + ' must be an integer')
+    else throw console.log('rootAccessorPrototype[' + index + '].' + attributeName + ' must be an integer')
   }
 }
 
@@ -133,13 +133,13 @@ function clear(array) {
 
 let log
 
-module.exports = function EntitiesPrototype(_entities) {
+module.exports = function createRootAccessorPrototype(_entities, generateID) {
 
   const $ = require
 
   const accessorPrototype = $('./accessor-prototype')(_entities)
 
-  const entitiesPrototype = Object.create(null, {
+  const rootAccessorPrototype = Object.create(null, {
 
     length: {value: _entities.status.length},
 
@@ -148,20 +148,23 @@ module.exports = function EntitiesPrototype(_entities) {
     standinArray: {value: []},
 
     create: {value: function() {
-      const createEntity = $('./create/entity')(_entities)
-      const args = [createEntity, accessorPrototype, entitiesPrototype]
+      const entityType = _entities.entityType[0]
+      const district = _entities.district[0]
+      const id = generateID(entityType, district)
+      const index = $('./create/entity')(id, _entities)
+      const args = [index, accessorPrototype, rootAccessorPrototype]
       const accessor = $('./create/accessor')(...args)
-      return accessor.index
+      return accessor
     }}
   })
 
-  const standinArray = entitiesPrototype.standinArray
+  const standinArray = rootAccessorPrototype.standinArray
   const attributeNames = Object.keys(_entities)
   attributeNames.forEach(function (attributeName) {
     const setter = createSetter(attributeName, _entities, standinArray)
     const propertyDescriptor = {value: setter}
-    Object.defineProperty(entitiesPrototype, attributeName, propertyDescriptor)
+    Object.defineProperty(rootAccessorPrototype, attributeName, propertyDescriptor)
   })
 
-  return entitiesPrototype
+  return rootAccessorPrototype
 }

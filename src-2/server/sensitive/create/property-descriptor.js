@@ -11,5 +11,5 @@ module.exports = function defineProperty(...args) {
     const args = [attributeName, _entities, entitiesPrototype]
     return $('../define/default-property')(accessorPrototype, ...args)
   }
-  else throw console.log('Object or null found in default entity')
+  else throw new Error('Object or null found in default entity')
 }

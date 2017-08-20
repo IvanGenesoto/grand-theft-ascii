@@ -9,5 +9,5 @@ module.exports = function createNestedArrayDescriptor(...args) {
   else if (typeof defaultValue === 'string') {
     return $('../../create/nested-array/string-descriptor')(attributeName)
   }
-  else throw console.log('Cannot create nested property descriptor of non-integer or -string')
+  else throw new Error('Cannot create nested property descriptor of non-integer or -string')
 }
