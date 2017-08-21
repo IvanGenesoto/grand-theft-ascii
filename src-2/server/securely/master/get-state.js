@@ -19,7 +19,7 @@ module.exports = function getState(districtID) {
 
   if (isMaster) {
     var Master = $('./create-master')(_entityDistricts, _entityCounts)
-    Master.getNextID = $('./generate-id')(_entityDistricts, _entityCounts)
+    Master.getNextID = $('./get-next-id')(_entityDistricts, _entityCounts)
   }
 
   const _state = {

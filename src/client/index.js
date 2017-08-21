@@ -114,7 +114,7 @@ function shiftCityElementsBuffer(initiatingRefresh) {
   else if (initiatingRefresh) {
     _.shiftTimeout = setTimeout(() => {
       shiftCityElementsBuffer(initiatingRefresh)
-    }, 1000 / 60)
+    }, 1000 / 30)
   }
 }
 
@@ -370,7 +370,7 @@ function renderCityElements(cityElementType) {
 function setDelay() {
   if (!_.setDelay) _.setDelay = {}
   var __ = _.setDelay
-  if (!__.loopStartTime) __.loopStartTime = performance.now() - 1000 / 60
+  if (!__.loopStartTime) __.loopStartTime = performance.now() - 1000 / 30
   if (!__.millisecondsAhead) __.millisecondsAhead = 0
   var refreshDuration = performance.now() - _.refreshStartTime
   var loopDuration = performance.now() - __.loopStartTime
@@ -382,7 +382,7 @@ function setDelay() {
       __.slowdownConfirmed = true
     }
   }
-  var millisecondsPerFrame = 1000 / 60
+  var millisecondsPerFrame = 1000 / 30
   __.millisecondsAhead += millisecondsPerFrame - loopDuration
   __.delay = millisecondsPerFrame + __.millisecondsAhead - refreshDuration
   clearTimeout(__.timeout)

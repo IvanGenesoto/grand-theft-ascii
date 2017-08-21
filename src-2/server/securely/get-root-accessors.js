@@ -1,4 +1,4 @@
-module.exports = function getRootAccessors(districtID) {
+module.exports = function getRootAccessors(districtID, io) {
 
   const $ = require
   const isMaster = districtID === 1
@@ -24,10 +24,10 @@ module.exports = function getRootAccessors(districtID) {
   } = _entityIndexes
 
   const {
-    _players = $('./entities/players'),
-    _characters = $('./entities/characters'),
-    _vehicles = $('./entities/vehicles'),
-    _rooms = $('./entities/rooms')
+    _players = $('./default/players'),
+    _characters = $('./default/characters'),
+    _vehicles = $('./default/vehicles'),
+    _rooms = $('./default/rooms')
   } = _entities
 
   const getNextID = isMaster
@@ -35,12 +35,14 @@ module.exports = function getRootAccessors(districtID) {
     : $('./define-get-next-id')(socket)
 
   const rootAccessors = {
-    players: $('./create/root/accessor')(_players, _playerIndexes, getNextID),
-    characters: $('./create/root/accessor')(_characters, _characterIndexes, getNextID),
-    vehicles: $('./create/root/accessor')(_vehicles, _vehicleIndexes, getNextID),
-    rooms: $('./create/root/accessor')(_rooms, _roomIndexes, getNextID),
-    Master
+    players: $('./create/root-accessor')(_players, _playerIndexes, getNextID, io),
+    characters: $('./create/root-accessor')(_characters, _characterIndexes, getNextID, io),
+    vehicles: $('./create/root-accessor')(_vehicles, _vehicleIndexes, getNextID, io),
+    rooms: $('./create/root-accessor')(_rooms, _roomIndexes, getNextID, io)
   }
 
-  return rootAccessors
+  return {
+    rootAccessors,
+    Master
+  }
 }
