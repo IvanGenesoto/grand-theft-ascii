@@ -41,8 +41,8 @@ function initiateDistrict() {
 
 function massPopulateDistrict(districtID) {
   var population = {
-    character: 50,
-    vehicle: 250
+    character: 20,
+    vehicle: 40
   }
   for (var objectType in population) {
     var number = population[objectType]
