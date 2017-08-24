@@ -1,6 +1,9 @@
-module.exports = function createMethodsForAccessorPrototype(_entities, indexesByID) {
+module.exports = function createIndividualMethodsForAccessorPrototype(
+  {_entities, entityType, indexesByID}) {
 
   const methodsForAccessorPrototype = {
+
+    entityType,
 
     length: function(attributeName) {
       const attribute = _entities[attributeName]

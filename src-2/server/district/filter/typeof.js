@@ -1,5 +1,6 @@
-module.exports = function checkTypeof(
-  defaultValue, entityType, attributeName, boolean) {
+module.exports = function filterTypeof(
+  {defaultValue, entityType, attributeName, boolean}
+) {
 
   if (defaultValue !== defaultValue) { // eslint-disable-line no-self-compare
     throw new TypeError('NaN found in ' + entityType + '.' + attributeName)

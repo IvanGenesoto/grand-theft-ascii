@@ -1,8 +1,9 @@
 module.exports = function createDefaultArrayPropertyDescriptor(args) {
 
   const $ = require
-  const {attributeName, _entities, indexesByID,
-    typeofDefaultValue, standinArray, entityType} = args
+  const {
+    attributeName, _entities, indexesByID, typeofDefaultValue, standinArray, entityType
+  } = args
   const attribute = _entities[attributeName]
 
   return {

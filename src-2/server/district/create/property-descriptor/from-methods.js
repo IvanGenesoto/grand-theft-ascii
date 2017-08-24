@@ -1,15 +1,21 @@
-module.exports = function createPropertyDescriptorsFromMethods(args) {
+module.exports = function createPropertyDescriptorsFromMethods(argsObject) {
+
   const $ = require
-  let {type, entityType} = args
-  if (entityType) entityType = '/' + entityType + 's'
-  const path = type
-    ? '../../../methods/for-' + type + entityType
-    : '../../methods/for-accessor-prototype'
-  const methods = Object.entries($(path))(args)
-  const propertyDescriptors = methods.map(method => {
-    const methodName = method[0]
-    method = method[1]
-    return {[methodName]: {value: method}}
-  })
-  return propertyDescriptors
+  let {args, ...descriptors} = argsObject
+  const {specific, entityType, district, individualAccessorPrototype} = args
+
+  const accessorLevel = individualAccessorPrototype ? 'root' : 'individual'
+  args = specific ? district : args
+  const path = specific
+      ? '../../../methods/' + accessorLevel + '/' + entityType + 's'
+      : '../methods/' + accessorLevel
+
+  let propertiesDescriptor = {}
+  propertiesDescriptor = Object.entries($(path))(args)
+    .filter(method => $('../../filter/methodNames')(method, [...descriptors]))
+    .reduce((propertiesDescriptor, method) => (
+      propertiesDescriptor = {...propertiesDescriptor, [method[0]]: {value: method[1]}}
+    ))
+
+  return propertiesDescriptor
 }
