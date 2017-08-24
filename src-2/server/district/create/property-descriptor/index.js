@@ -1,39 +1,32 @@
-module.exports = function createPropertyDescriptor(
-  attributeName, _entities, indexesByID
-) {
+module.exports = function createPropertyDescriptor(args) {
 
   const $ = require
-  const entityType = _entities.entityType[0]
+  const {attributeName, _entities} = args
   const attribute = _entities[attributeName]
   const defaultValue = attribute[0]
 
   if (Number.isInteger(defaultValue)) {
     return $('../create/property-descriptor/integer')(
-      {attributeName, _entities, indexesByID, entityType}
+      {...args, defaultValue}
     )
   }
 
   else if (Array.isArray(defaultValue)) {
+    const boolean = 'boolean'
     const nestedDefaultValue = defaultValue[0]
-    const typeofDefaultValue = $('./check-typeof')(
-      nestedDefaultValue, entityType, attributeName, 'boolean'
+    const typeofDefaultValue = $('./filter/typeof')(
+      {...args, nestedDefaultValue, boolean}
     )
     const standinArray = []
     return Number.isInteger(nestedDefaultValue)
-      ? $('../create/property-descriptor/integer-array')(
-        {attributeName, _entities, indexesByID, standinArray, entityType}
+      ? $('../create/property-descriptor/integer-array')({...args, standinArray})
+      : $('../create/property-descriptor/default-array')(
+        {...args, typeofDefaultValue, standinArray}
       )
-      : $('../create/property-descriptor/array')(
-      {attributeName, _entities, indexesByID, typeofDefaultValue, standinArray, entityType}
-    )
   }
 
   else {
-    const typeofDefaultValue = $('./check-typeof')(
-      defaultValue, entityType, attributeName
-    )
-    return $('../create/property-descriptor/default')(
-      {attributeName, _entities, indexesByID, typeofDefaultValue, entityType}
-    )
+    const typeofDefaultValue = $('./filter/typeof')({...args, defaultValue})
+    return $('../create/property-descriptor/default')({...args, typeofDefaultValue})
   }
 }

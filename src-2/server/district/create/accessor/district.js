@@ -36,10 +36,7 @@ module.exports = function createDistrictAccessor(io) {
     ? Master.getNextID
     : $('./define-get-next-id')(socket)
 
-  let rootAccessors = {
-    players: $('./create/root-accessor')(_players, _playerIndexes, getNextID),
-    characters: $('./create/root-accessor')(_characters, _characterIndexes, getNextID),
-    vehicles: $('./create/root-accessor')(_vehicles, _vehicleIndexes, getNextID),
-    rooms: $('./create/root-accessor')(_rooms, _roomIndexes, getNextID)
-  }``````
+  const allRootAccessors = $('./create/accessor/all-roots')(
+    {_allEntities, _allEntityIndexesByID, districtID, getNextID, district}
+  )
 }
