@@ -3,20 +3,22 @@ module.exports = function createAllRootAccessors(
 ) {
 
   const $ = require
+  let rootEntityType
 
-  const allRootAccessors = Object.entries(_allEntities)
-
-    .map(_entities => _entities[1]
-      ? _entities
-      : [_entities[0], $('../../entities/' + _entities[0])])
+  const allRootAccessors = Object
+    .entries(_allEntities)
 
     .map(_entities => {
-      const entityType = _entities[0].slice(1, _entities[0].length - 1)
-      _entities = _entities[1]
-      const _indexesByID = _allEntityIndexesByID[entityType]
-      const args = {_entities, _indexesByID, entityType, getNextID, districtID, district}
-      args.individualAccessorPrototype = $('../create/accessor/individual-prototype')(args)
-      const rootAccessorPrototype = $('../create/accessor/root-prototype')(args)
+      rootEntityType = _entities[0].slice(1)
+      return _entities[1] || $('../default-entities/' + rootEntityType)
+    })
+
+    .map(_entities => {
+      const _indexesByID = _allEntityIndexesByID[rootEntityType]
+      const args = {_entities, _indexesByID, rootEntityType, getNextID, districtID, district}
+      args.entityType = $('../../create/entity-type')(rootEntityType)
+      args.individualAccessorPrototype = $('../../create/accessor/individual-prototype')(args)
+      const rootAccessorPrototype = $('../../create/accessor/root-prototype')(args)
       const rootAccessor = Object.freeze(Object.create(rootAccessorPrototype))
       return rootAccessor
     })

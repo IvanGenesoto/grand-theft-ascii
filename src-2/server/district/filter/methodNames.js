@@ -1,5 +1,7 @@
 module.exports = function filterMethodNames(method, descriptors) {
 
+  if (!descriptors) return true
+
   const duplicates = []
 
   descriptors.forEach(descriptor => {
@@ -10,7 +12,7 @@ module.exports = function filterMethodNames(method, descriptors) {
   })
 
   if (duplicates[0]) {
-    throw new TypeError('Duplicate method names found: ' + duplicates)
+    throw new TypeError('Duplicate method name(s) found: ' + duplicates)
   }
 
   return duplicates[0] === undefined

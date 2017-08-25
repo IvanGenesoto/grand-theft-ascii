@@ -1,15 +1,23 @@
-module.exports = function methodsForIndividualPlayers() {
+module.exports = function methodsForIndividualPlayers(district) {
+
+  let reusedInputObject
 
   return {
 
-    input: function(input) {
+    get input() {
       const player = this
-      const inputs = Object.entries(input)
-      inputs.forEach(input => {
-        const inputType = input[0]
-        input = input[1]
-        player[inputType] = input
-      })
+      Object.keys(reusedInputObject)
+        .forEach(inputType => {
+          reusedInputObject[inputType] = player[inputType]
+        })
+      return reusedInputObject
+    },
+
+    set input(input) {
+      const player = this
+      reusedInputObject = input
+      Object.entries(input)
+        .forEach(inputProperty => player[inputProperty[0]] = inputProperty[1]) // eslint-disable-line no-return-assign
     }
 
   }
