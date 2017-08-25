@@ -1,7 +1,7 @@
 module.exports = function createIndividualMethodsForAccessorPrototype(
   {_entities, entityType, indexesByID}) {
 
-  const methodsForAccessorPrototype = {
+  return {
 
     entityType,
 
@@ -44,7 +44,5 @@ module.exports = function createIndividualMethodsForAccessorPrototype(
       items.length = 0
       return true
     }
-
   }
-  return methodsForAccessorPrototype
 }

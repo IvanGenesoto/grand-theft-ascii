@@ -9,7 +9,5 @@ module.exports = function connect(socket, players) {
     player = players[id]
   })
 
-  const {playerInput} = player // eslint-disable-line no-unused-vars
-
-  socket.on('input', input => playerInput = input) // eslint-disable-line
+  socket.on('input', input => player.input = input) // eslint-disable-line no-return-assign
 }

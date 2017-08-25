@@ -1,9 +1,11 @@
 module.exports = function createMethodsForRootAccessorProtoType(args) {
-  const {_entities, indexesByID, entityType, districtID, getNextID, accessorPrototype} = args
+  const {
+    _entities, indexesByID, entityType, rootEntityType, districtID, getNextID, accessorPrototype
+  } = args
 
-  const methodsForRootAccessorProtoType = {
+  return {
 
-    entityType: entityType + 's',
+    entityType: rootEntityType,
 
     get length() {
       return _entities.id.length
@@ -18,6 +20,4 @@ module.exports = function createMethodsForRootAccessorProtoType(args) {
       return accessor
     }
   }
-
-  return methodsForRootAccessorProtoType
 }

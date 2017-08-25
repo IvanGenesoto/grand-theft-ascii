@@ -1,4 +1,4 @@
-module.exports = function createPropertyDescriptorsFromAttributes(
+module.exports = function createPropertiesDescriptorFromAttributes(
   {_entities, indexesByID}
 ) {
 
@@ -6,12 +6,16 @@ module.exports = function createPropertyDescriptorsFromAttributes(
 
   const attributeNames = Object.keys(_entities)
 
-  const propertyDescriptors = attributeNames.map(attributeName => {
-    const propertyDescriptor = $('./property-descriptor')(
-      attributeName, _entities, indexesByID
-    )
-    return propertyDescriptor
+  const propertyDescriptors = attributeNames.map(attributeName => (
+      $('../../create/property-descriptor')({attributeName, _entities, indexesByID})
+    ))
+
+  const propertiesDescriptor = Object.create(null)
+
+  propertyDescriptors.forEach((descriptor, index) => {
+    const attributeName = attributeNames[index]
+    propertiesDescriptor[attributeName] = descriptor
   })
 
-  return propertyDescriptors
+  return propertiesDescriptor
 }
