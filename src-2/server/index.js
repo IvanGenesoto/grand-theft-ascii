@@ -5,7 +5,7 @@ const server = $('http').Server(app)
 const socket = $('socket.io')
 const io = socket(server)
 
-const district = $('./district')(io)
+const district = $('./prime')(io, $)
 
 $('./initiate')(district)
 
