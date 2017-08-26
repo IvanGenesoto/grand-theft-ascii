@@ -5,6 +5,8 @@ module.exports = function createCommonRootMethods(
 
   return {
 
+    districtID,
+
     entityType: rootEntityType,
 
     get length() {
@@ -12,7 +14,7 @@ module.exports = function createCommonRootMethods(
     },
 
     create: () => {
-      const id = getNextID()
+      const id = getNextID.call(this)
       const index = $('../../create/entity')(id, _entities)
       indexesByID[id] = index
       const accessor = $('../../create/accessor')(id, entityAccessorPrototype, rootAccessorPrototype)

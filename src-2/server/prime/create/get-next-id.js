@@ -1,15 +1,13 @@
-module.exports = function createGetNextID(districtID, districtsByID, entityCountsByDistrict) {
+module.exports = function createGetNextID(
+  {entityCounts, districtIDsByEntityID, entityCountsByDistrictID}
+) {
 
   return function getNextID() {
-    const rootEntityType = this.entityType
-    const id = districtsByID[rootEntityType].length
-    districtsByID[rootEntityType][id] = districtID
-    entityCountsByDistrict[rootEntityType][districtID]++
+    const entityType = this.entityType
+    const districtID = this.districtID
+    const id = entityCounts.increment()
+    districtIDsByEntityID.add.call(this, id)
+    entityCountsByDistrictID[entityType][districtID]++
     return id
   }
 }
-
-// implement Redis
-// increment & receive id at entityType
-// store districtID to districtsByID -> entityType -> id
-// increment entitiyCountsByDistrict -> entityType -> districtID

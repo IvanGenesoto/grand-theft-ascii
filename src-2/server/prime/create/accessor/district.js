@@ -1,42 +1,39 @@
-module.exports = function createDistrictAccessor(io) {
+module.exports = function createDistrictAccessor(redisClient, io, $) {
 
-  const $ = require
-  const isMaster = districtID === 1
-  const socket = isMaster
-    ? undefined
-    : $('./connect-to-master')
+  const redis = $('../../create/redis')(redisClient, $)
+  const getNextID = $('../../create-get-next-id')(redis)
+  const _district = $('../../retrieve-district')(redis)
+  const {districtID, _entityIndexesByID} = _district
 
-  const _state = isMaster
-    ? $('./master/get-state')(districtID)
-    : $('./request-state')(districtID, socket)
+  $('../../entity-types').forEach(entityType => {
+    _district[entityType] = _district[entityType] || []
+  })
 
-  let {
-    _allEntityIndexes,
-    _allEntities,
-    Master
-  } = _state
+  let district = Object.create(null, {id: {value: districtID}})
+  let rootEntityType
 
-  const accessorPrototype = $('../../create/accessor/prototype')(_entities) // use .map
+  district = Object
+    .entries(_district)
 
-  let {
-    players: _playerIndexes,
-    characters: _characterIndexes,
-    vehicles: _vehicleIndexes,
-    rooms: _roomIndexes
-  } = _allEntityIndexes
+    .map(_entities => {
+      const _entitiesName = _entities[0]
+      _entities = _entities[1]
+      rootEntityType = _entitiesName.slice(1)
+      return _entities || $('../../create/default/entities')(rootEntityType, $)
+    })
 
-  let {
-    _players = $('./access/default/players'),
-    _characters = $('./access/default/characters'),
-    _vehicles = $('./access/default/vehicles'),
-    _rooms = $('./access/default/rooms')
-  } = _entities
+    .map(_entities => {
+      const _indexesByID =
+        _entityIndexesByID[rootEntityType] = _entityIndexesByID[rootEntityType] || []
+      const args = {
+        _entities, _indexesByID, rootEntityType, getNextID, districtID, district
+      }
+      args.entityType = $('../../create/entity-type')(rootEntityType)
+      args.entityAccessorPrototype = $('../../create/accessor/entity-prototype')(args)
+      const rootAccessorPrototype = $('../../create/accessor/root-prototype')(args)
+      const rootAccessor = Object.create(rootAccessorPrototype)
+      return Object.freeze(rootAccessor)
+    })
 
-  const getNextID = isMaster
-    ? Master.getNextID
-    : $('./define-get-next-id')(socket)
-
-  const allRootAccessors = $('./create/accessor/all-roots')(
-    {_allEntities, _allEntityIndexesByID, districtID, getNextID, district}
-  )
+  return Object.freeze(district)
 }

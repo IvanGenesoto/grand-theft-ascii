@@ -6,7 +6,10 @@ module.exports = function createDefaultEntities(rootEntityType, $) {
     .entries($('../filter/attribute-names')($('../attributes/' + rootEntityType)))
 
     .reduce((_entities, attribute) => {
-      _entities[attribute[0]] = attribute[1]
+      const attributeName = attribute[0]
+      attribute = attribute[1]
+      _entities[attributeName] = attribute
+      return _entities
     })
 
   return _entities
