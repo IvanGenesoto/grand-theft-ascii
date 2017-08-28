@@ -7,10 +7,11 @@ const port = process.env.PORT || 3000
 const socket = $('socket.io')
 const io = socket(server)
 const redisClient = null
+const _ = './raw/'
 
-const district = $('./prime')(redisClient, io, $)
+const district = $(_)(redisClient, io, $, _)
 
-$('./initiate')(district)
+$('./buffered')(district)
 
 const {players} = district
 
