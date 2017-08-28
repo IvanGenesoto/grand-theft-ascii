@@ -21,6 +21,10 @@ module.exports = function createPropertyDescriptor(args) {
         thisContainer.this = this
         return methods
       },
+      set: function(value) {
+        thisContainer.this = this
+        methods.add(value)
+      },
       enumerable: true
     }
   }

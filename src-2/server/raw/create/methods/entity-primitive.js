@@ -10,6 +10,7 @@ module.exports = function createUniversalEntityPrimitiveMethods(
     }
 
     : function(value) { // set
+      if (integer && value.id) value = value.id
       $(_ + 'filter/typeof-value')(
         value, integer, typeofDefaultValue, attributeName, entityType
       )
