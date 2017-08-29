@@ -1,5 +1,5 @@
 module.exports = function createPropertiesDescriptorFromAttributes(
-  {_entities, entityType, _indexesByID, $, _}
+  {_entities, entityType, rootEntityType, district, _indexesByID, $, _}
 ) {
 
   const propertiesDescriptor = Object
@@ -8,7 +8,7 @@ module.exports = function createPropertiesDescriptorFromAttributes(
     .reduce((propertiesDescriptor, attributeName) => {
       const _attribute = _entities[attributeName]
       const propertyDescriptor = $(_ + 'create/property-descriptor')(
-        {_attribute, attributeName, entityType, _indexesByID, $, _}
+        {_attribute, attributeName, entityType, rootEntityType, district, _indexesByID, $, _}
       )
       return {...propertiesDescriptor, [attributeName]: propertyDescriptor}
     }, {})

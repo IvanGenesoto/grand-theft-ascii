@@ -26,12 +26,12 @@ module.exports = function createDistrictAccessor(redisClient, io, $, _) {
     .map(_entities => {
       const {rootEntityType} = _entities
       _entities = _entities._entities
+      const entityType = $(_ + 'create/entity/type')(rootEntityType)
       const _indexesByID =
         _entityIndexesByID[rootEntityType] = _entityIndexesByID[rootEntityType] || []
       const args = {
-        _entities, _indexesByID, rootEntityType, getNextID, districtID, district, $, _
+        _entities, _indexesByID, entityType, rootEntityType, getNextID, districtID, district, $, _
       }
-      args.entityType = $(_ + 'create/entity/type')(rootEntityType)
       args.entityAccessorPrototype = $(_ + 'create/accessor/entity-prototype')(args)
       const rootAccessorPrototype = $(_ + 'create/accessor/root-prototype')(args)
       const rootAccessor = Object.create(rootAccessorPrototype)
