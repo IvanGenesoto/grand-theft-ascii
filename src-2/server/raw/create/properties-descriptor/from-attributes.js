@@ -1,15 +1,17 @@
-module.exports = function createPropertiesDescriptorFromAttributes(
-  {_entities, entityType, rootEntityType, district, _indexesByID, $, _}
-) {
+module.exports = function createPropertiesDescriptorFromAttributes(args) {
+
+  const {_entities, $, _} = args
 
   const propertiesDescriptor = Object
     .keys(_entities)
 
     .reduce((propertiesDescriptor, attributeName) => {
       const _attribute = _entities[attributeName]
-      const propertyDescriptor = $(_ + 'create/property-descriptor')(
-        {_attribute, attributeName, entityType, rootEntityType, district, _indexesByID, $, _}
-      )
+      let _defaultValue = _attribute[0]
+      const descriptorType = (Array.isArray(_defaultValue)) ? 'array' : 'primitive'
+      const propertyDescriptor = $(
+        _ + 'create/property-descriptor/' + descriptorType
+      )(...args, _defaultValue)
       return {...propertiesDescriptor, [attributeName]: propertyDescriptor}
     }, {})
 
