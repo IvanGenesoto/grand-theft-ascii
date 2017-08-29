@@ -5,10 +5,10 @@ module.exports = function createEntity(id, _entities) {
 
   const _attributes = Object.values(_entities)
   _attributes.forEach(_attribute => {
-    const defaultValue = _attribute[0]
-    _attribute[index] = Array.isArray(defaultValue)
+    const _defaultValue = _attribute[0]
+    _attribute[index] = Array.isArray(_defaultValue)
       ? []
-      : defaultValue
+      : _defaultValue
   })
 
   return index
