@@ -1,5 +1,8 @@
 module.exports = function createCommonEntityArrayMethods(
-  {thisContainer, integer, typeofDefaultValue, _attribute, attributeName, _indexesByID, entityType, $, _}
+  {
+    idCashe, integer, typeofDefaultValue, _attribute, attributeName,
+      _indexesByID, entityType, rootEntityType, district, $, _
+    }
 ) {
 
   const standIn = []
@@ -7,30 +10,34 @@ module.exports = function createCommonEntityArrayMethods(
 
   return {
 
-    id: 0,
-
-    entityType,
-
-    length: function() {
-      const index = _indexesByID[thisContainer.this.id]
+    get length() {
+      const index = _indexesByID[idCashe.id]
       const values = _attribute[index]
       return values.length
     },
 
-    get: function() {
+    get all() {
       standIn.length = 0
-      const index = _indexesByID[thisContainer.this.id]
+      const index = _indexesByID[idCashe.id]
       const values = _attribute[index]
       values.forEach((value, index) => standIn[index] = value) // eslint-disable-line no-return-assign
       return standIn
     },
 
-    add: function(value) {
+    getAll() {
+      standIn.length = 0
+      const index = _indexesByID[idCashe.id]
+      const values = _attribute[index]
+      values.forEach((value, index) => standIn[index] = value) // eslint-disable-line no-return-assign
+      return standIn
+    },
+
+    add(value) {
       if (integer && value.id) value = value.id
       $(_ + 'filter/typeof-value')(
         value, integer, typeofDefaultValue, attributeName, entityType
       )
-      const index = _indexesByID[thisContainer.this.id]
+      const index = _indexesByID[idCashe.id]
       const values = _attribute[index]
       const duplicate = values.find(existingValue => existingValue === value)
       if (duplicate) return false
@@ -38,10 +45,10 @@ module.exports = function createCommonEntityArrayMethods(
       return true
     },
 
-    addMultiple: function(...values) {
+    addMultiple(...values) {
       log.length = 0
       values.forEach(value => {
-        const result = thisContainer.this[attributeName].add(value)
+        const result = district[rootEntityType][idCashe.id][attributeName].add(value)
         log.push(result)
       })
       const anyFalse = log.find(result => result === false)
@@ -49,8 +56,8 @@ module.exports = function createCommonEntityArrayMethods(
       return true
     },
 
-    remove: function(value) {
-      const index = _indexesByID[thisContainer.this.id]
+    remove(value) {
+      const index = _indexesByID[idCashe.id]
       const values = _attribute[index]
       const match = values.indexOf(value)
       if (match === -1) return false
@@ -58,10 +65,10 @@ module.exports = function createCommonEntityArrayMethods(
       return true
     },
 
-    removeMultiple: function(...values) {
+    removeMultiple(...values) {
       log.length = 0
       values.forEach(value => {
-        const result = thisContainer.this[attributeName].remove(value)
+        const result = district[rootEntityType][idCashe.id][attributeName].remove(value)
         log.push(result)
       })
       const anyFalse = log.find(result => result === false)
@@ -69,8 +76,8 @@ module.exports = function createCommonEntityArrayMethods(
       return true
     },
 
-    removeAll: function() {
-      const index = _indexesByID[thisContainer.this.id]
+    removeAll() {
+      const index = _indexesByID[idCashe.id]
       const values = _attribute[index]
       if (!values.length) return false
       values.length = 0

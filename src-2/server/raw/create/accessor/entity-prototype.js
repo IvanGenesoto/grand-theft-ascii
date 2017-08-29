@@ -1,6 +1,6 @@
-module.exports = function createIndividualAccessorPrototype(args) {
+module.exports = function createEntityAccessorPrototype(args) {
 
-  const {$, _} = args
+  const {entityType, $, _} = args
   args.breadth = 'individual'
 
   const attributesDescriptor = $(_ + 'create/properties-descriptor/from-attributes')(args)
@@ -12,7 +12,8 @@ module.exports = function createIndividualAccessorPrototype(args) {
 
   const propertiesDescriptor = {
     ...attributesDescriptor,
-    ...specificMethodsDescriptor
+    ...specificMethodsDescriptor,
+    entityType: {value: entityType, enumerable: true}
   }
 
   const entityAccessorPrototype = Object.create(null, propertiesDescriptor)

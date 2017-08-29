@@ -3,9 +3,9 @@ module.exports = function createPropertyDescriptor(args) {
   const {_attribute, $, _} = args
   let _defaultValue = _attribute[0]
   const get = true
-  const thisContainer = Object.create(null)
 
   if (Array.isArray(_defaultValue)) {
+    const idCashe = Object.create(null)
     const defaultValue = _defaultValue[0]
     const typeofDefaultValue = typeof defaultValue
     const noBoolean = true
@@ -13,16 +13,18 @@ module.exports = function createPropertyDescriptor(args) {
       {...args, defaultValue, typeofDefaultValue, noBoolean}
     )
     const integer = Number.isInteger(defaultValue)
-    const methods = $(_ + 'create/methods/entity-array')(
-      {...args, typeofDefaultValue, integer, thisContainer}
+    const methods = Object.freeze(
+      $(_ + 'create/methods/entity-array')(
+        {...args, typeofDefaultValue, integer, idCashe}
+      )
     )
     return {
       get: function() {
-        thisContainer.this = this
+        idCashe.id = this.id
         return methods
       },
       set: function(value) {
-        thisContainer.this = this
+        idCashe.id = this.id
         methods.add(value)
       },
       enumerable: true
