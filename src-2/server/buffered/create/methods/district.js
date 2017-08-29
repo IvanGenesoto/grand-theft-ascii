@@ -1,3 +1,3 @@
-module.exports = function createDistrictMethods(district) {
+module.exports = function createBufferedDistrictMethods(district) {
   return {}
 }

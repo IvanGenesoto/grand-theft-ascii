@@ -1,4 +1,4 @@
-const playerAttributes = { // eslint-disable-line no-undef
+const playerAttributes = {
   id: [0],
   status: ['on'],
   socket: [''],

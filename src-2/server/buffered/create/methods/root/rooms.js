@@ -1,3 +1,3 @@
-module.exports = function createRootSpecificRoomMethods(district) {
+module.exports = function createRootRoomMethods(district) {
   return {}
 }

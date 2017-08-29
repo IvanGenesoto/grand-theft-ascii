@@ -1,3 +1,3 @@
-module.exports = function createPrimeDistrictMethods() {
+module.exports = function createRawDistrictMethods() {
   return {}
 }

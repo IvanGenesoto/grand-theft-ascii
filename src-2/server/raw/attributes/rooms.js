@@ -1,4 +1,4 @@
-const roomAttributes = { // eslint-disable-line no-undef
+const roomAttributes = {
   id: [0],
   status: ['locked'],
   name: ['Pad'],

@@ -1,6 +1,15 @@
 module.exports = function createUniversalRootMethods(
-  {_entities, _indexesByID, rootEntityType, districtID, getNextID,
-    entityAccessorPrototype, rootAccessorPrototype, $, _}
+  {
+    _entities,
+    indexesByID,
+    rootEntityType,
+    districtID,
+    getNextID,
+    entityAccessorPrototype,
+    rootAccessorPrototype,
+    $,
+    _
+  }
 ) {
 
   const universalRootMethods = {
@@ -16,8 +25,10 @@ module.exports = function createUniversalRootMethods(
     create() {
       const id = getNextID.call(universalRootMethods)
       const index = $(_ + 'create/entity')(id, _entities)
-      _indexesByID[id] = index
-      const accessor = $(_ + 'create/accessor/entity')(id, entityAccessorPrototype, rootAccessorPrototype)
+      indexesByID[id] = index
+      const accessor = $(_ + 'create/accessor/entity')(
+        id, entityAccessorPrototype, rootAccessorPrototype
+      )
       return accessor
     },
 

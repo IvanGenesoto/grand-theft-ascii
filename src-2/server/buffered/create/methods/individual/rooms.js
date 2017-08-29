@@ -1,3 +1,3 @@
-module.exports = function createEntitySpecificRoomMethods(district) {
+module.exports = function createIndividualRoomMethods(district) {
   return {}
 }

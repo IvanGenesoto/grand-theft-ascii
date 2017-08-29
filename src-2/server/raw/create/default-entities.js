@@ -3,7 +3,11 @@ module.exports = function createDefaultEntities(rootEntityType, $, _) {
   let _entities = Object.create(null)
 
   _entities = Object
-    .entries($(_ + 'filter/duplicate-attribute-names')($(_ + 'attributes/' + rootEntityType)))
+    .entries(
+      $(_ + 'filter/duplicate-attribute-names')(
+        $(_ + 'attributes/' + rootEntityType)
+      )
+    )
 
     .reduce((_entities, _attribute) => {
       const attributeName = _attribute[0]

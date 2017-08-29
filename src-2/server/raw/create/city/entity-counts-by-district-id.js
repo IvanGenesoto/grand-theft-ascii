@@ -9,13 +9,13 @@ module.exports = function createEntityCountsByDistrictID() {
 
   return {
 
-    get: function() {
+    get() {
       const entityType = this.entityType
       const districtID = this.districtID
       return _entityCountsByDistrictID[entityType][districtID]
     },
 
-    increment: function() {
+    increment() {
       const entityType = this.entityType
       const districtID = this.districtID
       if (!_entityCountsByDistrictID[entityType][districtID]) {

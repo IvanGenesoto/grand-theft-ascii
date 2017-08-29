@@ -1,7 +1,13 @@
-const districtAttributes = { // eslint-disable-line no-undef
+const districtAttributes = {
   id: 0,
   status: '',
-  collisions: [[]]
+  blueprints: [0.1],
+  entities: {
+    players: {},
+    characters: {},
+    vehicles: {},
+    rooms: {}
+  }
 }
 
 module.exports = districtAttributes

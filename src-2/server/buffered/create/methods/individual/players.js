@@ -1,4 +1,4 @@
-module.exports = function createEntitySpecificPlayerMethods(district) {
+module.exports = function createIndividualPlayerMethods(district) {
 
   let reusedInputObject = {}
 
