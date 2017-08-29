@@ -1,4 +1,4 @@
-const vehicleAttributes = { // eslint-disable-line no-undef
+const vehicleAttributes = {
   id: [0],
   status: 'operational',
   model: 'delorean',

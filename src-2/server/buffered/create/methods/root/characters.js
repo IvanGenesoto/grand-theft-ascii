@@ -1,3 +1,3 @@
-module.exports = function createRootSpecificCharacterMethods(district) {
+module.exports = function createRootCharacterMethods(district) {
   return {}
 }

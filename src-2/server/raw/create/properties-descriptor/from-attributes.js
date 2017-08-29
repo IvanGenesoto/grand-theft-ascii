@@ -11,7 +11,7 @@ module.exports = function createPropertiesDescriptorFromAttributes(args) {
       const descriptorType = (Array.isArray(_defaultValue)) ? 'array' : 'primitive'
       const propertyDescriptor = $(
         _ + 'create/property-descriptor/' + descriptorType
-      )(...args, _defaultValue)
+      )({...args, _defaultValue, _attribute})
       return {...propertiesDescriptor, [attributeName]: propertyDescriptor}
     }, {})
 

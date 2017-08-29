@@ -1,4 +1,4 @@
-const characterAttributes = { // eslint-disable-line no-undef
+const characterAttributes = {
   id: [0],
   status: [''],
   name: [''],

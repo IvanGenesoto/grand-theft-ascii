@@ -1,7 +1,7 @@
 module.exports = function createUniversalEntityArrayMethods(
   {
     idCashe, integer, typeofDefaultValue, _attribute, attributeName,
-      _indexesByID, entityType, rootEntityType, district, $, _
+      indexesByID, entityType, rootEntityType, district, $, _
     }
 ) {
 
@@ -11,14 +11,14 @@ module.exports = function createUniversalEntityArrayMethods(
   return {
 
     get length() {
-      const index = _indexesByID[idCashe.id]
+      const index = indexesByID[idCashe.id]
       const values = _attribute[index]
       return values.length
     },
 
     get all() {
       standIn.length = 0
-      const index = _indexesByID[idCashe.id]
+      const index = indexesByID[idCashe.id]
       const values = _attribute[index]
       values.forEach((value, index) => standIn[index] = value) // eslint-disable-line no-return-assign
       return standIn
@@ -29,7 +29,7 @@ module.exports = function createUniversalEntityArrayMethods(
       $(_ + 'filter/typeof-value')(
         value, integer, typeofDefaultValue, attributeName, entityType
       )
-      const index = _indexesByID[idCashe.id]
+      const index = indexesByID[idCashe.id]
       const values = _attribute[index]
       const duplicate = values.find(existingValue => existingValue === value)
       if (duplicate) return false
@@ -49,7 +49,7 @@ module.exports = function createUniversalEntityArrayMethods(
     },
 
     remove(value) {
-      const index = _indexesByID[idCashe.id]
+      const index = indexesByID[idCashe.id]
       const values = _attribute[index]
       const match = values.indexOf(value)
       if (match === -1) return false
@@ -69,7 +69,7 @@ module.exports = function createUniversalEntityArrayMethods(
     },
 
     removeAll() {
-      const index = _indexesByID[idCashe.id]
+      const index = indexesByID[idCashe.id]
       const values = _attribute[index]
       if (!values.length) return false
       values.length = 0

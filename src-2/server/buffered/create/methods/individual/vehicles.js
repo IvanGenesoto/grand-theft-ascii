@@ -1,3 +1,3 @@
-module.exports = function createEntitySpecificVehicleMethods(district) {
+module.exports = function createIndividualVehicleMethods(district) {
   return {}
 }

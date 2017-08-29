@@ -6,10 +6,10 @@ const path = $('path')
 const port = process.env.PORT || 3000
 const socket = $('socket.io')
 const io = socket(server)
-const redisClient = null
+const redis = null
 const _ = './raw/'
 
-const district = $(_)(redisClient, io, $, _)
+const district = $(_)(redis, io, $, _)
 
 $('./buffered')(district)
 

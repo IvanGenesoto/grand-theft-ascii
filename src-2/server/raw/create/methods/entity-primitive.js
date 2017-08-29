@@ -1,11 +1,11 @@
 module.exports = function createUniversalEntityPrimitiveMethods(
-  {get, integer, typeofDefaultValue, _attribute, attributeName, entityType, _indexesByID, $, _}
+  {get, integer, typeofDefaultValue, _attribute, attributeName, entityType, indexesByID, $, _}
 ) {
 
   return get
 
     ? function() { // get
-      const index = _indexesByID[this.id]
+      const index = indexesByID[this.id]
       return _attribute[index]
     }
 
@@ -14,7 +14,7 @@ module.exports = function createUniversalEntityPrimitiveMethods(
       $(_ + 'filter/typeof-value')(
         value, integer, typeofDefaultValue, attributeName, entityType
       )
-      const index = _indexesByID[this.id]
+      const index = indexesByID[this.id]
       _attribute[index] = value
     }
 }

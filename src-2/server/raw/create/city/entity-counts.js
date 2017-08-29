@@ -9,12 +9,12 @@ module.exports = function createEntityCounts() {
 
   return {
 
-    get: function() {
+    get() {
       const entityType = this.entityType
       return _entityCounts[entityType]
     },
 
-    increment: function() {
+    increment() {
       const entityType = this.entityType
       return ++_entityCounts[entityType]
     }

@@ -1,3 +1,3 @@
-module.exports = function createEntitySpecificCharacterMethods(district) {
+module.exports = function createIndividualCharacterMethods(district) {
   return {}
 }

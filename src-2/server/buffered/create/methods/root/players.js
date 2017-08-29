@@ -1,3 +1,3 @@
-module.exports = function createRootSpecificPlayerMethods(district) {
+module.exports = function createRootPlayerMethods(district) {
   return {}
 }

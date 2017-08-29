@@ -1,3 +1,3 @@
-module.exports = function createRootSpecificVehicleMethods(district) {
+module.exports = function createRootVehicleMethods(district) {
   return {}
 }
