@@ -1,7 +1,6 @@
 .DS_Store
 node_modules
 npm-debug.log
-scratchpad
 build
 src/server/public/.DS_Store
 src/server/public/images/.DS_Store
@@ -17,3 +16,4 @@ src-2/server/elements-reference.js
 src-2/server/public/images
 patterns
 archive
+scratchpad
