@@ -1,7 +1,7 @@
 .DS_Store
 node_modules
 npm-debug.log
-build
+build/
 src/server/public/.DS_Store
 src/server/public/images/.DS_Store
 src/server/public/images/foreground/.DS_Store
@@ -14,6 +14,5 @@ src-2/server/public/images/foreground/arrow/.DS_Store
 src-2/server/public/images/foreground/arrow/arrow-original-size/
 src-2/server/elements-reference.js
 src-2/server/public/images
-patterns
-archive
+archive/
 scratchpad
