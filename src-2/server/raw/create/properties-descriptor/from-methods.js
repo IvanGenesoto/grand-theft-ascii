@@ -6,8 +6,12 @@ module.exports = function createPropertiesDescriptorFromMethods(
 
   let path = './' + exposure + '/create/methods/' + breadth
   if (exposure === 'buffered') path += '/' + rootEntityType
+  args = exposure === 'raw' ? args : district
+
   const propertiesDescriptor = Object
-    .entries($(path)(exposure === 'raw' ? args : district))
+    .entries(
+      $(path)(args)
+    )
 
     .filter(method => {
       return existingDescriptor
@@ -16,11 +20,14 @@ module.exports = function createPropertiesDescriptorFromMethods(
     })
 
     .reduce((propertiesDescriptor, method) => {
-      const methodName = method[0]
+      let methodName = method[0]
       method = method[1]
+      const changed = $(_ + 'change-accessor-name')(methodName)
+      methodName = changed ? changed.methodName : methodName
+      const key = changed ? changed.key : 'value'
       return {
         ...propertiesDescriptor,
-        [methodName]: {value: method, enumerable: true}
+        [methodName]: {[key]: method, enumerable: true}
       }
     }, {})
 

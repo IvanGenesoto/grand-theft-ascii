@@ -1,4 +1,4 @@
-module.exports = function createCommonEntityArrayMethods(
+module.exports = function createUniversalEntityArrayMethods(
   {
     idCashe, integer, typeofDefaultValue, _attribute, attributeName,
       _indexesByID, entityType, rootEntityType, district, $, _
@@ -17,14 +17,6 @@ module.exports = function createCommonEntityArrayMethods(
     },
 
     get all() {
-      standIn.length = 0
-      const index = _indexesByID[idCashe.id]
-      const values = _attribute[index]
-      values.forEach((value, index) => standIn[index] = value) // eslint-disable-line no-return-assign
-      return standIn
-    },
-
-    getAll() {
       standIn.length = 0
       const index = _indexesByID[idCashe.id]
       const values = _attribute[index]

@@ -4,7 +4,7 @@ module.exports = function createEntitySpecificPlayerMethods(district) {
 
   return {
 
-    get input() {
+    getInput() {
       const player = this
       Object.keys(reusedInputObject)
         .forEach(inputType => {
@@ -13,7 +13,7 @@ module.exports = function createEntitySpecificPlayerMethods(district) {
       return reusedInputObject
     },
 
-    set input(input) {
+    setInput(input) {
       const player = this
       reusedInputObject = input
       Object.entries(input)
