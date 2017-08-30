@@ -17,8 +17,8 @@ module.exports = function createDistrictIDsByEntityID($, _) {
     add(id) {
       const districtID = this.districtID
       const entityType = this.entityType
-      $(_ + 'filter/typeof-value')(id, true, undefined, '', entityType)
-      $(_ + 'filter/typeof-value')(districtID, true, undefined, '', entityType)
+      $(_ + 'filter/typeof-value')(id, 'integer', '', 'id', entityType)
+      $(_ + 'filter/typeof-value')(districtID, 'integer', '', 'districtID', entityType)
       _districtIDsByEntityID[entityType][id] = districtID
     }
   }
