@@ -21,7 +21,7 @@ module.exports = function createRootAccessors(
         entityType,
         rootEntityType,
         getNextID,
-        districtID,
+        districtID: district.id,
         district,
         $,
         _
