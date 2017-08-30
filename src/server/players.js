@@ -1,5 +1,3 @@
-const now = require('performance-now')
-
 function Players(_players = []) {
 
   const all = []
@@ -145,9 +143,7 @@ function Players(_players = []) {
       player.input = input
     },
 
-    updateLatencyBuffer: (id, timestamp) => {
-      var newTimestamp = now()
-      var latency = (newTimestamp - timestamp)
+    updateLatencyBuffer: (id, latency) => {
       var latencyBuffer = _players[id].latencyBuffer
       latencyBuffer.push(latency)
       if (latencyBuffer.length > 20) latencyBuffer.shift()

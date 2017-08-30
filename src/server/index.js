@@ -15,7 +15,7 @@ const players = require('./players')()
 const _ = {
   tick: 0,
   connectionQueue: [],
-  timestampQueue: [],
+  latencyQueue: [],
   inputQueue: [],
   activated: {
     walkers: [],
@@ -57,18 +57,18 @@ function massPopulateDistrict(districtID) {
 }
 
 function runQueues() {
-  var {connectionQueue, timestampQueue, inputQueue} = _
+  var {connectionQueue, latencyQueue, inputQueue} = _
   connectionQueue.forEach(connection => initiatePlayer(connection))
-  timestampQueue.forEach(({timestamp, socket}) => {
+  latencyQueue.forEach(({latency, socket}) => {
     var playerID = players.getPlayerIDBySocketID(socket.id)
-    players.updateLatencyBuffer(playerID, timestamp)
+    players.updateLatencyBuffer(playerID, latency)
   })
   inputQueue.forEach(({input, socket}) => {
     var playerID = players.getPlayerIDBySocketID(socket.id)
     players.updateInput(input, playerID)
   })
   _.connectionQueue.length = 0
-  _.timestampQueue.length = 0
+  _.latencyQueue.length = 0
   _.inputQueue.length = 0
 }
 
@@ -263,7 +263,9 @@ io.on('connection', socket => {
   _.connectionQueue.push(socket)
 
   socket.on('timestamp', timestamp => {
-    _.timestampQueue.push({timestamp, socket})
+    var newTimestamp = now()
+    var latency = newTimestamp - timestamp
+    _.latencyQueue.push({latency, socket})
   })
 
   socket.on('input', input => {
