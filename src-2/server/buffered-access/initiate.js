@@ -1,4 +1,4 @@
-module.exports = function initiate(district) {
+module.exports = function initiate({district, io, now, $, _}) {
 
   const {
     players, // eslint-disable-line no-unused-vars

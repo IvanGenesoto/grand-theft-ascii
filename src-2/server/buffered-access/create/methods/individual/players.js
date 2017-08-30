@@ -17,8 +17,11 @@ module.exports = function createIndividualPlayerMethods(district) {
       const player = this
       reusedInputObject = input
       Object.entries(input)
-        .forEach(inputProperty => player[inputProperty[0]] = inputProperty[1]) // eslint-disable-line no-return-assign
+        .forEach(inputEntry => {
+          const inputKey = inputEntry[0]
+          const input = inputEntry[1]
+          player[inputKey] = input
+        })
     }
-
   }
 }
