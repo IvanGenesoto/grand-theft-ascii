@@ -3,7 +3,7 @@ module.exports = function createUniversalRootMethods(
     _entities,
     indexesByID,
     rootEntityType,
-    districtID,
+    district,
     getNextID,
     entityAccessorPrototype,
     rootAccessorPrototype,
@@ -14,7 +14,7 @@ module.exports = function createUniversalRootMethods(
 
   const universalRootMethods = {
 
-    districtID,
+    districtID: district.id,
 
     entityType: rootEntityType,
 
