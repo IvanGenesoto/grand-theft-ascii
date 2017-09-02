@@ -6,18 +6,14 @@ const path = $('path')
 const port = process.env.PORT || 3000
 const socket = $('socket.io')
 const io = socket(server)
-const redis = null
 const now = $('performance-now')
 
-let _ = './raw-access/'
-const city = $(_ + 'create/accessor/city')(redis, $, _)
-$(_ + 'initiate')(city)
+const district = $('./raw/create/accessor/district')(io, now, $)
 
-const district = $(_ + 'create/accessor/district')(city, $, _)
-_ = './buffered-access/'
-$(_ + 'initiate')({district, io, now, $, _})
+$('./buffered/initiate')(district)
+
 const {players} = district
 
-io.on('connection', socket => $(_ + 'connect')(socket, players, now))
+io.on('connection', socket => $('buffered/connect')(socket, players, now))
 app.use(express.static(path.join(__dirname, 'public')))
 server.listen(port, () => console.log('Listening on port ' + port))
