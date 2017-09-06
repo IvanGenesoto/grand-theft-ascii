@@ -12,14 +12,14 @@ module.exports = function createRootAccessorPrototype(args) {
 
   const rootAccessorPrototype = Object.create(entityAccessorPrototype)
 
-  const bufferedMethods = $('./buffered/create-methods/root/' + rootEntityType)(district)
-  const rawMethods = $(_ + 'create/methods/root')(
+  const initiatedMethods = $('./initiate/create-methods/root/' + rootEntityType)(district)
+  const initializedMethods = $(_ + 'create/methods/root')(
     {...args, _entities, indexesByID, entityAccessorPrototype, rootAccessorPrototype}
   )
 
-  $(_ + 'filter/duplicate-property-names')(rawMethods, bufferedMethods)
-  $(_ + 'filter/integer-property-names')(rawMethods, bufferedMethods)
-  $(_ + 'add/methods')(rootAccessorPrototype, rawMethods, bufferedMethods)
+  $(_ + 'filter/duplicate-property-names')(initializedMethods, initiatedMethods)
+  $(_ + 'filter/integer-property-names')(initializedMethods, initiatedMethods)
+  $(_ + 'add/methods')(rootAccessorPrototype, initializedMethods, initiatedMethods)
 
   _entities.id.forEach((id, index) => {
     if (id) {
