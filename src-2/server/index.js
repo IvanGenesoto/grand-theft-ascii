@@ -8,12 +8,12 @@ const socket = $('socket.io')
 const io = socket(server)
 const now = $('performance-now')
 
-const district = $('./raw/create/accessor/district')(io, now, $)
+const district = $('./initialize')(io, now, $)
 
-$('./buffered/initiate')(district)
+$('./initiate')(district)
 
 const {players} = district
 
-io.on('connection', socket => $('buffered/connect')(socket, players, now))
+io.on('connection', socket => $('./connect')(socket, players, now))
 app.use(express.static(path.join(__dirname, 'public')))
 server.listen(port, () => console.log('Listening on port ' + port))

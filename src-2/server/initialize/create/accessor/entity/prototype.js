@@ -13,15 +13,15 @@ module.exports = function createEntityAccessorPrototype(args) {
       const args = {_defaultValue, _attribute, attributeName, entityType, indexesByID, $, _}
       const attributeMethod = $(_ + 'create/methods/entity/' + attributeType)(args)
       const propertyDescriptor = Object.getOwnPropertyDescriptor(attributeMethod, [attributeName])
-      Object.defineProperty(entityAccessorPrototype, [attributeName], propertyDescriptor)
+      Object.defineProperty(entityAccessorPrototype, attributeName, propertyDescriptor)
       return entityAccessorPrototype
     }, Object.create(null))
 
-  const rawMethods = $(_ + 'create/methods/entity')(args)
-  const bufferedMethods = $('./buffered/create-methods/entity/' + entityType)(district)
+  const initializedMethods = $(_ + 'create/methods/entity')(args)
+  const initiatedMethods = $('./initiate/create-methods/entity/' + entityType)(district)
 
-  $(_ + 'filter/duplicate-property-names')(_entities, rawMethods, bufferedMethods)
-  $(_ + 'add/methods')(entityAccessorPrototype, rawMethods, bufferedMethods)
+  $(_ + 'filter/duplicate-property-names')(_entities, initializedMethods, initiatedMethods)
+  $(_ + 'add/methods')(entityAccessorPrototype, initializedMethods, initiatedMethods)
 
   return Object.freeze(entityAccessorPrototype)
 }
