@@ -19,7 +19,7 @@ module.exports = function createRootAccessorPrototype(args) {
 
   $(_ + 'filter/duplicate-property-names')(initializedMethods, initiatedMethods)
   $(_ + 'filter/integer-property-names')(initializedMethods, initiatedMethods)
-  $(_ + 'add/methods')(rootAccessorPrototype, initializedMethods, initiatedMethods)
+  $(_ + 'append/methods')(rootAccessorPrototype, initializedMethods, initiatedMethods)
 
   _entities.id.forEach((id, index) => {
     if (id) {

@@ -21,7 +21,7 @@ module.exports = function createEntityAccessorPrototype(args) {
   const initiatedMethods = $('./initiate/create-methods/entity/' + entityType)(district)
 
   $(_ + 'filter/duplicate-property-names')(_entities, initializedMethods, initiatedMethods)
-  $(_ + 'add/methods')(entityAccessorPrototype, initializedMethods, initiatedMethods)
+  $(_ + 'append/methods')(entityAccessorPrototype, initializedMethods, initiatedMethods)
 
   return Object.freeze(entityAccessorPrototype)
 }
