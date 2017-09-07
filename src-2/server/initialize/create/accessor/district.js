@@ -15,7 +15,7 @@ module.exports = function createDistrictAccessor(args) {
   const initiatedMethods = $('./initiate/create-methods/district')(district)
 
   $(_ + 'filter/duplicate-property-names')(_entityRoots, initializedMethods, initiatedMethods)
-  $(_ + 'add/methods')(district, initializedMethods, initiatedMethods)
+  $(_ + 'append/methods')(district, initializedMethods, initiatedMethods)
 
   return Object.freeze(district)
 }
