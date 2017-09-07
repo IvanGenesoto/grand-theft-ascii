@@ -1,6 +1,6 @@
-module.exports = function createBufferedDistrictMethods(district) {
+module.exports = function createInitiatedDistrictMethods(district) {
 
-  const bufferedDistrictMethods = {}
+  const initiatedDistrictMethods = {}
 
-  return bufferedDistrictMethods
+  return initiatedDistrictMethods
 }

@@ -1,13 +1,13 @@
-module.exports = function createRawDistrictMethods({id, $}) {
+module.exports = function createInitializedDistrictMethods({id, $}) {
 
-  const rawDistrictMethods = {
+  const initializedDistrictMethods = {
 
     id,
 
     $,
 
-    _: './buffered'
+    _: './initiate'
   }
 
-  return rawDistrictMethods
+  return initializedDistrictMethods
 }
