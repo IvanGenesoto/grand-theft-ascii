@@ -16,7 +16,7 @@ module.exports = function retrieveDistrict(
     )
   }
 
-  _district = $(_ + 'add/attributes')(_district, 'districts', $, _)
+  _district = $(_ + 'append/attributes')(_district, 'districts', $, _)
   _district.id = districtID
 
   Object
