@@ -1,4 +1,4 @@
-module.exports = function CreateLatestDistrictID() {
+module.exports = function createLatestDistrictID() {
 
   let _latestDistrictID = 0
 
@@ -8,8 +8,6 @@ module.exports = function CreateLatestDistrictID() {
 
     increment: () => ++_latestDistrictID,
 
-    decrement: () => {
-      --_latestDistrictID
-    }
+    decrement: () => --_latestDistrictID
   }
 }

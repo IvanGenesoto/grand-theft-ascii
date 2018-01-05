@@ -3,10 +3,10 @@ module.exports = function createGetNextID({
 }) {
 
   return function getNextID() {
-    const rootAccessor = this
-    const id = entityCounts.increment.call(rootAccessor)
-    districtIDsByEntityID.add.call(rootAccessor, id)
-    entityCountsByDistrictID.increment.call(rootAccessor)
+    const rootAccessorPrototype = this
+    const id = entityCounts.increment.call(rootAccessorPrototype)
+    districtIDsByEntityID.add.call(rootAccessorPrototype, id)
+    entityCountsByDistrictID.increment.call(rootAccessorPrototype)
     return id
   }
 }

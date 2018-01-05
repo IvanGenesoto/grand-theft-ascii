@@ -12,7 +12,7 @@ module.exports = function createEntityAccessorPrototype(args) {
       const attributeType = Array.isArray(_defaultValue) ? 'array' : 'primitive'
       const args = {_defaultValue, _attribute, attributeName, entityType, indexesByID, $, _}
       const attributeMethod = $(_ + 'create/methods/entity/' + attributeType)(args)
-      const propertyDescriptor = Object.getOwnPropertyDescriptor(attributeMethod, [attributeName])
+      const propertyDescriptor = Object.getOwnPropertyDescriptor(attributeMethod, attributeName)
       Object.defineProperty(entityAccessorPrototype, attributeName, propertyDescriptor)
       return entityAccessorPrototype
     }, Object.create(null))

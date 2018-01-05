@@ -1,6 +1,6 @@
 module.exports = function createDistrictsByDistrictID($, _) {
 
-  const _districtsByDistrictID = []
+  const _districtsByDistrictID = [0]
 
   return {
 
