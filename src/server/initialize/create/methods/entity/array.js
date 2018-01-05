@@ -24,6 +24,8 @@ module.exports = function createArrayMethod({
       return values.length
     },
 
+    get count() { return this.length }, // eslint-disable-line brace-style
+
     get all() {
       const standIn = standIns[standinIndex]
       standIn.length = 0
@@ -33,6 +35,10 @@ module.exports = function createArrayMethod({
       standinIndex = standinIndex ? 0 : 1
       return standIn
     },
+
+    get get() { return this.all }, // eslint-disable-line brace-style
+
+    get getAll() { return this.all }, // eslint-disable-line brace-style
 
     add(value) {
       const {id} = value

@@ -8,8 +8,6 @@ module.exports = function createLatestCityID() {
 
     increment: () => ++_latestCityID,
 
-    decrement: () => {
-      --_latestCityID
-    }
+    decrement: () => --_latestCityID
   }
 }

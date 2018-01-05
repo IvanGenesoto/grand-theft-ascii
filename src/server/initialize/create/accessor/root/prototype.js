@@ -5,12 +5,10 @@ module.exports = function createRootAccessorPrototype(args) {
   _entities = $(_ + 'append/attributes')(_entities, rootEntityType, $, _)
 
   const indexesByID = $(_ + 'create/indexes-by-id')(_entities, rootEntityType)
-
+  const rootAccessorPrototype = Object.create(null)
   const entityAccessorPrototype = $(_ + 'create/accessor/entity/prototype')(
     {...args, _entities, indexesByID}
   )
-
-  const rootAccessorPrototype = Object.create(entityAccessorPrototype)
 
   const initiatedMethods = $('./initiate/create-methods/root/' + rootEntityType)(district)
   const initializedMethods = $(_ + 'create/methods/root')(

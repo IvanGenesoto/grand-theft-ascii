@@ -1,6 +1,6 @@
-module.exports = function retrieveDistrict(
-  {districtCount, latestDistrictID, districtsByDistrictID, $, _}
-) {
+module.exports = function retrieveDistrict(city) {
+
+  const {districtCount, latestDistrictID, districtsByDistrictID, $, _} = city
 
   const districtID = latestDistrictID.increment()
   if (districtID > districtCount.get()) {
