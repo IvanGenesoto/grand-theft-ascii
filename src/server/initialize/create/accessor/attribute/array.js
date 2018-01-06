@@ -1,21 +1,12 @@
 module.exports = function createArrayAttributeMethods({
-  _defaultValue, _attribute, attributeName, caller, entityType, indexesByID, $, _
+  _attribute, attributeName, caller, entityType, indexesByID, typeofDefaultValue, $
 }) {
 
-  const [defaultValue] = _defaultValue
-  const typeofDefaultValue = Number.isInteger(defaultValue)
-    ? 'integer'
-    : typeof defaultValue
-
-  $(_ + 'filter/typeof-default-value')(
-    defaultValue, typeofDefaultValue, attributeName, entityType
-  )
-
   const log = []
-  const alls = [[], []]
-  let allIndex = 0
+  const cashes = [[], []]
+  let casheIndex = 0
 
-  const attributeMethods = {
+  return Object.freeze({
 
     getLength() {
       const index = indexesByID[caller.id]
@@ -24,19 +15,19 @@ module.exports = function createArrayAttributeMethods({
     },
 
     getAll() {
-      const standIn = alls[allIndex]
-      standIn.length = 0
+      const cashe = cashes[casheIndex]
+      cashe.length = 0
       const index = indexesByID[caller.id]
       const values = _attribute[index]
-      values.forEach((value, index) => standIn[index] = value) // eslint-disable-line no-return-assign
-      allIndex = allIndex ? 0 : 1
-      return standIn
+      values.forEach((value, index) => cashe[index] = value) // eslint-disable-line no-return-assign
+      casheIndex = casheIndex ? 0 : 1
+      return cashe
     },
 
     add(value) {
       const {id} = value
       if (id) value = id
-      $(_ + 'filter/typeof-value')(value, typeofDefaultValue, attributeName, entityType)
+      $('./filter/typeof-value')(value, typeofDefaultValue, attributeName, entityType)
       const index = indexesByID[caller.id]
       const values = _attribute[index]
       if (typeofDefaultValue === 'integer') {
@@ -83,7 +74,5 @@ module.exports = function createArrayAttributeMethods({
       values.length = 0
       return false
     }
-  }
-
-  return Object.freeze(attributeMethods)
+  })
 }

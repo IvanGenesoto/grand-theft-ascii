@@ -1,15 +1,14 @@
-module.exports = function createCity($, _) {
+module.exports = function createCity($) {
 
   const city = {
-    latestCityID: $(_ + 'create/methods/city/latest-city-id')(),
-    districtCount: $(_ + 'create/methods/city/district-count')(),
-    latestDistrictID: $(_ + 'create/methods/city/latest-district-id')(),
-    districtsByDistrictID: $(_ + 'create/methods/city/districts-by-district-id')($, _),
-    entityCounts: $(_ + 'create/methods/city/entity-counts')(),
-    districtIDsByEntityID: $(_ + 'create/methods/city/district-ids-by-entity-id')($, _),
-    entityCountsByDistrictID: $(_ + 'create/methods/city/entity-counts-by-district-id')(),
-    $,
-    _
+    latestCityID: $('./create/methods/city/latest-city-id')(),
+    districtCount: $('./create/methods/city/district-count')(),
+    latestDistrictID: $('./create/methods/city/latest-district-id')(),
+    districtsByDistrictID: $('./create/methods/city/districts-by-district-id')($),
+    entityCounts: $('./create/methods/city/entity-counts')(),
+    districtIDsByEntityID: $('./create/methods/city/district-ids-by-entity-id')($),
+    entityCountsByDistrictID: $('./create/methods/city/entity-counts-by-district-id')(),
+    $
   }
 
   return city

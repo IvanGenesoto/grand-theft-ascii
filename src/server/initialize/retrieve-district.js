@@ -1,6 +1,6 @@
 module.exports = function retrieveDistrict(city) {
 
-  const {districtCount, latestDistrictID, districtsByDistrictID, $, _} = city
+  const {districtCount, latestDistrictID, districtsByDistrictID, $} = city
 
   const districtID = latestDistrictID.increment()
   if (districtID > districtCount.get()) {
@@ -16,15 +16,15 @@ module.exports = function retrieveDistrict(city) {
     )
   }
 
-  const _attributes = $(_ + 'attributes/districts')
-  _district = $(_ + 'append/attributes')(_district, _attributes)
+  const _attributes = $('./attributes/districts')
+  _district = $('./append/attributes')(_district, _attributes)
   _district.id = districtID
 
   Object
     .entries(_district)
     .forEach(([attributeName, _attribute]) => {
       const typeofAttribute = typeof _attribute
-      $(_ + 'filter/typeof-default-value')(
+      $('./filter/typeof-default-value')(
         _attribute, typeofAttribute, attributeName, 'district', 'object'
       )
     })

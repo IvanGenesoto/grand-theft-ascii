@@ -1,21 +1,23 @@
 module.exports = function createPlayerMethods(district) {
 
-  let reusedInputObject = {}
+  const {players, characters, vehicles, rooms, $} = district // eslint-disable-line no-unused-vars
 
-  const playerMethods = {
+  let cashedInput = {}
+
+  return {
 
     get input() {
       const player = this
-      Object.keys(reusedInputObject)
+      Object.keys(cashedInput)
         .forEach(inputType => {
-          reusedInputObject[inputType] = player[inputType]
+          cashedInput[inputType] = player[inputType]
         })
-      return reusedInputObject
+      return cashedInput
     },
 
     set input(input) {
       const player = this
-      reusedInputObject = input
+      cashedInput = input
       Object.entries(input)
         .forEach(inputEntry => {
           const inputKey = inputEntry[0]
@@ -24,6 +26,4 @@ module.exports = function createPlayerMethods(district) {
         })
     }
   }
-
-  return playerMethods
 }

@@ -1,15 +1,14 @@
-module.exports = function createEntity(id, _entities) {
+module.exports = function createEntity(id, _entityRoot) {
 
-  const index = _entities.id.length
-  _entities.id[index] = id
+  const index = _entityRoot.id.length
+  _entityRoot.id[index] = id
 
-  const _attributes = Object.values(_entities)
-  _attributes.forEach(_attribute => {
-    const _defaultValue = _attribute[0]
-    _attribute[index] = Array.isArray(_defaultValue)
-      ? []
-      : _defaultValue
-  })
+  Object
+    .values(_entityRoot)
+    .forEach(_attribute => {
+      const [_defaultValue] = _attribute
+      _attribute[index] = Array.isArray(_defaultValue) ? [] : _defaultValue
+    })
 
   return index
 }

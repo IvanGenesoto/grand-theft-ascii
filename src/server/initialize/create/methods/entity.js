@@ -1,11 +1,9 @@
 module.exports = function createEntityMethods({entityType, districtID}) {
 
-  const entityMethods = {
+  return {
 
     entityType,
 
     districtID
   }
-
-  return entityMethods
 }

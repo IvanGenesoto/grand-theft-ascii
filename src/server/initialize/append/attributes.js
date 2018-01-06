@@ -1,11 +1,11 @@
-module.exports = function appendAttributes(_entities, _attributes) {
+module.exports = function appendAttributes(_entityRoot, _attributes) {
 
   const _attributeEntries = Object.entries(_attributes)
 
-  return _attributeEntries.reduce(append, _entities || Object.create(null))
+  return _attributeEntries.reduce(append, _entityRoot || Object.create(null))
 
-  function append(_entities, [attributeName, _attribute]) {
-    if (!_entities[attributeName]) _entities[attributeName] = _attribute
-    return _entities
+  function append(_entityRoot, [attributeName, _attribute]) {
+    if (!_entityRoot[attributeName]) _entityRoot[attributeName] = _attribute
+    return _entityRoot
   }
 }

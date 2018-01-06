@@ -1,22 +1,31 @@
 module.exports = function appendAttributeAccessors(args) {
 
-  const {_entities, entityType, caller, $, _} = args
+  const {entityAccessorPrototype, _entityRoot, entityType, caller, $} = args
 
-  const _attributeEntries = Object.entries(_entities)
+  return Object
+    .entries(_entityRoot)
+    .reduce(append, entityAccessorPrototype)
 
-  return _attributeEntries.reduce(append, Object.create(null))
-
-  function append(entityAccessorPrototype, _attributeEntry) {
-    const [attributeName, _attribute] = _attributeEntry
+  function append(entityAccessorPrototype, [attributeName, _attribute]) {
     if (attributeName === 'id') return entityAccessorPrototype
-    const [_defaultValue] = _attribute
+    let [_defaultValue] = _attribute
     const attributeType = Array.isArray(_defaultValue) ? 'array' : 'primitive'
-    const newArgs = {_defaultValue, _attribute, attributeName, attributeType, entityType, ...args}
-    const attributeMethods = $(_ + 'create/methods/attribute/' + attributeType)(newArgs)
+    _defaultValue = attributeType === 'array'
+      ? _defaultValue[0]
+      : _defaultValue
+    const typeofDefaultValue = Number.isInteger(_defaultValue)
+      ? 'integer'
+      : typeof _defaultValue
+    $('./filter/typeof-default-value')(
+      _defaultValue, typeofDefaultValue, attributeName, entityType
+    )
+    const attributeAccessor = $('./create/accessor/attribute/' + attributeType)({
+      _attribute, attributeName, attributeType, entityType, typeofDefaultValue, ...args
+    })
     Object.defineProperty(
       entityAccessorPrototype,
       attributeName,
-      $(_ + 'create/descriptor')(caller, attributeMethods)
+      $('./create/descriptor')(caller, attributeAccessor)
     )
     return entityAccessorPrototype
   }

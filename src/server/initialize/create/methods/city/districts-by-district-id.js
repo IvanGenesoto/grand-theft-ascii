@@ -1,4 +1,4 @@
-module.exports = function createDistrictsByDistrictID($, _) {
+module.exports = function createDistrictsByDistrictID($) {
 
   const _districtsByDistrictID = [0]
 
@@ -8,8 +8,8 @@ module.exports = function createDistrictsByDistrictID($, _) {
 
     add(district) {
       const districtID = this.id
-      $(_ + 'filter/typeof-value')(districtID, 'integer', '', 'id', 'district')
-      $(_ + 'filter/typeof-value')(district, false, 'object', '', 'district')
+      $('./filter/typeof-value')(districtID, 'integer', '', 'id', 'district')
+      $('./filter/typeof-value')(district, false, 'object', '', 'district')
       _districtsByDistrictID[districtID] = district
     }
   }

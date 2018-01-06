@@ -1,15 +1,19 @@
 module.exports = function createEntityAccessorPrototype(args) {
 
-  const {_entities, rootEntityType, district, $, _} = args
+  const {_entityRoot, entityRootType, districtAccessor, $} = args
 
-  const entityType = $(_ + 'create/entity-type')(rootEntityType)
-  let entityAccessorPrototype = $(_ + 'append/accessors/attribute')({entityType, ...args})
+  const entityType = $('./create/entity-type')(entityRootType)
+  let entityAccessorPrototype = Object.create(null)
+  entityAccessorPrototype = $('./append/accessors/attribute')({
+    entityAccessorPrototype, entityType, ...args
+  })
 
-  const initializedMethods = $(_ + 'create/methods/entity')(args)
-  const initiatedMethods = $('./initiate/create-methods/entity/' + entityType)(district)
+  const initializedMethods = $('./create/methods/entity')(args)
+  const initiatedMethods = $('../initiate/create-methods/entity/' + entityType)(districtAccessor)
 
-  $(_ + 'filter/duplicate-property-names')(_entities, initializedMethods, initiatedMethods)
-  entityAccessorPrototype = $(_ + 'append/methods')(
+  $('./filter/duplicate-property-names')(_entityRoot, initializedMethods, initiatedMethods)
+
+  entityAccessorPrototype = $('./append/methods')(
     entityAccessorPrototype, initializedMethods, initiatedMethods
   )
 

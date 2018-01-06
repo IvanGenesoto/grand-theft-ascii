@@ -1,13 +1,7 @@
-module.exports = function createInitializedDistrictMethods({id, $}) {
+module.exports = function createInitializedDistrictMethods({districtID, $}) {
 
-  const initializedDistrictMethods = {
+  return {
 
-    id,
-
-    $,
-
-    _: './initiate'
+    id: districtID
   }
-
-  return initializedDistrictMethods
 }
