@@ -1,5 +1,5 @@
-module.exports = function createArrayMethod({
-  _defaultValue, _attribute, attributeName, entityType, indexesByID, $, _
+module.exports = function createArrayAttributeMethods({
+  _defaultValue, _attribute, attributeName, caller, entityType, indexesByID, $, _
 }) {
 
   const [defaultValue] = _defaultValue
@@ -12,39 +12,32 @@ module.exports = function createArrayMethod({
   )
 
   const log = []
-  const standIns = [[], []]
-  let standinIndex = 0
-  let thisID
+  const alls = [[], []]
+  let allIndex = 0
 
-  const arrayAttributeMethods = {
+  const attributeMethods = {
 
-    get length() {
-      const index = indexesByID[thisID]
+    getLength() {
+      const index = indexesByID[caller.id]
       const values = _attribute[index]
       return values.length
     },
 
-    get count() { return this.length }, // eslint-disable-line brace-style
-
-    get all() {
-      const standIn = standIns[standinIndex]
+    getAll() {
+      const standIn = alls[allIndex]
       standIn.length = 0
-      const index = indexesByID[thisID]
+      const index = indexesByID[caller.id]
       const values = _attribute[index]
       values.forEach((value, index) => standIn[index] = value) // eslint-disable-line no-return-assign
-      standinIndex = standinIndex ? 0 : 1
+      allIndex = allIndex ? 0 : 1
       return standIn
     },
-
-    get get() { return this.all }, // eslint-disable-line brace-style
-
-    get getAll() { return this.all }, // eslint-disable-line brace-style
 
     add(value) {
       const {id} = value
       if (id) value = id
       $(_ + 'filter/typeof-value')(value, typeofDefaultValue, attributeName, entityType)
-      const index = indexesByID[thisID]
+      const index = indexesByID[caller.id]
       const values = _attribute[index]
       if (typeofDefaultValue === 'integer') {
         const duplicate = values.find(existingValue => existingValue === value)
@@ -66,7 +59,7 @@ module.exports = function createArrayMethod({
     remove(value) {
       const {id} = value
       if (id) value = id
-      const index = indexesByID[thisID]
+      const index = indexesByID[caller.id]
       const values = _attribute[index]
       const match = values.indexOf(value)
       if (match === -1) return value
@@ -84,7 +77,7 @@ module.exports = function createArrayMethod({
     },
 
     removeAll() {
-      const index = indexesByID[thisID]
+      const index = indexesByID[caller.id]
       const values = _attribute[index]
       if (!values.length) return true
       values.length = 0
@@ -92,15 +85,5 @@ module.exports = function createArrayMethod({
     }
   }
 
-  const arrayAttributeMethod = Object.create({}, {[attributeName]: {
-
-    get: function() {
-      thisID = this.id
-      return arrayAttributeMethods
-    },
-
-    enumerable: true
-  }})
-
-  return arrayAttributeMethod
+  return Object.freeze(attributeMethods)
 }

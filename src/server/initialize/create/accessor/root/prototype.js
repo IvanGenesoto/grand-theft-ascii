@@ -2,7 +2,8 @@ module.exports = function createRootAccessorPrototype(args) {
 
   let {_entities, rootEntityType, district, $, _} = args
 
-  _entities = $(_ + 'append/attributes')(_entities, rootEntityType, $, _)
+  const _attributes = $(_ + 'attributes/' + rootEntityType)
+  _entities = $(_ + 'append/attributes')(_entities, _attributes, $, _)
 
   const indexesByID = $(_ + 'create/indexes-by-id')(_entities, rootEntityType)
   const rootAccessorPrototype = Object.create(null)

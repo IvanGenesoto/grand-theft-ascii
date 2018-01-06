@@ -19,12 +19,12 @@ module.exports = function createRootMethods(
 
     entityType: rootEntityType,
 
-    get length() {
-      return _entities.id.length - 1 // disclude default entity
+    getLength() {
+      return _entities.id.length - 1 // exclude default entity
     },
 
     create() {
-      const id = getNextID.call(rootMethods)
+      const id = getNextID.call(this)
       const index = $(_ + 'create/entity')(id, _entities)
       indexesByID[id] = index
       const entityAccessor = $(_ + 'create/accessor/entity')(id, entityAccessorPrototype)
