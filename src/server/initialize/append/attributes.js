@@ -1,4 +1,4 @@
-module.exports = function appendAttributes(_entities, _attributes, $, _) {
+module.exports = function appendAttributes(_entities, _attributes) {
 
   const _attributeEntries = Object.entries(_attributes)
 

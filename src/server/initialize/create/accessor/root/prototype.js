@@ -3,10 +3,10 @@ module.exports = function createRootAccessorPrototype(args) {
   let {_entities, rootEntityType, district, $, _} = args
 
   const _attributes = $(_ + 'attributes/' + rootEntityType)
-  _entities = $(_ + 'append/attributes')(_entities, _attributes, $, _)
+  _entities = $(_ + 'append/attributes')(_entities, _attributes)
 
   const indexesByID = $(_ + 'create/indexes-by-id')(_entities, rootEntityType)
-  const rootAccessorPrototype = Object.create(null)
+  let rootAccessorPrototype = Object.create(null)
   const entityAccessorPrototype = $(_ + 'create/accessor/entity/prototype')(
     {...args, _entities, indexesByID}
   )
@@ -18,14 +18,13 @@ module.exports = function createRootAccessorPrototype(args) {
 
   $(_ + 'filter/duplicate-property-names')(initializedMethods, initiatedMethods)
   $(_ + 'filter/integer-property-names')(initializedMethods, initiatedMethods)
-  $(_ + 'append/methods')(rootAccessorPrototype, initializedMethods, initiatedMethods)
+  rootAccessorPrototype = $(_ + 'append/methods')(
+    rootAccessorPrototype, initializedMethods, initiatedMethods
+  )
 
-  _entities.id.forEach((id, index) => {
-    if (id) {
-      indexesByID[id] = index
-      const entityAccessor = $(_ + 'create/accessor/entity')(id, entityAccessorPrototype)
-      rootAccessorPrototype[id] = entityAccessor
-    }
+  const createEntityAccessor = $(_ + 'create/accessor/entity')
+  rootAccessorPrototype = $(_ + 'append/accessors/entity')({
+    _entities, rootAccessorPrototype, entityAccessorPrototype, createEntityAccessor
   })
 
   return rootAccessorPrototype
