@@ -1,31 +1,26 @@
-module.exports = function retrieveDistrict(city) {
+module.exports = function retrieveDistrict(cityAccessor) {
 
-  const {districtCount, latestDistrictID, districtsByDistrictID, $} = city
+  const {districtCount, retrievedDistrictCount, districtsByDistrictID, $} = cityAccessor
 
-  const districtID = latestDistrictID.increment()
+  const districtID = retrievedDistrictCount.increment()
   if (districtID > districtCount.get()) {
-    latestDistrictID.decrement()
+    retrievedDistrictCount.decrement()
     throw new Error('All districts already retrieved')
   }
 
   let _district = districtsByDistrictID.get(districtID)
-
-  if (_district && _district.id !== districtID) {
-    throw new Error(
+  if (_district && _district.id !== districtID) { throw new Error( // eslint-disable-line brace-style
       '_district.id (' + _district.id + ') does not match districtID (' + districtID + ')'
-    )
-  }
+  ) } // eslint-disable-line brace-style
 
-  const _attributes = $('./attributes/districts')
-  _district = $('./append/attributes')(_district, _attributes)
+  _district = $('./append/attributes')(_district, $('./attributes/districts'))
   _district.id = districtID
 
   Object
     .entries(_district)
     .forEach(([attributeName, _attribute]) => {
-      const typeofAttribute = typeof _attribute
       $('./filter/typeof-default-value')(
-        _attribute, typeofAttribute, attributeName, 'district', 'object'
+        _attribute, typeof _attribute, attributeName, 'district', 'object'
       )
     })
 
