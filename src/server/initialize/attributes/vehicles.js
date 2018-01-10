@@ -1,7 +1,7 @@
 const vehicleAttributes = {
   id: [0],
-  status: 'operational',
-  model: 'delorean',
+  status: ['operational'],
+  model: ['delorean'],
   district: [0],
   zone: [0],
   seats: [2],

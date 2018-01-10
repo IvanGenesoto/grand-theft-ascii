@@ -1,8 +1,8 @@
 module.exports = function createRootMethods(
   {
-    _entities,
+    _entityRoot,
     indexesByID,
-    rootEntityType,
+    entityRootType,
     district,
     districtID,
     getNextID,
@@ -13,21 +13,21 @@ module.exports = function createRootMethods(
   }
 ) {
 
-  const rootMethods = {
+  return {
 
     districtID,
 
-    entityType: rootEntityType,
+    entityType: entityRootType,
 
-    get length() {
-      return _entities.id.length - 1 // disclude default entity
+    getLength() {
+      return _entityRoot.id.length - 1 // exclude default entity
     },
 
     create() {
-      const id = getNextID.call(rootMethods)
-      const index = $(_ + 'create/entity')(id, _entities)
+      const id = getNextID.call(this)
+      const index = $('./create/entity')(id, _entityRoot)
       indexesByID[id] = index
-      const entityAccessor = $(_ + 'create/accessor/entity')(id, entityAccessorPrototype)
+      const entityAccessor = $('./create/accessor/entity')(id, entityAccessorPrototype)
       rootAccessorPrototype[id] = entityAccessor
       return entityAccessor
     },
@@ -42,6 +42,4 @@ module.exports = function createRootMethods(
       return entities
     }
   }
-
-  return rootMethods
 }

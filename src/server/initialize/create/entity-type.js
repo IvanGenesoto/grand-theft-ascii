@@ -1,15 +1,15 @@
-module.exports = function createEntityType(rootEntityType) {
+module.exports = function createEntityType(entityRootType) {
 
-  if (rootEntityType.endsWith('ies')) {
-    return rootEntityType
-      .slice(0, rootEntityType.length - 3)
+  if (entityRootType.endsWith('ies')) {
+    return entityRootType
+      .slice(0, entityRootType.length - 3)
       .concat('y')
   }
 
-  else if (rootEntityType.endsWith('s')) {
-    return rootEntityType
-      .slice(0, rootEntityType.length - 1)
+  else if (entityRootType.endsWith('s')) {
+    return entityRootType
+      .slice(0, entityRootType.length - 1)
   }
 
-  else return rootEntityType
+  else return entityRootType
 }

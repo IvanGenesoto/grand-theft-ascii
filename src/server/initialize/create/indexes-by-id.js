@@ -1,8 +1,9 @@
-module.exports = function createIndexesById(_entities, rootEntityType) {
+module.exports = function createIndexesById(_entityRoot, entityRootType) {
 
-  const indexesByID = []
+  return _entityRoot.id.reduce(append, [])
 
-  _entities.id.forEach((id, index) => indexesByID[id] = index) // eslint-disable-line no-return-assign
-
-  return indexesByID
+  function append (indexesByID, id, index) {
+    indexesByID[id] = index
+    return indexesByID
+  }
 }

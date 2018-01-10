@@ -1,10 +1,4 @@
-module.exports = function createRootAccessor(args) {
+module.exports = function createRootAccessor(rootAccessorPrototype) {
 
-  const {$, _} = args
-
-  const rootAccessorPrototype = $(_ + 'create/accessor/root/prototype')(args)
-
-  const rootAccessor = Object.create(rootAccessorPrototype)
-
-  return Object.freeze(rootAccessor)
+  return Object.freeze(Object.create(rootAccessorPrototype))
 }

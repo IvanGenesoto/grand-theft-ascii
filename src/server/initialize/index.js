@@ -1,18 +1,11 @@
-module.exports = function initialize(io, now, $) {
+module.exports = function initializeDistrict() {
 
-  const _ = './initialize/'
+  const $ = require
+  const cityAccessor = $('./create/accessor/city')($)
+  $('./initialize-city')(cityAccessor)
 
-  const city = $(_ + 'create/accessor/city')($, _)
-  $(_ + 'initiate-city')(city)
+  const getNextID = $('./create/get-next-id')(cityAccessor)
+  const _district = $('./retrieve-district')(cityAccessor)
 
-  const _district = $(_ + 'retrieve-district')(city)
-  const {id: districtID, entities: _entityRoots} = _district
-
-  const getNextID = $(_ + 'create/get-next-id')(city)
-
-  const district = $(_ + 'create/accessor/district')({
-    _entityRoots, districtID, getNextID, $, _
-  })
-
-  return district
+  return $('./create/accessor/district')({_district, getNextID, $})
 }

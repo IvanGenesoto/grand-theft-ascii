@@ -8,11 +8,10 @@ const socket = $('socket.io')
 const io = socket(server)
 const now = $('performance-now')
 
-const district = $('./initialize')(io, now, $)
+const district = $('./initialize')(now)
+const {players} = district
 
 $('./initiate')(district)
-
-const {players} = district
 
 io.on('connection', socket => $('./connect')(socket, players, now))
 app.use(express.static(path.join(__dirname, 'public')))

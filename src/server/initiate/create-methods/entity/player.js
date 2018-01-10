@@ -1,29 +1,15 @@
 module.exports = function createPlayerMethods(district) {
 
-  let reusedInputObject = {}
+  const {players, characters, vehicles, rooms, $} = district // eslint-disable-line no-unused-vars
 
-  const playerMethods = {
+  return {
 
     get input() {
-      const player = this
-      Object.keys(reusedInputObject)
-        .forEach(inputType => {
-          reusedInputObject[inputType] = player[inputType]
-        })
-      return reusedInputObject
-    },
-
-    set input(input) {
-      const player = this
-      reusedInputObject = input
-      Object.entries(input)
-        .forEach(inputEntry => {
-          const inputKey = inputEntry[0]
-          const input = inputEntry[1]
-          player[inputKey] = input
-        })
+      const inputKit = $('./input-kit')
+      inputKit.fillCallers()
+      const caller = inputKit.callers[inputKit.getNextCallerIndex()]
+      caller.player = this
+      return caller
     }
   }
-
-  return playerMethods
 }

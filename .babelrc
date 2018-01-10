@@ -1,6 +1,7 @@
 {
   "plugins": [
     "transform-object-rest-spread",
-    "object-entries-and-values-to-object-keys"
+    "object-entries-and-values-to-object-keys",
+    "transform-es2015-spread"
   ]
 }

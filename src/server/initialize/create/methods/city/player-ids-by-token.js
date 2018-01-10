@@ -1,4 +1,4 @@
-module.exports = function createPlayerIDsByToken($, _) {
+module.exports = function createPlayerIDsByToken($) {
 
   const _playerIDsByToken = {'': 0}
 
@@ -8,8 +8,8 @@ module.exports = function createPlayerIDsByToken($, _) {
 
     add(id, token) {
       const entityType = this.entityType
-      $(_ + 'filter/typeof-value')(id, 'integer', '', 'id', entityType)
-      $(_ + 'filter/typeof-value')(token, false, 'string', 'token', entityType)
+      $('./filter/typeof-value')(id, 'integer', '', 'id', entityType)
+      $('./filter/typeof-value')(token, false, 'string', 'token', entityType)
       _playerIDsByToken[token] = id
     }
   }

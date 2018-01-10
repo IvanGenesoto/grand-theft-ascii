@@ -1,9 +1,14 @@
-module.exports = function appendMethods(object, ...methods) {
+module.exports = function appendMethods(parent, ...methods) {
 
-  [...methods]
-    .forEach(methods => Object
-    .entries(methods)
-    .forEach(([methodName, method]) => object[methodName] = method)) // eslint-disable-line no-return-assign
+  return [...methods].reduce(append, parent)
 
-  return object
+  function append(parent, methods) {
+    Object
+      .entries(methods)
+      .forEach(([methodName, method]) => {
+        const descriptor = Object.getOwnPropertyDescriptor(methods, methodName)
+        return Object.defineProperty(parent, methodName, descriptor)
+      })
+    return parent
+  }
 }
