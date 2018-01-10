@@ -4,7 +4,7 @@ module.exports = function createInitializedDistrictMethods({_district, $}) {
 
   const statusAccessor = Object.freeze({
     get: () => status,
-    set: (value) => _district.status = value // eslint-disable-line no-return-assign
+    set: (value) => (_district.status = value)
   })
 
   const blueprintsAccessor = Object.freeze({
@@ -18,8 +18,8 @@ module.exports = function createInitializedDistrictMethods({_district, $}) {
 
     id,
 
-    get status() { return statusAccessor }, // eslint-disable-line brace-style
+    get status() { return statusAccessor },
 
-    get blueprints() { return blueprintsAccessor } // eslint-disable-line brace-style
+    get blueprints() { return blueprintsAccessor }
   }
 }

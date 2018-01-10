@@ -4,7 +4,7 @@ module.exports = function filterTypeofDefaultValue(
 
   if (typeofDefaultValue === 'integer') return defaultValue
 
-  if (defaultValue !== defaultValue) { // eslint-disable-line no-self-compare
+  if (Number.isNaN(defaultValue)) {
     throw new TypeError('NaN found in ' + entityType + ' ' + attributeName)
   }
 

@@ -9,9 +9,11 @@ module.exports = function retrieveDistrict(cityAccessor) {
   }
 
   let _district = districtsByDistrictID.get(districtID)
-  if (_district && _district.id !== districtID) { throw new Error( // eslint-disable-line brace-style
+  if (_district && _district.id !== districtID) {
+    throw new Error(
       '_district.id (' + _district.id + ') does not match districtID (' + districtID + ')'
-  ) } // eslint-disable-line brace-style
+    )
+  }
 
   _district = $('./append/attributes')(_district, $('./attributes/districts'))
   _district.id = districtID

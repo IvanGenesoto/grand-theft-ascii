@@ -2,7 +2,6 @@
 node_modules
 npm-debug.log
 build/
-src-old
 src/server/public/.DS_Store
 src/server/public/images/.DS_Store
 src/server/public/images/foreground/.DS_Store

@@ -8,7 +8,7 @@ const socket = $('socket.io')
 const io = socket(server)
 const now = $('performance-now')
 
-const district = $('./initialize')()
+const district = $('./initialize')(now)
 const {players} = district
 
 $('./initiate')(district)

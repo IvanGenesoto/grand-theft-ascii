@@ -29,5 +29,5 @@ module.exports = function connect(socket, players, now) {
     player.updateLatencyBuffer(latency)
   })
 
-  socket.on('input', input => player.input.set()) // eslint-disable-line no-return-assign
+  socket.on('input', input => player.input.set())
 }

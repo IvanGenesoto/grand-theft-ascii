@@ -1,4 +1,4 @@
-module.exports = function createArrayAttributeMethods({
+module.exports = function createArrayAttributeAccessor({
   _attribute, attributeName, caller, entityType, indexesByID, typeofDefaultValue, $
 }) {
 
@@ -19,7 +19,7 @@ module.exports = function createArrayAttributeMethods({
       cashe.length = 0
       const index = indexesByID[caller.id]
       const values = _attribute[index]
-      values.forEach((value, index) => cashe[index] = value) // eslint-disable-line no-return-assign
+      values.forEach((value, index) => (cashe[index] = value))
       casheIndex = casheIndex ? 0 : 1
       return cashe
     },
