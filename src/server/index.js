@@ -1,18 +1,23 @@
-const $ = require
-const express = $('express')
-const app = express()
-const server = $('http').Server(app)
-const path = $('path')
-const port = process.env.PORT || 3000
-const socket = $('socket.io')
-const io = socket(server)
-const now = $('performance-now')
+const fs = require('fs')
+const path = require('path')
+const express = require('express')
+const http = require('http')
+const socket = require('socket.io')
+const now = require('performance-now')
+const modules = require('./import-files')({
+  module, __dirname, fs, path, socket, now
+})
 
-const district = $('./initialize')(now)
+const app = express()
+const server = http.createServer(app)
+const port = process.env.PORT || 3000
+const io = socket(server)
+
+const district = modules.initialize.index()
 const {players} = district
 
-$('./initiate')(district)
+require('./initiate')(district)
 
-io.on('connection', socket => $('./connect')(socket, players, now))
+io.on('connection', socket => require('./connect')(socket, players, now))
 app.use(express.static(path.join(__dirname, 'public')))
 server.listen(port, () => console.log('Listening on port ' + port))

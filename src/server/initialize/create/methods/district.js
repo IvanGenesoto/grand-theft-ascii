@@ -1,10 +1,10 @@
 module.exports = function createInitializedDistrictMethods({_district, $}) {
 
-  const {id, status, blueprints: _blueprints} = _district
+  const {id, statusCode, blueprints: _blueprints} = _district
 
-  const statusAccessor = Object.freeze({
-    get: () => status,
-    set: (value) => (_district.status = value)
+  const statusCodeAccessor = Object.freeze({
+    get: () => statusCode,
+    set: (value) => (_district.statusCode = value)
   })
 
   const blueprintsAccessor = Object.freeze({
@@ -18,7 +18,7 @@ module.exports = function createInitializedDistrictMethods({_district, $}) {
 
     id,
 
-    get status() { return statusAccessor },
+    get statusCode() { return statusCodeAccessor },
 
     get blueprints() { return blueprintsAccessor }
   }

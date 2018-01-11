@@ -1,6 +1,6 @@
 const characterAttributes = {
   id: [0],
-  status: [''],
+  statusCode: [0],
   name: [''],
   player: [0],
   latency: [0.1], // test 0.0

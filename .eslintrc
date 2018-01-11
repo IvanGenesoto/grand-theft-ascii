@@ -8,6 +8,7 @@
     "padded-blocks": 0,
     "curly": ["error", "multi-line"],
     "brace-style": ["error", "stroustrup", {"allowSingleLine": true}],
-    "react/prop-types": 0
+    "react/prop-types": 0,
+    "object-curly-spacing": "error"
   }
 }

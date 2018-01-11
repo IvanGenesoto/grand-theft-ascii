@@ -1,33 +1,31 @@
 module.exports = function connect(socket, players, now) {
 
   const {districtID} = players
-
-  console.log('connected to socket: ' + socket.id)
+  const socketID = socket.id
+  const socketIndex = socketID.slice(-4)
+  console.log('connected to socket ' + socketIndex)
   socket.emit('district_id', districtID)
 
   let player
 
-  socket.on('create_player', attributes => {
+  socket.on('create_player', token => {
     player = players.create()
-    player.customize(attributes)
-    socket.emit('player_id', player.id)
+    player.socket.set(socketID)
+    player.token.set(token)
+    socket.emit('player', player)
   })
 
-  socket.on('login', token => {
-    const id = players.retrieveDistrictID(token)
-    if (!id) socket.emit('invalid_token')
-    else if (id !== districtID) socket.emit('player_district_id,', id)
-    else {
-      player = players.retrievePlayer(token)
-      socket.emit(player.id)
+  socket.on('log_in', token => {
+    const playerID = players.retrievePlayerID(token)
+    if (!playerID) return socket.emit('invalid_token')
+    const playerDistrictID = players.retrieveDistrictID(playerID)
+    if (playerDistrictID !== districtID) {
+      return socket.emit('player_district_id', playerDistrictID)
     }
+    player = players[playerID]
+    player.socket.set(socketID)
+    socket.emit('player', player)
   })
 
-  socket.on('timestamp', timestamp => {
-    const newTimestamp = now()
-    const latency = newTimestamp - timestamp
-    player.updateLatencyBuffer(latency)
-  })
-
-  socket.on('input', input => player.input.set())
+  socket.on('input', input => player.input.set(input))
 }

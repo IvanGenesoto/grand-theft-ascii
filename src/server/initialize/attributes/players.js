@@ -1,6 +1,7 @@
 const playerAttributes = {
   id: [0],
-  status: ['on'],
+  statusCode: [0],
+  token: [''],
   socket: [''],
   character: [0],
   predictionBuffer: ['object'],

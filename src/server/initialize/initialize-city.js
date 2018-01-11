@@ -1,9 +1,9 @@
 module.exports = function initializeCity(cityAccessor) {
 
-  const {binaryStatus, districtCount} = cityAccessor
+  const {statusCode, districtCount} = cityAccessor
 
-  const cityBinaryStatus = binaryStatus.increment()
-  if (cityBinaryStatus > 1) return binaryStatus.decrement()
+  const cityStatusCode = statusCode.increment()
+  if (cityStatusCode > 1) return statusCode.decrement()
 
   const cityDistrictCount = districtCount.get()
   if (cityDistrictCount) throw new Error('Positive disctrictCount before city initialization')
