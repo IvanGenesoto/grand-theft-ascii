@@ -29,7 +29,8 @@ const inputKit = {
     },
     set(input) {
       const entries = Object.entries(input)
-      for (let i = 0, key, value; (key = entries[i][0], value = entries[i][1]); i++) {
+      for (let i = 0, length = entries.length; i < length; i++) {
+        const [key, value] = entries[i]
         this[key].set(value)
       }
       return (inputKit.previousInput = input)

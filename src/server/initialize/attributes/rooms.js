@@ -1,6 +1,6 @@
 const roomAttributes = {
   id: [0],
-  status: ['locked'],
+  statusCode: [0],
   name: ['Pad'],
   district: [0],
   zone: [0],

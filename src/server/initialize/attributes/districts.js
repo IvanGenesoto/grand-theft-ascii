@@ -1,6 +1,6 @@
 const districtAttributes = {
   id: 0,
-  status: '',
+  statusCode: 0,
   blueprints: [0.1],
   entities: {
     players: '',

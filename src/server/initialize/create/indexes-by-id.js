@@ -1,4 +1,4 @@
-module.exports = function createIndexesById(_entityRoot, entityRootType) {
+module.exports = function createIndexesByID(_entityRoot, entityRootType) {
 
   return _entityRoot.id.reduce(append, [])
 
