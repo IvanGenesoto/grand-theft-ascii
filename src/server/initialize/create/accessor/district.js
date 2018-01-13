@@ -1,6 +1,6 @@
 module.exports = function createDistrictAccessor(args) {
 
-  const {_district, $} = args
+  const {_district, $, initiateDistrict} = args
   const {id: districtID, entities: _entityRoots} = _district
 
   let districtAccessor = Object.create(null)
@@ -19,6 +19,8 @@ module.exports = function createDistrictAccessor(args) {
   districtAccessor = $('./append/methods')(
     districtAccessor, initializedMethods, initiatedMethods
   )
+
+  districtAccessor.initiate = initiateDistrict
 
   return Object.freeze(districtAccessor)
 }
