@@ -1,52 +1,26 @@
 module.exports = function importModules(module, __dirname) {
 
-  const nodes = {}
+  const importKit = {
+    importLoop: module.require('./import/loop'),
+    importFile: module.require('./import/file'),
+    importDirectory: module.require('./import/directory'),
+    getName: module.require('./import/get-name'),
+    directoryPath: __dirname,
+    enumerable: true,
+    isNode: true,
+    module
+  }
 
-  module.require('./import/nodes').forEach(node => {
-    let name = node
-    const l = name.length
-    for (let i = 0; i < l; i++) {
-      if (name[i] === '-' || name[i] === '.') name = camelize(name, i)
-    }
-    nodes[name] = module.require(node)
-  })
+  const {importLoop} = importKit
+  const boundImportLoop = importLoop.bind(null, importKit)
+  const modules = module
+    .require('./import/nodes')
+    .reduce(boundImportLoop, Object.create(null))
 
-  const {fs, path} = nodes
-  const boundLoop = loop.bind(null, __dirname)
+  importKit.isNode = false
+  importKit.path = modules.path
+  const fs = importKit.fs = modules.fs
   let fileNames = fs.readdirSync(__dirname)
 
-  return Object.freeze(fileNames.reduce(boundLoop, {...nodes}))
-
-  function camelize(name, i) {
-    return name.slice(0, i) + name[i + 1].toUpperCase() + name.slice(i + 2)
-  }
-
-  function loop(directoryName, parent, fileName) {
-    const filePath = path.join(directoryName, fileName)
-    const stats = fs.statSync(filePath)
-    let {name, ext} = path.parse(filePath)
-    const l = name.length
-    for (let i = 0; i < l; i++) if (name[i] === '-') name = camelize(name, i)
-    if (stats.isFile()) return importFile(filePath, parent, name, ext)
-    if (stats.isDirectory()) return importDirectory(filePath, parent, name)
-    else return parent
-  }
-
-  function importFile(filePath, parent, name, ext) {
-    if (ext.toLowerCase() !== '.js') return parent
-    const value = module.require(filePath)
-    if (typeof value === 'function' && value.name) name = value.name
-    Object.defineProperty(parent, name, {value, enumerable: true})
-    return parent
-  }
-
-  function importDirectory(filePath, parent, name) {
-    if (name === 'public') return parent
-    const descriptor = {value: {}, enumerable: true}
-    const {[name]: child} = Object.defineProperty(parent, name, descriptor)
-    const fileNames = fs.readdirSync(filePath)
-    const boundLoop = loop.bind(null, filePath)
-    parent[name] = fileNames.reduce(boundLoop, child)
-    return parent
-  }
+  return Object.freeze(fileNames.reduce(boundImportLoop, modules))
 }

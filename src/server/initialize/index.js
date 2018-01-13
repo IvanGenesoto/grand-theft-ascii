@@ -7,9 +7,7 @@ module.exports = function initializeDistrict(modules) {
   const getNextID = $('./create/get-next-id')(cityAccessor)
   const _district = $('./retrieve-district')(cityAccessor)
 
-  const {server, socketIo, performanceNow} = modules
-  const io = socketIo(server)
-  const now = performanceNow
+  const {initiateDistrict, io, performanceNow: now} = modules
 
-  return $('./create/accessor/district')({_district, getNextID, $, io, now})
+  return $('./create/accessor/district')({_district, getNextID, $, io, now, initiateDistrict})
 }
