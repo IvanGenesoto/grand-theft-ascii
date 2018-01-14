@@ -1,4 +1,4 @@
-module.exports = function createEntityMethods({entityType, districtID}) {
+module.exports = function createEntityMethods({entityType, districtID, modules}) {
 
   return {
 

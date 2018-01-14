@@ -1,4 +1,5 @@
-module.exports = function createDistrictIDsByEntityID($) {
+module.exports = function createDistrictIDsByEntityID(modules) {
+  const {filter} = modules.initialize
 
   const _districtIDsByEntityID = {
     players: [0],
@@ -17,8 +18,8 @@ module.exports = function createDistrictIDsByEntityID($) {
     add(id) {
       const districtID = this.districtID
       const entityType = this.entityType
-      $('./filter/typeof-value')(id, 'integer', '', 'id', entityType)
-      $('./filter/typeof-value')(districtID, 'integer', '', 'districtID', entityType)
+      filter.typeofValue(id, 'integer', '', 'id', entityType)
+      filter.typeofValue(districtID, 'integer', '', 'districtID', entityType)
       _districtIDsByEntityID[entityType][id] = districtID
     }
   }

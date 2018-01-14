@@ -4,7 +4,7 @@ module.exports = function importModules(module, __dirname) {
     importLoop: module.require('./import/loop'),
     importFile: module.require('./import/file'),
     importDirectory: module.require('./import/directory'),
-    getName: module.require('./import/get-name'),
+    makeCamelCase: module.require('./import/make-camel-case'),
     directoryPath: __dirname,
     enumerable: true,
     isNode: true,

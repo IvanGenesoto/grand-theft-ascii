@@ -1,26 +1,27 @@
 module.exports = function createDistrictAccessor(args) {
 
-  const {_district, $, initiateDistrict} = args
+  const {_district, modules} = args
   const {id: districtID, entities: _entityRoots} = _district
+  const {initialize, initiateDistrict} = modules
+  const {append} = initialize
 
   let districtAccessor = Object.create(null)
-  districtAccessor = $('../initiate/append-$')(districtAccessor)
-  districtAccessor = $('./append/accessors/root')({
-    districtAccessor, districtID, _entityRoots, caller: {}, ...args
+  districtAccessor = append.accessors.root({
+    ...args, districtAccessor, districtID, _entityRoots, caller: {}
   })
 
-  const initiatedMethods = $('../initiate/create-methods/district')(districtAccessor)
-  const initializedMethods = $('./create/methods/district')({
-    _district, districtAccessor, ...args
+  const initiatedMethods = modules.initiate.createMethods.district(districtAccessor)
+  const initializedMethods = initialize.create.methods.district({
+    ...args, _district, districtAccessor
   })
 
-  $('./filter/duplicate-property-names')(_entityRoots, initializedMethods, initiatedMethods)
+  initialize.filter.duplicatePropertyNames(_entityRoots, initializedMethods, initiatedMethods)
 
-  districtAccessor = $('./append/methods')(
+  districtAccessor = append.methods(
     districtAccessor, initializedMethods, initiatedMethods
   )
 
-  districtAccessor.initiate = initiateDistrict
+  districtAccessor.initiateDistrict = initiateDistrict
 
   return Object.freeze(districtAccessor)
 }

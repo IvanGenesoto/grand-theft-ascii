@@ -1,6 +1,7 @@
 module.exports = function appendAttributeAccessors(args) {
 
-  const {entityAccessorPrototype, _entityRoot, entityType, caller, $} = args
+  const {entityAccessorPrototype, _entityRoot, entityType, caller, modules} = args
+  const {initialize} = modules
 
   return Object
     .entries(_entityRoot)
@@ -16,16 +17,17 @@ module.exports = function appendAttributeAccessors(args) {
     const typeofDefaultValue = Number.isInteger(_defaultValue)
       ? 'integer'
       : typeof _defaultValue
-    $('./filter/typeof-default-value')(
+    initialize.filter.typeofDefaultValue(
       _defaultValue, typeofDefaultValue, attributeName, entityType
     )
-    const attributeAccessor = $('./create/accessor/attribute/' + attributeType)({
+    const {create} = initialize
+    const attributeAccessor = create.accessor.attribute[attributeType]({
       _attribute, attributeName, attributeType, entityType, typeofDefaultValue, ...args
     })
     Object.defineProperty(
       entityAccessorPrototype,
       attributeName,
-      $('./create/descriptor')(caller, attributeAccessor)
+      create.descriptor(caller, attributeAccessor)
     )
     return entityAccessorPrototype
   }

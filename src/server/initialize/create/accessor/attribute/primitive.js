@@ -1,5 +1,5 @@
 module.exports = function createPrimitiveAttributeAccessor({
-  _attribute, attributeName, caller, entityType, typeofDefaultValue, indexesByID, $
+  _attribute, attributeName, caller, entityType, typeofDefaultValue, indexesByID, modules
 }) {
 
   return Object.freeze({
@@ -12,7 +12,7 @@ module.exports = function createPrimitiveAttributeAccessor({
     set(value) {
       const {id} = value
       if (id) value = id
-      $('./filter/typeof-value')(value, typeofDefaultValue, attributeName, entityType)
+      modules.initialize.filter.typeofValue(value, typeofDefaultValue, attributeName, entityType)
       const index = indexesByID[caller.id]
       _attribute[index] = value
     }

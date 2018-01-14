@@ -1,4 +1,4 @@
-module.exports = function createInitializedDistrictMethods({_district, $, io, now}) {
+module.exports = function createInitializedDistrictMethods({_district, modules, io, now}) {
 
   const {id, statusCode, blueprints: _blueprints} = _district
 
@@ -21,6 +21,8 @@ module.exports = function createInitializedDistrictMethods({_district, $, io, no
     io,
 
     now,
+
+    initiate: modules.initiate,
 
     get statusCode() { return statusCodeAccessor },
 
