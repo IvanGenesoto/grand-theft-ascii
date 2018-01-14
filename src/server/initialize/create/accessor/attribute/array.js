@@ -1,5 +1,5 @@
 module.exports = function createArrayAttributeAccessor({
-  _attribute, attributeName, caller, entityType, indexesByID, typeofDefaultValue, $
+  _attribute, attributeName, caller, entityType, indexesByID, typeofDefaultValue, modules
 }) {
 
   const log = []
@@ -27,7 +27,7 @@ module.exports = function createArrayAttributeAccessor({
     add(value) {
       const {id} = value
       if (id) value = id
-      $('./filter/typeof-value')(value, typeofDefaultValue, attributeName, entityType)
+      modules.initialize.filter.typeofValue(value, typeofDefaultValue, attributeName, entityType)
       const index = indexesByID[caller.id]
       const values = _attribute[index]
       if (typeofDefaultValue === 'integer') {

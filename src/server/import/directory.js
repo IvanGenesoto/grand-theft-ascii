@@ -1,8 +1,8 @@
 module.exports = function importDirectory(importKit) {
-  let {filePath, fs, importLoop, enumerable, parentObject, name, getName} = importKit
+  let {filePath, fs, importLoop, enumerable, parentObject, name, makeCamelCase} = importKit
   if (name === 'public') return parentObject
   const descriptor = {value: Object.create(null), enumerable}
-  name = getName(descriptor.value, name)
+  name = makeCamelCase(name)
   const {[name]: directoryObject} = Object.defineProperty(parentObject, name, descriptor)
   const fileNames = fs.readdirSync(filePath)
   importKit = {...importKit, directoryPath: filePath}

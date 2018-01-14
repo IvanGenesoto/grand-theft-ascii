@@ -1,11 +1,11 @@
 module.exports = function importFile({
-  module, filePath, parentObject, name, getName, enumerable, isNode
+  module, filePath, parentObject, name, makeCamelCase, enumerable, isNode
 }) {
   const value = module.require(filePath)
   if (typeof value === 'object' && value.shouldAppendProperties) {
     return Object.entries(value).reduce(appendProperties, parentObject)
   }
-  name = getName(value, name, isNode)
+  name = makeCamelCase(name)
   return Object.defineProperty(parentObject, name, {value, enumerable})
 }
 

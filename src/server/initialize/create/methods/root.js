@@ -8,10 +8,12 @@ module.exports = function createRootMethods(
     getNextID,
     entityAccessorPrototype,
     rootAccessorPrototype,
-    $,
+    modules,
     _
   }
 ) {
+
+  const {create} = modules.initialize
 
   return {
 
@@ -25,9 +27,9 @@ module.exports = function createRootMethods(
 
     create() {
       const id = getNextID.call(this)
-      const index = $('./create/entity')(id, _entityRoot)
+      const index = create.entity(id, _entityRoot)
       indexesByID[id] = index
-      const entityAccessor = $('./create/accessor/entity')(id, entityAccessorPrototype)
+      const entityAccessor = create.accessor.entity.index(id, entityAccessorPrototype)
       rootAccessorPrototype[id] = entityAccessor
       return entityAccessor
     },
