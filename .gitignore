@@ -9,5 +9,6 @@ src/server/public/images/foreground/arrow/.DS_Store
 src/server/public/images/foreground/arrow/arrow-original-size/
 src/server/elements-reference.js
 src/server/public/images
+src/server/initialize-old
 archive/
 scratchpad

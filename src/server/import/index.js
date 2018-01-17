@@ -1,26 +1,25 @@
 module.exports = function importModules(module, __dirname) {
 
-  const importKit = {
+  let importKit = {
     importLoop: module.require('./import/loop'),
     importFile: module.require('./import/file'),
     importDirectory: module.require('./import/directory'),
     makeCamelCase: module.require('./import/make-camel-case'),
+    nodes: module.require('./import/nodes'),
     directoryPath: __dirname,
     enumerable: true,
-    isNode: true,
     module
   }
 
-  const {importLoop} = importKit
-  const boundImportLoop = importLoop.bind(null, importKit)
-  const modules = module
-    .require('./import/nodes')
-    .reduce(boundImportLoop, Object.create(null))
+  const {importLoop, nodes} = importKit
+  let boundImportLoop = importLoop.bind(null, importKit)
+  const initialize = nodes.reduce(boundImportLoop, Object.create(null))
 
-  importKit.isNode = false
-  importKit.path = modules.path
-  const fs = importKit.fs = modules.fs
-  let fileNames = fs.readdirSync(__dirname)
+  const {fs, path} = initialize
+  const directoryPath = __dirname
+  importKit = {...importKit, fs, path, directoryPath}
+  boundImportLoop = importLoop.bind(null, importKit)
+  const fileNames = fs.readdirSync(directoryPath)
 
-  return Object.freeze(fileNames.reduce(boundImportLoop, modules))
+  return fileNames.reduce(boundImportLoop, initialize)
 }

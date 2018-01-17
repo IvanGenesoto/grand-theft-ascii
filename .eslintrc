@@ -6,7 +6,7 @@
   "rules": {
     "space-before-function-paren": 0,
     "padded-blocks": 0,
-    "curly": ["error", "multi-line"],
+    "curly": 0,
     "brace-style": ["error", "stroustrup", {"allowSingleLine": true}],
     "react/prop-types": 0,
     "object-curly-spacing": "error"
