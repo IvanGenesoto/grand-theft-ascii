@@ -13,13 +13,13 @@ module.exports = function importModules(module, __dirname) {
 
   const {importLoop, nodes} = importKit
   let boundImportLoop = importLoop.bind(null, importKit)
-  const initialize = nodes.reduce(boundImportLoop, Object.create(null))
+  const modules = nodes.reduce(boundImportLoop, Object.create(null))
 
-  const {fs, path} = initialize
+  const {fs, path} = modules
   const directoryPath = __dirname
   importKit = {...importKit, fs, path, directoryPath}
   boundImportLoop = importLoop.bind(null, importKit)
   const fileNames = fs.readdirSync(directoryPath)
 
-  return fileNames.reduce(boundImportLoop, initialize)
+  return fileNames.reduce(boundImportLoop, modules)
 }

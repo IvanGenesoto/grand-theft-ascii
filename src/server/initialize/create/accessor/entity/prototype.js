@@ -12,7 +12,8 @@ module.exports = function createEntityAccessorPrototype(args) {
 
   const initializedMethods = create.methods.entity(args)
   const initiatedMethods = modules.initiate.createMethods.entity[entityType](
-    districtAccessor, modules.initiate)
+    districtAccessor, modules.initiate
+  )
 
   initialize.filter.duplicatePropertyNames(
     _entityRoot, initializedMethods, initiatedMethods
