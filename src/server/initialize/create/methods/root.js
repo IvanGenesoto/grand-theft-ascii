@@ -31,6 +31,7 @@ module.exports = function createRootMethods(
       indexesByID[id] = index
       const entityAccessor = create.accessor.entity.index(id, entityAccessorPrototype)
       rootAccessorPrototype[id] = entityAccessor
+      _entityRoot.district[id] = districtID
       return entityAccessor
     },
 
