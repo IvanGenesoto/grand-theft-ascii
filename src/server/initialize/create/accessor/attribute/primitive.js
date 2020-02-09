@@ -10,7 +10,7 @@ module.exports = function createPrimitiveAttributeAccessor({
     },
 
     set(value) {
-      const {id} = value
+      const {id} = value || {}
       if (id) value = id
       modules.initialize.filter.typeofValue(value, typeofDefaultValue, attributeName, entityType)
       const index = indexesByID[caller.id]

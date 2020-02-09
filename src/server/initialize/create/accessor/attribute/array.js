@@ -25,7 +25,7 @@ module.exports = function createArrayAttributeAccessor({
     },
 
     add(value) {
-      const {id} = value
+      const {id} = value || {}
       if (id) value = id
       modules.initialize.filter.typeofValue(value, typeofDefaultValue, attributeName, entityType)
       const index = indexesByID[caller.id]
@@ -48,7 +48,7 @@ module.exports = function createArrayAttributeAccessor({
     },
 
     remove(value) {
-      const {id} = value
+      const {id} = value || {}
       if (id) value = id
       const index = indexesByID[caller.id]
       const values = _attribute[index]

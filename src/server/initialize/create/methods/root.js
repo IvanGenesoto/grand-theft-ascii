@@ -22,7 +22,7 @@ module.exports = function createRootMethods(
     entityType: entityRootType,
 
     getLength() {
-      return _entityRoot.id.length - 1 // exclude default entity
+      return _entityRoot.id.length - 1 // #note: #Exclude default entity.
     },
 
     create() {
@@ -31,7 +31,7 @@ module.exports = function createRootMethods(
       indexesByID[id] = index
       const entityAccessor = create.accessor.entity.index(id, entityAccessorPrototype)
       rootAccessorPrototype[id] = entityAccessor
-      _entityRoot.district[id] = districtID
+      _entityRoot.district[index] = districtID
       return entityAccessor
     },
 

@@ -3,7 +3,7 @@ const districtAttributes = {
   statusCode: 0,
   blueprints: [0.1],
   entities: {
-    players: '',
+    players: '', // #refactor: Try null.
     characters: '',
     vehicles: '',
     rooms: ''
