@@ -43,6 +43,15 @@ module.exports = function createRootMethods(
         quantity--
       }
       return entities
+    },
+
+    getIDWithAttribute(attributeType, value) {
+      debugger
+      const _attributeByIndex = _entityRoot[attributeType]
+      const _idByIndex = _entityRoot.id
+      const index = _attributeByIndex.indexOf(value)
+      console.log({attributeType, value, _entityRoot, _attributeByIndex, _idByIndex, index, id: _idByIndex[index]})
+      return _idByIndex[index]
     }
   }
 }

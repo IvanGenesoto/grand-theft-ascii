@@ -1,7 +1,6 @@
 const modules = require('./import')(module, __dirname)
 const {express, http, socketIo, path, initialize} = modules
 const initializeDistrict = initialize.index
-
 const app = express()
 const server = http.createServer(app)
 const io = modules.io = socketIo(server)

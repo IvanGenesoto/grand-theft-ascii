@@ -3,6 +3,8 @@ const playerAttributes = {
   statusCode: [0],
   token: [''],
   socket: [''],
+  name: [''], // #temporary
+  district: [0], // #temporary
   character: [0],
   predictionBuffer: ['object'],
   latencyBuffer: [[0.1]],
