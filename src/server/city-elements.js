@@ -200,7 +200,7 @@ function CityElements(_cityElements = []) {
         }
       }
 
-      cityElements[id] = cityElementClone
+      cityElements[id] = cityElementClone // #refactor: unnecessary
       return cityElementClone
     },
 
