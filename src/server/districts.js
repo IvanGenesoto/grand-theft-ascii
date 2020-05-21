@@ -934,7 +934,9 @@ function Districts(_districts = []) {
     },
 
     detectCollisions: cityElements => {
-      var {collisions: {vehiclesA, vehiclesB}, interactions: {charactersA, charactersB}} = detected
+      var {collisions, interactions} = detected
+      const {vehiclesA, vehiclesB} = collisions
+      const {charactersA, charactersB} = interactions
       vehiclesA.length = 0
       vehiclesB.length = 0
       charactersA.length = 0
@@ -957,14 +959,14 @@ function Districts(_districts = []) {
 
               comparedCityElements.forEach(comparedCityElementID => {
                 var comparedCityElement = cityElements[comparedCityElementID]
-                var {x: X, y: Y, width: WIDTH, height: HEIGHT, type: TYPE} = comparedCityElement
+                var {x: x_, y: y_, width: width_, height: height_, type: type_} = comparedCityElement
 
                 if (
-                  type === TYPE &&
-                  x < X + WIDTH &&
-                  x + width > X &&
-                  y < Y + HEIGHT &&
-                  y + height > Y
+                  type === type_ &&
+                  x < x_ + width_ &&
+                  x + width > x_ &&
+                  y < y_ + height_ &&
+                  y + height > y_
                 ) {
 
                   if (type === 'vehicle') {
