@@ -60,7 +60,7 @@ function runQueues() {
   var {connectionQueue, latencyQueue, inputQueue} = _
   connectionQueue.forEach(connection => initiatePlayer(connection))
   latencyQueue.forEach(({latency, socket}) => {
-    var playerID = players.getPlayerIDBySocketID(socket.id)
+    var playerID = players.getPlayerIDBySocketID(socket.id)  // #refactor: Pass player ID to/from client and use if socket is match.
     players.updateLatencyBuffer(playerID, latency)
   })
   inputQueue.forEach(({input, socket}) => {

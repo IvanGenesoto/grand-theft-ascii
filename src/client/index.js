@@ -93,8 +93,9 @@ function drawToLayer(type) {
         x = blueprint.x
         y = blueprint.y
       }
-      context.drawImage($variation, 0, 0, variation.width, variation.height,
-        x, y, variation.width, variation.height)
+      context.drawImage(
+        $variation, 0, 0, variation.width, variation.height, x, y, variation.width, variation.height
+      )
       context.setTransform(1, 0, 0, 1, 0, 0)
     })
   }
