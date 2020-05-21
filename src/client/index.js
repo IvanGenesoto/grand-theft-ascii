@@ -195,7 +195,7 @@ function checkPredictionOutcome() {
   var timestamp = _.cityElements[0].timestamp
   var differences = predictionBuffer.map((prediction) => {
     var duration = timestamp - prediction.timestamp
-    return Math.abs(duration - latency)
+    return Math.abs(duration - latency / 2)
   })
   var smallest = Math.min(...differences)
   var index = differences.findIndex(difference => difference === smallest)
