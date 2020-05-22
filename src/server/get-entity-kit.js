@@ -1,6 +1,6 @@
 import now from 'performance-now'
 
-export const getCityElementKit = function (_cityElements = []) {
+export const getEntityKit = function (_entities = []) {
 
   const all = []
 
@@ -132,11 +132,14 @@ export const getCityElementKit = function (_cityElements = []) {
     return cityElement
   }
 
-  const cityElements = {
+  const entityKit = {
 
-    length: _cityElements.length,
+    length: _entities.length,
 
-    create: (type, districtId, x, y, speed, districtWidth = 3200, districtHeight = 8000) => {
+    create: (type, districtId, configuration) => {
+      const {x, y, speed} = configuration || {}
+      const districtWidth = 3200
+      const districtHeight = 8000
       const directions = {
         character: ['left', 'right'],
         vehicle: ['left', 'right', 'up', 'down', 'up-left', 'up-right', 'down-left', 'down-right']
@@ -164,22 +167,22 @@ export const getCityElementKit = function (_cityElements = []) {
         cityElement.speed = (speed || speed === 0) ? speed : Math.round(Math.random() * cityElement.maxSpeed)
       }
 
-      cityElement.id = _cityElements.length
+      cityElement.id = _entities.length
       cityElementClone.id = cityElement.id
       cityElement.elementId = 'o' + cityElement.id
-      _cityElements.push(cityElement)
+      _entities.push(cityElement)
 
       const id = cityElement.id
-      cityElements[id] = cityElementClone
-      cityElements.clone(id)
-      cityElements.refreshLength()
+      entityKit[id] = cityElementClone
+      entityKit.clone(id)
+      entityKit.refreshLength()
 
       return id
     },
 
     clone: id => {
-      const cityElementClone = cityElements[id]
-      const cityElement = _cityElements[id]
+      const cityElementClone = entityKit[id]
+      const cityElement = _entities[id]
 
       for (var property in cityElement) {
         var value = cityElement[property]
@@ -210,7 +213,7 @@ export const getCityElementKit = function (_cityElements = []) {
           if (idArray) {
             idArray.forEach(id => {
               if (id) {
-                var cityElementClone = cityElements.clone(id)
+                var cityElementClone = entityKit.clone(id)
                 multiple.push(cityElementClone)
               }
             })
@@ -222,36 +225,36 @@ export const getCityElementKit = function (_cityElements = []) {
 
     cloneAll: () => {
       all.length = 0
-      _cityElements.forEach((item, id) => {
-        var cityElement = cityElements.clone(id)
+      _entities.forEach((item, id) => {
+        var cityElement = entityKit.clone(id)
         all.push(cityElement)
       })
       return all
     },
 
     refreshLength: () => {
-      cityElements.length = _cityElements.length
+      entityKit.length = _entities.length
     },
 
     assignPlayer: (characterId, playerId) => {
-      _cityElements[characterId].player = playerId
-      cityElements[characterId].player = playerId
+      _entities[characterId].player = playerId
+      entityKit[characterId].player = playerId
     },
 
     assignDistrict: (cityElementId, districtId) => {
-      _cityElements[cityElementId].district = districtId
-      cityElements[cityElementId].district = districtId
+      _entities[cityElementId].district = districtId
+      entityKit[cityElementId].district = districtId
     },
 
-    giveKey: (characterId, cityElementId, masterKey) => {
-      var character = _cityElements[characterId]
-      var cityElement = _cityElements[cityElementId]
+    giveKey: (characterId, cityElementId, isMasterKey) => {
+      var character = _entities[characterId]
+      var cityElement = _entities[cityElementId]
       var type = cityElement.type
 
       switch (true) {
-        case type === 'vehicle' && masterKey: var keysType = 'vehicleMasterKeys'; break
+        case type === 'vehicle' && isMasterKey: var keysType = 'vehicleMasterKeys'; break
         case type === 'vehicle': keysType = 'vehicleKeys'; break
-        case type === 'room' && masterKey: keysType = 'roomMasterKeys'; break
+        case type === 'room' && isMasterKey: keysType = 'roomMasterKeys'; break
         case type === 'room': keysType = 'roomKeys'; break
         default:
       }
@@ -259,12 +262,12 @@ export const getCityElementKit = function (_cityElements = []) {
       var keys = character[keysType]
       var duplicateKey = keys.find(key => key === cityElementId)
       if (!duplicateKey) keys.push(cityElementId)
-      if (masterKey) var keyHoldersType = 'masterKeyHolders'
+      if (isMasterKey) var keyHoldersType = 'masterKeyHolders'
       else keyHoldersType = 'keyHolders'
       var keyHolders = cityElement[keyHoldersType]
       var duplicateKeyHolder = keyHolders.find(keyHolder => keyHolder === characterId)
       if (!duplicateKeyHolder) keyHolders.push(characterId)
-      if (masterKey) cityElements.giveKey(characterId, cityElementId)
+      if (isMasterKey) entityKit.giveKey(characterId, cityElementId)
     },
 
     checkForVehicleEntries: (characters, vehicles) => {
@@ -275,9 +278,9 @@ export const getCityElementKit = function (_cityElements = []) {
       nonEntereringWalkers.length = 0
 
       vehicles.forEach((vehicleId, index) => {
-        var vehicle = _cityElements[vehicleId]
+        var vehicle = _entities[vehicleId]
         var characterId = characters[index]
-        var character = _cityElements[characterId]
+        var character = _entities[characterId]
         if (vehicle.driver) var driver = 1
         else driver = 0
 
@@ -304,9 +307,9 @@ export const getCityElementKit = function (_cityElements = []) {
       strandedWalkers.length = 0
       characterIds.forEach((characterId, index) => {
 
-        var character = _cityElements[characterId]
+        var character = _entities[characterId]
         var vehicleId = vehicleIds[index]
-        var vehicle = _cityElements[vehicleId]
+        var vehicle = _entities[vehicleId]
         var {driver, passengers, seats} = vehicle
         if (driver) {
           driver = 1
@@ -330,24 +333,24 @@ export const getCityElementKit = function (_cityElements = []) {
     },
 
     active: function(characterId) {
-      _cityElements[characterId].active += 1
+      _entities[characterId].active += 1
     },
 
     inactive: function(characterId) {
-      _cityElements[characterId].active = 0
+      _entities[characterId].active = 0
     },
 
     exitVehicles: characterIds => {
       characterIds.forEach(characterId => {
-        var {active, id} = _cityElements[characterId]
-        if (active >= 30) cityElements.exitVehicle(id)
+        var {active, id} = _entities[characterId]
+        if (active >= 30) entityKit.exitVehicle(id)
       })
     },
 
     exitVehicle: characterId => {
-      var character = _cityElements[characterId]
+      var character = _entities[characterId]
       var {driving} = character
-      var vehicle = _cityElements[driving]
+      var vehicle = _entities[driving]
       character.driving = 0
       character.passenging = 0
       character.active = 0
@@ -373,7 +376,7 @@ export const getCityElementKit = function (_cityElements = []) {
     },
 
     walk: (characterId, input) => {
-      var character = _cityElements[characterId]
+      var character = _entities[characterId]
       var {right, left} = input
       if (right) {
         character.direction = 'right'
@@ -387,9 +390,9 @@ export const getCityElementKit = function (_cityElements = []) {
     },
 
     drive: (characterId, input) => {
-      var character = _cityElements[characterId]
+      var character = _entities[characterId]
       var vehicleId = character.driving
-      var vehicle = _cityElements[vehicleId]
+      var vehicle = _entities[vehicleId]
       var {up, down, left, right, accelerate, decelerate} = input
       var {direction} = vehicle
       if (direction !== 'up' && direction !== 'down') {
@@ -414,16 +417,16 @@ export const getCityElementKit = function (_cityElements = []) {
     },
 
     updateLocations: (districts) => {
-      _cityElements.forEach(cityElement => {
+      _entities.forEach(cityElement => {
         if (cityElement.id) {
           var {driving, passenging, occupying, type, slowing, falling} = cityElement
-          if (driving || passenging) cityElements.updateTravelingCharacterLocation(cityElement)
-          else if (occupying) cityElements.updateOccupyingCharacterLocation(cityElement, districts)
-          else if (type === 'character') cityElements.updateWalkingCharacterLocation(cityElement, districts)
+          if (driving || passenging) entityKit.updateTravelingCharacterLocation(cityElement)
+          else if (occupying) entityKit.updateOccupyingCharacterLocation(cityElement, districts)
+          else if (type === 'character') entityKit.updateWalkingCharacterLocation(cityElement, districts)
           else if (type === 'vehicle') {
-            if (falling) cityElements.fallVehicle(cityElement)
-            if (slowing) cityElements.graduallyStopVehicle(cityElement)
-            cityElements.updateVehicleLocation(cityElement, districts)
+            if (falling) entityKit.fallVehicle(cityElement)
+            if (slowing) entityKit.graduallyStopVehicle(cityElement)
+            entityKit.updateVehicleLocation(cityElement, districts)
           }
         }
       })
@@ -431,7 +434,7 @@ export const getCityElementKit = function (_cityElements = []) {
 
     updateTravelingCharacterLocation: (character) => {
       var {driving, passenging} = character
-      var vehicle = driving ? _cityElements[driving] : _cityElements[passenging]
+      var vehicle = driving ? _entities[driving] : _entities[passenging]
       var {x, y, width, height} = vehicle
       character.x = x + width / 2
       character.y = y + height / 2
@@ -536,7 +539,7 @@ export const getCityElementKit = function (_cityElements = []) {
 
       var min = 0
       var maxX = districts[district].width - width
-      if (driver) var character = _cityElements[driver]
+      if (driver) var character = _entities[driver]
       if (driver && character.player) {
 
         if (nextX < min) {
@@ -581,7 +584,7 @@ export const getCityElementKit = function (_cityElements = []) {
         if (!(index % 2) || index === 0) characterId = item
         else latency = item
         if (characterId && latency) {
-          _cityElements[characterId].latency = latency
+          _entities[characterId].latency = latency
           characterId = null
           latency = null
         }
@@ -589,10 +592,10 @@ export const getCityElementKit = function (_cityElements = []) {
     },
 
     emit: (io) => {
-      _cityElements[0].timestamp = now()
-      io.volatile.emit('cityElements', _cityElements)
+      _entities[0].timestamp = now()
+      io.volatile.emit('entities', _entities)
     }
   }
 
-  return cityElements
+  return entityKit
 }
