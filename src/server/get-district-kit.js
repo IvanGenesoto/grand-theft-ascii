@@ -1,4 +1,4 @@
-function Districts(_districts = []) {
+export const getDistrictKit = function (_districts = []) {
 
   const all = []
 
@@ -22,7 +22,7 @@ function Districts(_districts = []) {
     }
   }
 
-  let elementID = 0
+  let elementId = 0
   let layerY = 0
 
   function createDistrict(type) {
@@ -682,14 +682,14 @@ function Districts(_districts = []) {
     while (row < 8) {
       var section = -1
       row += 1
-      var rowID = getGridIndex(row * 1000)
-      grid[rowID] = {}
+      var rowId = getGridIndex(row * 1000)
+      grid[rowId] = {}
       while (section < 32) {
         section += 1
-        var sectionID = getGridIndex(section * 1000)
-        grid[rowID][sectionID] = {}
-        grid[rowID][sectionID].a = []
-        grid[rowID][sectionID].b = []
+        var sectionId = getGridIndex(section * 1000)
+        grid[rowId][sectionId] = {}
+        grid[rowId][sectionId].a = []
+        grid[rowId][sectionId].b = []
       }
     }
     return grid
@@ -708,11 +708,11 @@ function Districts(_districts = []) {
     return coordinate.slice(0, 2)
   }
 
-  function assignElementIDsToScenery(cityElement) {
+  function assignElementIdsToScenery(cityElement) {
     for (var property in cityElement) {
       if (property === 'element') {
-        var id = elementID += 1
-        cityElement.elementID = 's' + id
+        var id = elementId += 1
+        cityElement.elementId = 's' + id
       }
       else if (
         typeof cityElement[property] !== 'string' &&
@@ -720,7 +720,7 @@ function Districts(_districts = []) {
         typeof cityElement[property] !== 'boolean'
       ) {
         var nestedCityElement = cityElement[property]
-        assignElementIDsToScenery(nestedCityElement)
+        assignElementIdsToScenery(nestedCityElement)
       }
     }
   }
@@ -729,14 +729,14 @@ function Districts(_districts = []) {
     for (var type in district.scenery) {
       var layers = district.scenery[type]
       layerY = 0
-      for (var layerID in layers) {
-        var layer = layers[layerID]
-        for (var sectionID in layer.sections) {
-          var section = layer.sections[sectionID]
+      for (var layerId in layers) {
+        var layer = layers[layerId]
+        for (var sectionId in layer.sections) {
+          var section = layer.sections[sectionId]
           var rows = section.rows
           var variationsArray = []
-          for (var variationID in section.variations) {
-            var variation = section.variations[variationID]
+          for (var variationId in section.variations) {
+            var variation = section.variations[variationId]
             for (var i = 0; i < variation.prevalence; i++) {
               variationsArray.push(variation)
             }
@@ -793,7 +793,7 @@ function Districts(_districts = []) {
       var districtClone = createDistrict(type)
 
       if (type) {
-        assignElementIDsToScenery(district)
+        assignElementIdsToScenery(district)
         composeScenery(district)
         var grid = createGrid()
         district.grid = grid
@@ -875,7 +875,7 @@ function Districts(_districts = []) {
       else return undefined
     },
 
-    emit: (districtID, socket) => socket.emit('district', _districts[districtID]),
+    emit: (districtId, socket) => socket.emit('district', _districts[districtId]),
 
     addToDistrict: (...things) => {
       things.forEach(cityElement => {
@@ -898,10 +898,10 @@ function Districts(_districts = []) {
         var {district, vehicleKeys, id} = character
         var vehiclesInCharacterDistrict = _districts[district].vehicles
         vehicleKeys.forEach(key => {
-          var vehicleID = vehiclesInCharacterDistrict.find(vehicle => vehicle === key)
-          if (vehicleID) {
+          var vehicleId = vehiclesInCharacterDistrict.find(vehicle => vehicle === key)
+          if (vehicleId) {
             characters.push(id)
-            vehicles.push(vehicleID)
+            vehicles.push(vehicleId)
             matchesForCharacter.push(id)
           }
         })
@@ -944,21 +944,21 @@ function Districts(_districts = []) {
 
       _districts.forEach(district => {
         var grid = district.grid
-        for (var rowID in grid) {
-          var row = grid[rowID]
-          for (var sectionID in row) {
-            var section = row[sectionID]
+        for (var rowId in grid) {
+          var row = grid[rowId]
+          for (var sectionId in row) {
+            var section = row[sectionId]
             var cityElementsToCompare = section.a
             var comparedCityElements = section.b
 
             comparedCityElements.length = 0
             while (cityElementsToCompare.length) {
-              var cityElementToCompareID = cityElementsToCompare.shift()
-              var cityElementToCompare = cityElements[cityElementToCompareID]
+              var cityElementToCompareId = cityElementsToCompare.shift()
+              var cityElementToCompare = cityElements[cityElementToCompareId]
               if (cityElementToCompare) var {x, y, width, height, type} = cityElementToCompare
 
-              comparedCityElements.forEach(comparedCityElementID => {
-                var comparedCityElement = cityElements[comparedCityElementID]
+              comparedCityElements.forEach(comparedCityElementId => {
+                var comparedCityElement = cityElements[comparedCityElementId]
                 var {x: x_, y: y_, width: width_, height: height_, type: type_} = comparedCityElement
 
                 if (
@@ -990,5 +990,3 @@ function Districts(_districts = []) {
 
   return districts
 }
-
-module.exports = Districts

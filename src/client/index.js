@@ -1,4 +1,5 @@
-var io = require('socket.io-client')
+import io from 'socket.io-client'
+
 var socket = io()
 
 var _ = {
@@ -9,7 +10,7 @@ var _ = {
     x: 0,
     y: 0,
     element: 'canvas',
-    elementID: '_0',
+    elementId: '_0',
     width: 1920,
     height: 1080
   }
@@ -35,7 +36,7 @@ function createElements(cityElement, loop) {
   for (var property in cityElement) {
     if (property === 'element') {
       var $element = document.createElement(cityElement.element)
-      $element.id = cityElement.elementID
+      $element.id = cityElement.elementId
       document.body.appendChild($element)
       if (cityElement !== _.camera) {
         $element.classList.add('hidden')
@@ -74,15 +75,15 @@ function checkImagesLoaded() {
 
 function drawToLayer(type) {
   var layers = _.district.scenery[type]
-  for (var layerID in layers) {
-    var layer = layers[layerID]
+  for (var layerId in layers) {
+    var layer = layers[layerId]
     var blueprints = layer.blueprints
     blueprints.forEach(blueprint => {
-      var sectionID = blueprint.section
-      var variationID = blueprint.variation
-      var variation = layer.sections[sectionID].variations[variationID]
-      var $variation = document.getElementById(variation.elementID)
-      var $layer = document.getElementById(layer.elementID)
+      var sectionId = blueprint.section
+      var variationId = blueprint.variation
+      var variation = layer.sections[sectionId].variations[variationId]
+      var $variation = document.getElementById(variation.elementId)
+      var $layer = document.getElementById(layer.elementId)
       var context = $layer.getContext('2d')
       if (layer.scale) {
         context.scale(layer.scale, layer.scale)
@@ -266,7 +267,7 @@ function updatePlayerCharacterLocation() {
 
 function render(first) {
   if (first) {
-    var $camera = document.getElementById(_.camera.elementID)
+    var $camera = document.getElementById(_.camera.elementId)
     $camera.classList.add('hidden')
   }
   renderScenery('backgrounds')
@@ -278,13 +279,13 @@ function render(first) {
 
 function updateCamera() {
   if (_.camera.following) {
-    var cityElementID = _.camera.following
+    var cityElementId = _.camera.following
     if (
-      _.district.characters.find(item => item === cityElementID) ||
-      _.district.vehicles.find(item => item === cityElementID) ||
-      _.district.rooms.find(item => item === cityElementID)
+      _.district.characters.find(item => item === cityElementId) ||
+      _.district.vehicles.find(item => item === cityElementId) ||
+      _.district.rooms.find(item => item === cityElementId)
     ) {
-      var cityElement = _.cityElements[cityElementID]
+      var cityElement = _.cityElements[cityElementId]
       if (cityElement.driving) cityElement = _.cityElements[cityElement.driving]
       _.camera.x = Math.round(cityElement.x - _.camera.width / 2)
       _.camera.y = Math.round(cityElement.y - _.camera.height / 2)
@@ -299,19 +300,19 @@ function updateCamera() {
 }
 
 function clearCanvas() {
-  var $camera = document.getElementById(_.camera.elementID)
+  var $camera = document.getElementById(_.camera.elementId)
   var context = $camera.getContext('2d')
   context.clearRect(0, 0, _.camera.width, _.camera.height)
 }
 
 function renderScenery(type) {
   var layers = _.district.scenery[type]
-  for (var layerID in layers) {
-    var layer = layers[layerID]
-    var cityElementID = _.camera.following
-    var cityElement = _.cityElements[cityElementID]
-    var $layer = document.getElementById(layer.elementID)
-    var $camera = document.getElementById(_.camera.elementID)
+  for (var layerId in layers) {
+    var layer = layers[layerId]
+    var cityElementId = _.camera.following
+    var cityElement = _.cityElements[cityElementId]
+    var $layer = document.getElementById(layer.elementId)
+    var $camera = document.getElementById(_.camera.elementId)
     var context = $camera.getContext('2d')
     if (layer.x) var layerX = layer.x
     else layerX = 0
@@ -325,8 +326,8 @@ function renderScenery(type) {
 }
 
 function renderCityElements(cityElementType) {
-  _.district[cityElementType].forEach(cityElementID => {
-    var cityElement = _.cityElements[cityElementID]
+  _.district[cityElementType].forEach(cityElementId => {
+    var cityElement = _.cityElements[cityElementId]
     var {driving, passenging, occupying} = cityElement
     if (!(driving || passenging || occupying)) {
       var xInCamera = cityElement.x - _.camera.x
@@ -338,8 +339,8 @@ function renderCityElements(cityElementType) {
         yInCamera < 0 - cityElement.height
       )) {
 
-        var $cityElement = document.getElementById(cityElement.elementID)
-        var $camera = document.getElementById(_.camera.elementID)
+        var $cityElement = document.getElementById(cityElement.elementId)
+        var $camera = document.getElementById(_.camera.elementId)
         var context = $camera.getContext('2d')
         if (cityElement.direction) {
           var {direction, previousDirection} = cityElement
@@ -451,8 +452,8 @@ function control(key, action) {
 }
 
 window.addEventListener('resize', () => {
-  if (document.getElementById(_.camera.elementID)) {
-    var $camera = document.getElementById(_.camera.elementID)
+  if (document.getElementById(_.camera.elementId)) {
+    var $camera = document.getElementById(_.camera.elementId)
     _.camera.width = innerWidth
     _.camera.height = innerHeight
     $camera.width = innerWidth

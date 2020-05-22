@@ -1,16 +1,19 @@
-const express = require('express')
-const app = express()
-const http = require('http')
-const server = http.Server(app)
-const socket = require('socket.io')
-const io = socket(server)
-const path = require('path')
-const port = process.env.PORT || 3000
-const now = require('performance-now')
+import express, {static as static_} from 'express'
+import {Server} from 'http'
+import socketIo from 'socket.io'
+import {join} from 'path'
+import now from 'performance-now'
+import {getDistrictKit} from './get-district-kit'
+import {getCityElementKit} from './get-entity-kit'
+import {getPlayerKit} from './get-player-kit'
 
-const districts = require('./districts')()
-const cityElements = require('./city-elements')()
-const players = require('./players')()
+const app = express()
+const server = Server(app)
+const io = socketIo(server)
+const port = process.env.PORT || 3000
+const districts = getDistrictKit()
+const cityElements = getCityElementKit()
+const players = getPlayerKit()
 
 const _ = {
   tick: 0,
@@ -25,21 +28,21 @@ const _ = {
 }
 
 function createMayor() {
-  var playerID = players.create()
-  var characterID = cityElements.create('character')
-  var districtID = districts.create()
-  players.assignCharacter(playerID, characterID)
-  cityElements.assignPlayer(characterID, playerID)
-  cityElements.assignDistrict(characterID, districtID)
+  var playerId = players.create()
+  var characterId = cityElements.create('character')
+  var districtId = districts.create()
+  players.assignCharacter(playerId, characterId)
+  cityElements.assignPlayer(characterId, playerId)
+  cityElements.assignDistrict(characterId, districtId)
 }
 
 function initiateDistrict() {
-  var districtID = districts.create('neon')
-  massPopulateDistrict(districtID)
-  return districtID
+  var districtId = districts.create('neon')
+  massPopulateDistrict(districtId)
+  return districtId
 }
 
-function massPopulateDistrict(districtID) {
+function massPopulateDistrict(districtId) {
   var population = {
     character: 20,
     vehicle: 40
@@ -48,8 +51,8 @@ function massPopulateDistrict(districtID) {
     var number = population[objectType]
     var populated = 0
     while (populated < number) {
-      var objectID = cityElements.create(objectType, districtID)
-      var object = cityElements.clone(objectID)
+      var objectId = cityElements.create(objectType, districtId)
+      var object = cityElements.clone(objectId)
       districts.addToDistrict(object)
       populated++
     }
@@ -60,12 +63,12 @@ function runQueues() {
   var {connectionQueue, latencyQueue, inputQueue} = _
   connectionQueue.forEach(connection => initiatePlayer(connection))
   latencyQueue.forEach(({latency, socket}) => {
-    var playerID = players.getPlayerIDBySocketID(socket.id)  // #refactor: Pass player ID to/from client and use if socket is match.
-    players.updateLatencyBuffer(playerID, latency)
+    var playerId = players.getPlayerIdBySocketId(socket.id)  // #refactor: Pass player Id to/from client and use if socket is match.
+    players.updateLatencyBuffer(playerId, latency)
   })
   inputQueue.forEach(({input, socket}) => {
-    var playerID = players.getPlayerIDBySocketID(socket.id)
-    players.updateInput(input, playerID)
+    var playerId = players.getPlayerIdBySocketId(socket.id)
+    players.updateInput(input, playerId)
   })
   _.connectionQueue.length = 0
   _.latencyQueue.length = 0
@@ -73,25 +76,25 @@ function runQueues() {
 }
 
 function initiatePlayer(socket) {
-  var playerID = players.create(socket.id)
-  var districtID = districts.choose()
-  if (!districtID) districtID = initiateDistrict()
-  var characterID = cityElements.create('character', districtID)
-  players.assignCharacter(playerID, characterID)
-  socket.join(districtID.toString())
-  cityElements.assignPlayer(characterID, playerID)
-  var character = cityElements.clone(characterID)
+  var playerId = players.create(socket.id)
+  var districtId = districts.choose()
+  if (!districtId) districtId = initiateDistrict()
+  var characterId = cityElements.create('character', districtId)
+  players.assignCharacter(playerId, characterId)
+  socket.join(districtId.toString())
+  cityElements.assignPlayer(characterId, playerId)
+  var character = cityElements.clone(characterId)
   var vehicleX = getVehicleX(character)
-  var vehicleID = cityElements.create('vehicle', districtID, vehicleX, 7843, 0)
-  cityElements.giveKey(characterID, vehicleID, 'masterKey')
-  var vehicle = cityElements.clone(vehicleID)
-  character = cityElements.clone(characterID)
+  var vehicleId = cityElements.create('vehicle', districtId, vehicleX, 7843, 0)
+  cityElements.giveKey(characterId, vehicleId, 'masterKey')
+  var vehicle = cityElements.clone(vehicleId)
+  character = cityElements.clone(characterId)
   districts.addToDistrict(character)
   districts.addToDistrict(vehicle)
-  players.emit(playerID, socket)
-  districts.emit(districtID, socket)
-  emitCityElementToDistrict(character, districtID)
-  emitCityElementToDistrict(vehicle, districtID)
+  players.emit(playerId, socket)
+  districts.emit(districtId, socket)
+  emitCityElementToDistrict(character, districtId)
+  emitCityElementToDistrict(vehicle, districtId)
 }
 
 function getVehicleX(character) {
@@ -101,8 +104,8 @@ function getVehicleX(character) {
   return (side === 'left') ? character.x - distance : character.x + distance
 }
 
-function emitCityElementToDistrict(cityElement, districtID) {
-  io.to(districtID.toString()).emit('cityElement', cityElement)
+function emitCityElementToDistrict(cityElement, districtId) {
+  io.to(districtId.toString()).emit('cityElement', cityElement)
 }
 
 function refresh() {
@@ -110,8 +113,8 @@ function refresh() {
   _.tick += 1
   runQueues()
 
-  var playerCharacterIDs = players.getPlayerCharacterIDs()
-  var playerCharacters = cityElements.cloneMultiple(playerCharacterIDs)
+  var playerCharacterIds = players.getPlayerCharacterIds()
+  var playerCharacters = cityElements.cloneMultiple(playerCharacterIds)
   var activated = checkIfActive(playerCharacters)
   var {walkers, drivers, passengers} = activated
 
@@ -138,8 +141,8 @@ function refresh() {
   cityElements.cloneMultiple(charactersPutInVehicles,
     vehiclesCharactersWerePutIn, collidedVehicles, interacted)
 
-  playerCharacterIDs = players.getPlayerCharacterIDs()
-  playerCharacters = cityElements.cloneMultiple(playerCharacterIDs)
+  playerCharacterIds = players.getPlayerCharacterIds()
+  playerCharacters = cityElements.cloneMultiple(playerCharacterIds)
   cityElements.cloneAll()
   var allPlayers = players.cloneAll()
   updateActive(allPlayers)
@@ -180,10 +183,10 @@ function checkIfActive(playerCharacters) {
   return _.activated
 }
 
-function collideVehicles({vehiclesA, vehiclesB}) {
+function collideVehicles({vehiclesA, vehiclesB}) { // eslint-disable-line no-unused-vars
 }
 
-function makeCharactersInteract({charactersA, charactersB}) {
+function makeCharactersInteract({charactersA, charactersB}) { // eslint-disable-line no-unused-vars
 }
 
 function updateActive(allPlayers) {
@@ -276,7 +279,7 @@ io.on('connection', socket => {
 createMayor()
 initiateDistrict()
 
-app.use(express.static(path.join(__dirname, 'public')))
+app.use(static_(join(__dirname, 'public')))
 server.listen(port, () => {
   console.log('Listening on port 3000.')
 })
