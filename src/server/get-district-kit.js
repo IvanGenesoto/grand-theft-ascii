@@ -46,7 +46,7 @@ export const getDistrictKit = function (_districts = []) {
     const sceneries = {
       neon: {
         backgrounds: {
-          '1': {
+          1: {
             id: 1,
             blueprints: [],
             element: 'canvas',
@@ -54,11 +54,11 @@ export const getDistrictKit = function (_districts = []) {
             height: 8000,
             depth: 4,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 1,
                     element: 'img',
@@ -68,11 +68,11 @@ export const getDistrictKit = function (_districts = []) {
                   }
                 }
               },
-              '2': {
+              2: {
                 id: 2,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 4,
                     element: 'img',
@@ -80,7 +80,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 260
                   },
-                  '2': {
+                  2: {
                     id: 2,
                     prevalence: 1,
                     element: 'img',
@@ -88,7 +88,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 260
                   },
-                  '3': {
+                  3: {
                     id: 3,
                     prevalence: 2,
                     element: 'img',
@@ -98,11 +98,11 @@ export const getDistrictKit = function (_districts = []) {
                   }
                 }
               },
-              '3': {
+              3: {
                 id: 3,
                 rows: 48,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 3,
                     element: 'img',
@@ -110,7 +110,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 134
                   },
-                  '2': {
+                  2: {
                     id: 2,
                     prevalence: 2,
                     element: 'img',
@@ -118,7 +118,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 134
                   },
-                  '3': {
+                  3: {
                     id: 3,
                     prevalence: 1,
                     element: 'img',
@@ -126,7 +126,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 134
                   },
-                  '4': {
+                  4: {
                     id: 4,
                     prevalence: 1,
                     element: 'img',
@@ -134,7 +134,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 134
                   },
-                  '5': {
+                  5: {
                     id: 5,
                     prevalence: 2,
                     element: 'img',
@@ -142,7 +142,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 134
                   },
-                  '6': {
+                  6: {
                     id: 6,
                     prevalence: 2,
                     element: 'img',
@@ -150,7 +150,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 134
                   },
-                  '7': {
+                  7: {
                     id: 7,
                     prevalence: 3,
                     element: 'img',
@@ -158,7 +158,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 134
                   },
-                  '8': {
+                  8: {
                     id: 8,
                     prevalence: 2,
                     element: 'img',
@@ -166,7 +166,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1024,
                     height: 134
                   },
-                  '9': {
+                  9: {
                     id: 9,
                     prevalence: 3,
                     element: 'img',
@@ -176,11 +176,11 @@ export const getDistrictKit = function (_districts = []) {
                   }
                 }
               },
-              '4': {
+              4: {
                 id: 4,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 1,
                     element: 'img',
@@ -192,7 +192,7 @@ export const getDistrictKit = function (_districts = []) {
               }
             }
           },
-          '2': {
+          2: {
             id: 2,
             blueprints: [],
             y: 7050,
@@ -201,11 +201,11 @@ export const getDistrictKit = function (_districts = []) {
             height: 8000,
             depth: 2,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     width: 1024,
                     height: 768,
@@ -217,7 +217,7 @@ export const getDistrictKit = function (_districts = []) {
               }
             }
           },
-          '3': {
+          3: {
             id: 3,
             blueprints: [],
             y: 7232,
@@ -226,11 +226,11 @@ export const getDistrictKit = function (_districts = []) {
             height: 8000,
             depth: 1,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     width: 1408,
                     height: 768,
@@ -244,7 +244,7 @@ export const getDistrictKit = function (_districts = []) {
           }
         },
         foregrounds: {
-          '1': {
+          1: {
             id: 1,
             blueprints: [],
             x: 0,
@@ -255,11 +255,11 @@ export const getDistrictKit = function (_districts = []) {
             element: 'canvas',
             scale: 16,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 1,
                     element: 'img',
@@ -267,7 +267,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 144,
                     height: 544
                   },
-                  '2': {
+                  2: {
                     id: 2,
                     prevalence: 1,
                     element: 'img',
@@ -279,7 +279,7 @@ export const getDistrictKit = function (_districts = []) {
               }
             }
           },
-          '2': {
+          2: {
             id: 2,
             blueprints: [],
             x: 32000,
@@ -290,11 +290,11 @@ export const getDistrictKit = function (_districts = []) {
             element: 'canvas',
             scale: 16,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 1,
                     element: 'img',
@@ -302,7 +302,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 144,
                     height: 544
                   },
-                  '2': {
+                  2: {
                     id: 2,
                     prevalence: 1,
                     element: 'img',
@@ -314,7 +314,7 @@ export const getDistrictKit = function (_districts = []) {
               }
             }
           },
-          '3': {
+          3: {
             id: 3,
             blueprints: [],
             x: 0,
@@ -325,11 +325,11 @@ export const getDistrictKit = function (_districts = []) {
             element: 'canvas',
             scale: 64,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 1,
                     element: 'img',
@@ -337,7 +337,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '2': {
+                  2: {
                     id: 2,
                     prevalence: 1,
                     element: 'img',
@@ -345,7 +345,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '3': {
+                  3: {
                     id: 3,
                     prevalence: 1,
                     element: 'img',
@@ -353,7 +353,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '4': {
+                  4: {
                     id: 4,
                     prevalence: 1,
                     element: 'img',
@@ -361,7 +361,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '5': {
+                  5: {
                     id: 5,
                     prevalence: 1,
                     element: 'img',
@@ -369,7 +369,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '6': {
+                  6: {
                     id: 6,
                     prevalence: 1,
                     element: 'img',
@@ -377,7 +377,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '7': {
+                  7: {
                     id: 7,
                     prevalence: 1,
                     element: 'img',
@@ -385,7 +385,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '8': {
+                  8: {
                     id: 8,
                     prevalence: 1,
                     element: 'img',
@@ -397,7 +397,7 @@ export const getDistrictKit = function (_districts = []) {
               }
             }
           },
-          '4': {
+          4: {
             id: 4,
             blueprints: [],
             x: 32000,
@@ -408,11 +408,11 @@ export const getDistrictKit = function (_districts = []) {
             element: 'canvas',
             scale: 64,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 1,
                     element: 'img',
@@ -420,7 +420,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '2': {
+                  2: {
                     id: 2,
                     prevalence: 1,
                     element: 'img',
@@ -428,7 +428,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '3': {
+                  3: {
                     id: 3,
                     prevalence: 1,
                     element: 'img',
@@ -436,7 +436,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '4': {
+                  4: {
                     id: 4,
                     prevalence: 1,
                     element: 'img',
@@ -444,7 +444,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '5': {
+                  5: {
                     id: 5,
                     prevalence: 1,
                     element: 'img',
@@ -452,7 +452,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '6': {
+                  6: {
                     id: 6,
                     prevalence: 1,
                     element: 'img',
@@ -460,7 +460,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '7': {
+                  7: {
                     id: 7,
                     prevalence: 1,
                     element: 'img',
@@ -468,7 +468,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '8': {
+                  8: {
                     id: 8,
                     prevalence: 1,
                     element: 'img',
@@ -480,7 +480,7 @@ export const getDistrictKit = function (_districts = []) {
               }
             }
           },
-          '5': {
+          5: {
             id: 5,
             blueprints: [],
             x: 64000,
@@ -491,11 +491,11 @@ export const getDistrictKit = function (_districts = []) {
             element: 'canvas',
             scale: 64,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 1,
                     element: 'img',
@@ -503,7 +503,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '2': {
+                  2: {
                     id: 2,
                     prevalence: 1,
                     element: 'img',
@@ -511,7 +511,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '3': {
+                  3: {
                     id: 3,
                     prevalence: 1,
                     element: 'img',
@@ -519,7 +519,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '4': {
+                  4: {
                     id: 4,
                     prevalence: 1,
                     element: 'img',
@@ -527,7 +527,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '5': {
+                  5: {
                     id: 5,
                     prevalence: 1,
                     element: 'img',
@@ -535,7 +535,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '6': {
+                  6: {
                     id: 6,
                     prevalence: 1,
                     element: 'img',
@@ -543,7 +543,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '7': {
+                  7: {
                     id: 7,
                     prevalence: 1,
                     element: 'img',
@@ -551,7 +551,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '8': {
+                  8: {
                     id: 8,
                     prevalence: 1,
                     element: 'img',
@@ -563,7 +563,7 @@ export const getDistrictKit = function (_districts = []) {
               }
             }
           },
-          '6': {
+          6: {
             id: 6,
             blueprints: [],
             x: 96000,
@@ -574,11 +574,11 @@ export const getDistrictKit = function (_districts = []) {
             element: 'canvas',
             scale: 64,
             sections: {
-              '1': {
+              1: {
                 id: 1,
                 rows: 1,
                 variations: {
-                  '1': {
+                  1: {
                     id: 1,
                     prevalence: 1,
                     element: 'img',
@@ -586,7 +586,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '2': {
+                  2: {
                     id: 2,
                     prevalence: 1,
                     element: 'img',
@@ -594,7 +594,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '3': {
+                  3: {
                     id: 3,
                     prevalence: 1,
                     element: 'img',
@@ -602,7 +602,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '4': {
+                  4: {
                     id: 4,
                     prevalence: 1,
                     element: 'img',
@@ -610,7 +610,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 448,
                     height: 1248
                   },
-                  '5': {
+                  5: {
                     id: 5,
                     prevalence: 1,
                     element: 'img',
@@ -618,7 +618,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '6': {
+                  6: {
                     id: 6,
                     prevalence: 1,
                     element: 'img',
@@ -626,7 +626,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '7': {
+                  7: {
                     id: 7,
                     prevalence: 1,
                     element: 'img',
@@ -634,7 +634,7 @@ export const getDistrictKit = function (_districts = []) {
                     width: 1248,
                     height: 448
                   },
-                  '8': {
+                  8: {
                     id: 8,
                     prevalence: 1,
                     element: 'img',

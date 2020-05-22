@@ -229,7 +229,7 @@ function initiatePlayer({socket, wrappedPlayerId}) {
   const {playerKit, districtKit, entityKit} = this
   const {id: socketId} = socket
   const playerId = wrappedPlayerId.playerId = playerKit.create(socketId)
-  const districtId = districtKit.choose() || initiateDistrict.call(state, )
+  const districtId = districtKit.choose() || initiateDistrict.call(state)
   const districtIdString = districtId.toString()
   const characterId = entityKit.create('character', districtId)
   playerKit.assignCharacter(playerId, characterId)
