@@ -11,7 +11,7 @@ export const getPlayerKit = function (_players = []) {
     const playerPrototype = {
       id: undefined,
       status: 'on',
-      socket: undefined,
+      socketId: undefined,
       character: null,
       predictionBuffer: [],
       latencyBuffer: [],
@@ -45,28 +45,28 @@ export const getPlayerKit = function (_players = []) {
     return player
   }
 
-  const players = {
+  const playerKit = {
 
     create: socketId => {
 
       var player = createPlayer()
       var playerClone = createPlayer()
 
-      player.socket = socketId
+      player.socketId = socketId
 
       player.id = _players.length
       _players.push(player)
 
       const id = player.id
-      players[id] = playerClone
-      players.clone(id)
-      players.refreshLength()
+      playerKit[id] = playerClone
+      playerKit.clone(id)
+      playerKit.refreshLength()
 
       return id
     },
 
     clone: id => {
-      const playerClone = players[id]
+      const playerClone = playerKit[id]
       const player = _players[id]
 
       for (var property in player) {
@@ -88,7 +88,7 @@ export const getPlayerKit = function (_players = []) {
         }
       }
 
-      players[id] = playerClone
+      playerKit[id] = playerClone
       return playerClone
     },
 
@@ -99,7 +99,7 @@ export const getPlayerKit = function (_players = []) {
           if (idArray) {
             idArray.forEach(id => {
               if (id) {
-                var playerClone = players.clone(id)
+                var playerClone = playerKit.clone(id)
                 multiple.push(playerClone)
               }
             })
@@ -112,7 +112,7 @@ export const getPlayerKit = function (_players = []) {
     cloneAll: () => {
       all.length = 0
       _players.forEach((item, id) => {
-        var player = players.clone(id)
+        var player = playerKit.clone(id)
         all.push(player)
       })
       return all
@@ -120,30 +120,25 @@ export const getPlayerKit = function (_players = []) {
 
     assignCharacter: (playerId, characterId) => {
       _players[playerId].character = characterId
-      players[playerId].character = characterId
+      playerKit[playerId].character = characterId
     },
 
     getPlayerCharacterIds: () => {
       return _players.map(player => player.character)
     },
 
-    getPlayerIdBySocketId: socketId => {
-      var player = _players.find(player => (player.socket === socketId))
-      return player.id
-    },
-
     refreshLength: () => {
-      players.length = _players.length
+      playerKit.length = _players.length
     },
 
     emit: (playerId, socket) => socket.emit('player', _players[playerId]),
 
     updateInput: (input, playerId) => {
-      var player = _players[playerId]
-      player.input = input
+      const player = _players[playerId]
+      player && (player.input = input)
     },
 
-    updateLatencyBuffer: (id, latency) => {
+    updateLatencyBuffer: (latency, id) => {
       var latencyBuffer = _players[id].latencyBuffer
       latencyBuffer.push(latency)
       if (latencyBuffer.length > 20) latencyBuffer.shift()
@@ -154,7 +149,7 @@ export const getPlayerKit = function (_players = []) {
       _players.forEach(player => {
         if (player.status === 'on') {
           latencies.push(player.character)
-          latencies.push(players.getLatency(player.id))
+          latencies.push(playerKit.getLatency(player.id))
         }
       })
       return latencies
@@ -168,5 +163,5 @@ export const getPlayerKit = function (_players = []) {
     }
   }
 
-  return players
+  return playerKit
 }

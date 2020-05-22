@@ -783,7 +783,7 @@ export const getDistrictKit = function (_districts = []) {
     startRow()
   }
 
-  var districts = {
+  var districtKit = {
 
     length: _districts.length,
 
@@ -805,15 +805,15 @@ export const getDistrictKit = function (_districts = []) {
       _districts.push(district)
 
       const id = district.id
-      districts[id] = districtClone
-      districts.clone(id)
-      districts.refreshLength()
+      districtKit[id] = districtClone
+      districtKit.clone(id)
+      districtKit.refreshLength()
 
       return id
     },
 
     clone: id => {
-      const districtClone = districts[id]
+      const districtClone = districtKit[id]
       const district = _districts[id]
 
       for (var property in district) {
@@ -835,7 +835,7 @@ export const getDistrictKit = function (_districts = []) {
         }
       }
 
-      districts[id] = districtClone
+      districtKit[id] = districtClone
       return districtClone
     },
 
@@ -846,7 +846,7 @@ export const getDistrictKit = function (_districts = []) {
           if (idArray) {
             idArray.forEach(id => {
               if (id) {
-                var districtClone = districts.clone(id)
+                var districtClone = districtKit.clone(id)
                 multiple.push(districtClone)
               }
             })
@@ -859,14 +859,14 @@ export const getDistrictKit = function (_districts = []) {
     cloneAll: () => {
       all.length = 0
       _districts.forEach((item, id) => {
-        var district = districts.clone(id)
+        var district = districtKit.clone(id)
         all.push(district)
       })
       return all
     },
 
     refreshLength: () => {
-      districts.length = _districts.length
+      districtKit.length = _districts.length
     },
 
     choose: () => {
@@ -882,7 +882,7 @@ export const getDistrictKit = function (_districts = []) {
         var {district, type, id} = cityElement
         type = type + 's'
         _districts[district][type].push(id)
-        districts[district][type].push(id)
+        districtKit[district][type].push(id)
       })
     },
 
@@ -910,8 +910,8 @@ export const getDistrictKit = function (_districts = []) {
       return matches
     },
 
-    addToGrid: (cityElements) => {
-      cityElements.forEach(cityElement => {
+    addToGrid: (entities) => {
+      entities.forEach(cityElement => {
         var {x, y, width, height, district, id} = cityElement
         var grid = _districts[district].grid
         var xRight = x + width
@@ -933,7 +933,7 @@ export const getDistrictKit = function (_districts = []) {
       })
     },
 
-    detectCollisions: cityElements => {
+    detectCollisions: entities => {
       var {collisions, interactions} = detected
       const {vehiclesA, vehiclesB} = collisions
       const {charactersA, charactersB} = interactions
@@ -954,11 +954,11 @@ export const getDistrictKit = function (_districts = []) {
             comparedCityElements.length = 0
             while (cityElementsToCompare.length) {
               var cityElementToCompareId = cityElementsToCompare.shift()
-              var cityElementToCompare = cityElements[cityElementToCompareId]
+              var cityElementToCompare = entities[cityElementToCompareId]
               if (cityElementToCompare) var {x, y, width, height, type} = cityElementToCompare
 
               comparedCityElements.forEach(comparedCityElementId => {
-                var comparedCityElement = cityElements[comparedCityElementId]
+                var comparedCityElement = entities[comparedCityElementId]
                 var {x: x_, y: y_, width: width_, height: height_, type: type_} = comparedCityElement
 
                 if (
@@ -988,5 +988,5 @@ export const getDistrictKit = function (_districts = []) {
     }
   }
 
-  return districts
+  return districtKit
 }
