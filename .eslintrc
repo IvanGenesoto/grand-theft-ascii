@@ -1,13 +1,34 @@
 {
-  "env": {
-    "browser": true
-  },
-  "extends": ["standard", "plugin:react/recommended"],
+  "env": {"browser": true},
+  "extends": "standard",
+  "reportUnusedDisableDirectives": true,
   "rules": {
-    "space-before-function-paren": 0,
-    "padded-blocks": 0,
-    "curly": ["error", "multi-line"],
-    "brace-style": ["error", "stroustrup"],
-    "react/prop-types": 0
+    "space-before-function-paren": ["error", {
+      "anonymous": "always",
+      "named": "never",
+      "asyncArrow": "always"
+    }],
+    "padded-blocks": "off",
+    "curly": "off",
+    "brace-style": ["error", "stroustrup", {"allowSingleLine": true}],
+    "object-curly-spacing": ["error", "never"],
+    "indent": ["error", 2, {"SwitchCase": 1}],
+    "quotes": [1, "single", {"avoidEscape": true, "allowTemplateLiterals": true}],
+    "no-return-assign": "off",
+    "no-unused-vars": ["error", {
+        "args": "all", "argsIgnorePattern": "^unused", "varsIgnorePattern": "^unused"
+    }],
+    "standard/no-callback-literal": "off",
+    "no-restricted-globals": [
+      "error",
+      "name",
+      "length",
+      "status",
+      "event",
+      "top",
+      "defaultStatus",
+      "parent",
+      "stop"
+    ]
   }
 }

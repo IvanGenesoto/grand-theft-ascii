@@ -1,4 +1,4 @@
-function Players(_players = []) {
+export const getPlayerKit = function (_players = []) {
 
   const all = []
 
@@ -47,12 +47,12 @@ function Players(_players = []) {
 
   const players = {
 
-    create: socketID => {
+    create: socketId => {
 
       var player = createPlayer()
       var playerClone = createPlayer()
 
-      player.socket = socketID
+      player.socket = socketId
 
       player.id = _players.length
       _players.push(player)
@@ -118,17 +118,17 @@ function Players(_players = []) {
       return all
     },
 
-    assignCharacter: (playerID, characterID) => {
-      _players[playerID].character = characterID
-      players[playerID].character = characterID
+    assignCharacter: (playerId, characterId) => {
+      _players[playerId].character = characterId
+      players[playerId].character = characterId
     },
 
-    getPlayerCharacterIDs: () => {
+    getPlayerCharacterIds: () => {
       return _players.map(player => player.character)
     },
 
-    getPlayerIDBySocketID: socketID => {
-      var player = _players.find(player => (player.socket === socketID))
+    getPlayerIdBySocketId: socketId => {
+      var player = _players.find(player => (player.socket === socketId))
       return player.id
     },
 
@@ -136,10 +136,10 @@ function Players(_players = []) {
       players.length = _players.length
     },
 
-    emit: (playerID, socket) => socket.emit('player', _players[playerID]),
+    emit: (playerId, socket) => socket.emit('player', _players[playerId]),
 
-    updateInput: (input, playerID) => {
-      var player = _players[playerID]
+    updateInput: (input, playerId) => {
+      var player = _players[playerId]
       player.input = input
     },
 
@@ -170,5 +170,3 @@ function Players(_players = []) {
 
   return players
 }
-
-module.exports = Players
