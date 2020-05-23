@@ -744,6 +744,23 @@ export const getDistrictKit = function (_districts = []) {
     startRow()
   }
 
+  const callPushEntity = function (character) {
+    const {characters, vehicles} = this
+    const {district, vehicleKeys, id: characterId} = character
+    const vehiclesInCharacterDistrict = _districts[district].vehicles
+    const pushEntityIdWithThis = pushEntityId.bind({
+      vehiclesInCharacterDistrict, characters, characterId, vehicles
+    })
+    vehicleKeys.forEach(pushEntityIdWithThis)
+  }
+
+  const pushEntityId = function (key) {
+    const {vehiclesInCharacterDistrict, characters, characterId, vehicles} = this
+    const vehicleId = vehiclesInCharacterDistrict.find(vehicle => vehicle === key)
+    vehicleId && characters.push(characterId)
+    vehicleId && vehicles.push(vehicleId)
+  }
+
   var districtKit = {
 
     length: _districts.length,
@@ -830,35 +847,24 @@ export const getDistrictKit = function (_districts = []) {
 
     emit: (districtId, socket) => socket.emit('district', _districts[districtId]),
 
-    addToDistrict: (...things) => {
-      things.forEach(cityElement => {
-        var {district, type, id} = cityElement
-        type = type + 's'
-        _districts[district][type].push(id)
-        districtKit[district][type].push(id)
-      })
-    },
+    addToDistrict: (...things) => things.forEach(entity => {
+      let {district, type, id: entityId} = entity
+      type = type + 's'
+      _districts[district][type].push(entityId)
+      districtKit[district][type].push(entityId)
+    }),
 
     checkVehicleKeyMatches: walkers => {
       const characters = []
       const vehicles = []
-      walkers.forEach(character => {
-        const {district, vehicleKeys, id: characterId} = character
-        const vehiclesInCharacterDistrict = _districts[district].vehicles
-        vehicleKeys.forEach(key => {
-          const vehicleId = vehiclesInCharacterDistrict.find(vehicle => vehicle === key)
-          if (vehicleId) {
-            characters.push(characterId)
-            vehicles.push(vehicleId)
-          }
-        })
-      })
+      const callPushEntityWithThis = callPushEntity.bind({characters, vehicles})
+      walkers.forEach(callPushEntityWithThis)
       return {characters, vehicles}
     },
 
     addToGrid: (entities) => {
-      entities.forEach(cityElement => {
-        var {x, y, width, height, district, id} = cityElement
+      entities.forEach(entity => {
+        var {x, y, width, height, district, id} = entity
         var grid = _districts[district].grid
         var xRight = x + width
         var yBottom = y + height
