@@ -25,8 +25,8 @@ function initiateDistrict(district) {
     checkImagesLoaded()
   }
   else {
-    drawToLayer('backgrounds')
-    drawToLayer('foregrounds')
+    drawToLayer('backgroundLayers')
+    drawToLayer('foregroundLayers')
     shiftCityElementsBuffer('initiateRefresh')
   }
 }
@@ -74,16 +74,15 @@ function checkImagesLoaded() {
 
 function drawToLayer(type) {
   var layers = state.district.scenery[type]
-  for (var layerId in layers) {
-    var layer = layers[layerId]
-    var blueprints = layer.blueprints
+  layers.forEach(layer => {
+    var {blueprints} = layer
     blueprints.forEach(blueprint => {
-      var sectionId = blueprint.section
-      var variationId = blueprint.variation
-      var variation = layer.sections[sectionId].variations[variationId]
-      var $variation = document.getElementById(variation.elementId)
-      var $layer = document.getElementById(layer.elementId)
-      var context = $layer.getContext('2d')
+      const {sectionId} = blueprint
+      const {variationId} = blueprint
+      const variation = layer.sections[sectionId - 1].variations[variationId - 1]
+      const $variation = document.getElementById(variation.elementId)
+      const $layer = document.getElementById(layer.elementId)
+      const context = $layer.getContext('2d')
       if (layer.scale) {
         context.scale(layer.scale, layer.scale)
         var x = blueprint.x / layer.scale
@@ -98,7 +97,7 @@ function drawToLayer(type) {
       )
       context.setTransform(1, 0, 0, 1, 0, 0)
     })
-  }
+  })
 }
 
 function shiftCityElementsBuffer(initiatingRefresh) {
@@ -269,10 +268,10 @@ function render(first) {
     var $camera = document.getElementById(state.camera.elementId)
     $camera.classList.add('hidden')
   }
-  renderScenery('backgrounds')
+  renderScenery('backgroundLayers')
   renderCityElements('characters')
   renderCityElements('vehicles')
-  renderScenery('foregrounds')
+  renderScenery('foregroundLayers')
   if (first) setTimeout(() => $camera.classList.remove('hidden'), 1250)
 }
 

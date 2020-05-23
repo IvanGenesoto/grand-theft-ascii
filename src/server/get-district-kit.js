@@ -3,25 +3,22 @@ export const getDistrictKit = function (_districts = []) {
   const all = []
   const multiple = []
 
-  let elementId = 0
-  let layerY = 0
-
   const createDistrict = () => {
     const scenery = {
-      backgrounds: {
-        1: {
+      backgroundLayers: [
+        {
           id: 1,
           blueprints: [],
           tag: 'canvas',
           width: 16000,
           height: 8000,
           depth: 4,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 1,
                   tag: 'img',
@@ -29,13 +26,13 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 367
                 }
-              }
+              ]
             },
-            2: {
+            {
               id: 2,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 4,
                   tag: 'img',
@@ -43,7 +40,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 260
                 },
-                2: {
+                {
                   id: 2,
                   prevalence: 1,
                   tag: 'img',
@@ -51,7 +48,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 260
                 },
-                3: {
+                {
                   id: 3,
                   prevalence: 2,
                   tag: 'img',
@@ -59,13 +56,13 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 260
                 }
-              }
+              ]
             },
-            3: {
+            {
               id: 3,
               rows: 48,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 3,
                   tag: 'img',
@@ -73,7 +70,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 },
-                2: {
+                {
                   id: 2,
                   prevalence: 2,
                   tag: 'img',
@@ -81,7 +78,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 },
-                3: {
+                {
                   id: 3,
                   prevalence: 1,
                   tag: 'img',
@@ -89,7 +86,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 },
-                4: {
+                {
                   id: 4,
                   prevalence: 1,
                   tag: 'img',
@@ -97,7 +94,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 },
-                5: {
+                {
                   id: 5,
                   prevalence: 2,
                   tag: 'img',
@@ -105,7 +102,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 },
-                6: {
+                {
                   id: 6,
                   prevalence: 2,
                   tag: 'img',
@@ -113,7 +110,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 },
-                7: {
+                {
                   id: 7,
                   prevalence: 3,
                   tag: 'img',
@@ -121,7 +118,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 },
-                8: {
+                {
                   id: 8,
                   prevalence: 2,
                   tag: 'img',
@@ -129,7 +126,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 },
-                9: {
+                {
                   id: 9,
                   prevalence: 3,
                   tag: 'img',
@@ -137,13 +134,13 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 134
                 }
-              }
+              ]
             },
-            4: {
+            {
               id: 4,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 1,
                   tag: 'img',
@@ -151,11 +148,11 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1024,
                   height: 673
                 }
-              }
+              ]
             }
-          }
+          ]
         },
-        2: {
+        {
           id: 2,
           blueprints: [],
           y: 7050,
@@ -163,12 +160,12 @@ export const getDistrictKit = function (_districts = []) {
           width: 24000,
           height: 8000,
           depth: 2,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   width: 1024,
                   height: 768,
@@ -176,11 +173,11 @@ export const getDistrictKit = function (_districts = []) {
                   tag: 'img',
                   src: 'images/background/middle.png'
                 }
-              }
+              ]
             }
-          }
+          ]
         },
-        3: {
+        {
           id: 3,
           blueprints: [],
           y: 7232,
@@ -188,12 +185,12 @@ export const getDistrictKit = function (_districts = []) {
           width: 32000,
           height: 8000,
           depth: 1,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   width: 1408,
                   height: 768,
@@ -201,13 +198,13 @@ export const getDistrictKit = function (_districts = []) {
                   tag: 'img',
                   src: 'images/background/near.png'
                 }
-              }
+              ]
             }
-          }
+          ]
         }
-      },
-      foregrounds: {
-        1: {
+      ],
+      foregroundLayers: [
+        {
           id: 1,
           blueprints: [],
           x: 0,
@@ -217,12 +214,12 @@ export const getDistrictKit = function (_districts = []) {
           depth: 0.5,
           tag: 'canvas',
           scale: 16,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 1,
                   tag: 'img',
@@ -230,7 +227,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 144,
                   height: 544
                 },
-                2: {
+                {
                   id: 2,
                   prevalence: 1,
                   tag: 'img',
@@ -238,11 +235,11 @@ export const getDistrictKit = function (_districts = []) {
                   width: 144,
                   height: 544
                 }
-              }
+              ]
             }
-          }
+          ]
         },
-        2: {
+        {
           id: 2,
           blueprints: [],
           x: 32000,
@@ -252,12 +249,12 @@ export const getDistrictKit = function (_districts = []) {
           depth: 0.5,
           tag: 'canvas',
           scale: 16,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 1,
                   tag: 'img',
@@ -265,7 +262,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 144,
                   height: 544
                 },
-                2: {
+                {
                   id: 2,
                   prevalence: 1,
                   tag: 'img',
@@ -273,11 +270,11 @@ export const getDistrictKit = function (_districts = []) {
                   width: 144,
                   height: 544
                 }
-              }
+              ]
             }
-          }
+          ]
         },
-        3: {
+        {
           id: 3,
           blueprints: [],
           x: 0,
@@ -287,12 +284,12 @@ export const getDistrictKit = function (_districts = []) {
           depth: 0.25,
           tag: 'canvas',
           scale: 64,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 1,
                   tag: 'img',
@@ -300,7 +297,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                2: {
+                {
                   id: 2,
                   prevalence: 1,
                   tag: 'img',
@@ -308,7 +305,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                3: {
+                {
                   id: 3,
                   prevalence: 1,
                   tag: 'img',
@@ -316,7 +313,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                4: {
+                {
                   id: 4,
                   prevalence: 1,
                   tag: 'img',
@@ -324,7 +321,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                5: {
+                {
                   id: 5,
                   prevalence: 1,
                   tag: 'img',
@@ -332,7 +329,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                6: {
+                {
                   id: 6,
                   prevalence: 1,
                   tag: 'img',
@@ -340,7 +337,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                7: {
+                {
                   id: 7,
                   prevalence: 1,
                   tag: 'img',
@@ -348,7 +345,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                8: {
+                {
                   id: 8,
                   prevalence: 1,
                   tag: 'img',
@@ -356,11 +353,11 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 }
-              }
+              ]
             }
-          }
+          ]
         },
-        4: {
+        {
           id: 4,
           blueprints: [],
           x: 32000,
@@ -370,12 +367,12 @@ export const getDistrictKit = function (_districts = []) {
           depth: 0.25,
           tag: 'canvas',
           scale: 64,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 1,
                   tag: 'img',
@@ -383,7 +380,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                2: {
+                {
                   id: 2,
                   prevalence: 1,
                   tag: 'img',
@@ -391,7 +388,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                3: {
+                {
                   id: 3,
                   prevalence: 1,
                   tag: 'img',
@@ -399,7 +396,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                4: {
+                {
                   id: 4,
                   prevalence: 1,
                   tag: 'img',
@@ -407,7 +404,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                5: {
+                {
                   id: 5,
                   prevalence: 1,
                   tag: 'img',
@@ -415,7 +412,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                6: {
+                {
                   id: 6,
                   prevalence: 1,
                   tag: 'img',
@@ -423,7 +420,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                7: {
+                {
                   id: 7,
                   prevalence: 1,
                   tag: 'img',
@@ -431,7 +428,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                8: {
+                {
                   id: 8,
                   prevalence: 1,
                   tag: 'img',
@@ -439,11 +436,11 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 }
-              }
+              ]
             }
-          }
+          ]
         },
-        5: {
+        {
           id: 5,
           blueprints: [],
           x: 64000,
@@ -453,12 +450,12 @@ export const getDistrictKit = function (_districts = []) {
           depth: 0.25,
           tag: 'canvas',
           scale: 64,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 1,
                   tag: 'img',
@@ -466,7 +463,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                2: {
+                {
                   id: 2,
                   prevalence: 1,
                   tag: 'img',
@@ -474,7 +471,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                3: {
+                {
                   id: 3,
                   prevalence: 1,
                   tag: 'img',
@@ -482,7 +479,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                4: {
+                {
                   id: 4,
                   prevalence: 1,
                   tag: 'img',
@@ -490,7 +487,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                5: {
+                {
                   id: 5,
                   prevalence: 1,
                   tag: 'img',
@@ -498,7 +495,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                6: {
+                {
                   id: 6,
                   prevalence: 1,
                   tag: 'img',
@@ -506,7 +503,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                7: {
+                {
                   id: 7,
                   prevalence: 1,
                   tag: 'img',
@@ -514,7 +511,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                8: {
+                {
                   id: 8,
                   prevalence: 1,
                   tag: 'img',
@@ -522,11 +519,11 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 }
-              }
+              ]
             }
-          }
+          ]
         },
-        6: {
+        {
           id: 6,
           blueprints: [],
           x: 96000,
@@ -536,12 +533,12 @@ export const getDistrictKit = function (_districts = []) {
           depth: 0.25,
           tag: 'canvas',
           scale: 64,
-          sections: {
-            1: {
+          sections: [
+            {
               id: 1,
               rows: 1,
-              variations: {
-                1: {
+              variations: [
+                {
                   id: 1,
                   prevalence: 1,
                   tag: 'img',
@@ -549,7 +546,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                2: {
+                {
                   id: 2,
                   prevalence: 1,
                   tag: 'img',
@@ -557,7 +554,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                3: {
+                {
                   id: 3,
                   prevalence: 1,
                   tag: 'img',
@@ -565,7 +562,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                4: {
+                {
                   id: 4,
                   prevalence: 1,
                   tag: 'img',
@@ -573,7 +570,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 448,
                   height: 1248
                 },
-                5: {
+                {
                   id: 5,
                   prevalence: 1,
                   tag: 'img',
@@ -581,7 +578,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                6: {
+                {
                   id: 6,
                   prevalence: 1,
                   tag: 'img',
@@ -589,7 +586,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                7: {
+                {
                   id: 7,
                   prevalence: 1,
                   tag: 'img',
@@ -597,7 +594,7 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 },
-                8: {
+                {
                   id: 8,
                   prevalence: 1,
                   tag: 'img',
@@ -605,11 +602,11 @@ export const getDistrictKit = function (_districts = []) {
                   width: 1248,
                   height: 448
                 }
-              }
+              ]
             }
-          }
+          ]
         }
-      }
+      ]
     }
     const defaultDistrict = {
       id: null,
@@ -641,14 +638,14 @@ export const getDistrictKit = function (_districts = []) {
 
   const createGrid = () => {
     const grid = {}
-    let rowCount = 8
-    while (rowCount) {
-      --rowCount
+    let rowCount = -1
+    while (rowCount < 8) {
+      ++rowCount
       const rowId = getGridIndex(rowCount * 1000)
       const row = grid[rowId] = {}
-      let sectionCount = 32
-      while (sectionCount) {
-        --sectionCount
+      let sectionCount = -1
+      while (sectionCount < 32) {
+        ++sectionCount
         const sectionId = getGridIndex(sectionCount * 1000)
         const section = row[sectionId] = {}
         section.a = []
@@ -664,42 +661,31 @@ export const getDistrictKit = function (_districts = []) {
     const {length} = coordinate
     let zerosToAdd = 5 - length
     let zeros = ''
-    while (zerosToAdd > 0) {
-      zeros += '0'
-      --zerosToAdd
-    }
+    while (zerosToAdd > 0) zeros += '0' && --zerosToAdd
     coordinate = zeros + coordinate
     return coordinate.slice(0, 2)
   }
 
-  const assignElementId = scenery => Object
-    .entries(scenery)
-    .forEach(([key, value]) => {
-      if (key === 'tag') scenery.elementId = 's' + ++elementId
-      else if (value && typeof value === 'object') assignElementId(value)
-    })
-
-  const composeScenery = scenery => Object.entries(scenery).forEach(pair => {
-    const [type, layers] = pair
-    const handleLayerWithThis = handleLayer.bind({type})
-    layerY = 0
-    Object.values(layers).forEach(handleLayerWithThis)
+  const assignElementId = component => Object.entries(component).forEach(pair => {
+    const [key, value] = pair
+    if (key === 'tag') component.elementId = 's' + ++elementId
+    else if (Array.isArray(value)) value.forEach(assignElementId)
   })
 
   const handleLayer = function (layer) {
-    const {type} = this
+    const {isForeground} = this || {}
     const {sections} = layer
-    const handleSectionWithThis = handleSection.bind({type, layer})
-    Object.values(sections).forEach(handleSectionWithThis)
+    const handleSectionWithThis = handleSection.bind({isForeground, layer})
+    sections.forEach(handleSectionWithThis)
   }
 
   const handleSection = function (section) {
-    const {type, layer} = this
+    const {isForeground, layer} = this
     const {rows, variations} = section
     const variationOptions = []
     const pushVariationWithThis = pushVariation.bind({variationOptions})
-    Object.values(variations).forEach(pushVariationWithThis)
-    createBlueprints({type, layer, section, rows, variationOptions})
+    variations.forEach(pushVariationWithThis)
+    pushBlueprints({isForeground, layer, section, rows, variationOptions})
   }
 
   const pushVariation = function (variation) {
@@ -708,40 +694,49 @@ export const getDistrictKit = function (_districts = []) {
     while (prevalence) variationOptions.push(variation) && --prevalence
   }
 
-  function createBlueprints({type, layer, section, rows, variationOptions}) {
-    var rowsDrawn = 0
-    function startRow() {
-      var x = 0
-      var rowY = 0
-      function createBlueprint() {
-        if (x < layer.width) {
-          var index = Math.floor(Math.random() * variationOptions.length)
-          var variation = variationOptions[index]
-          if (layer.y) layerY = layer.y
-          var blueprint = {section: section.id, variation: variation.id, x, y: layerY}
-          layer.blueprints.push(blueprint)
-          if (type === 'foregrounds') {
-            if (layer.id < 3) {
-              x += 2000
-            }
-            else {
-              var gap = Math.floor(Math.random() * (3000 - 1000) + 1000)
-              x += gap + variation.width
-            }
-          }
-          x += variation.width
-          rowY = variation.height
-          createBlueprint()
-        }
-        else {
-          rowsDrawn += 1
-          layerY += rowY
-          startRow()
-        }
-      }
-      if (rowsDrawn < rows) createBlueprint()
-    }
-    startRow()
+  function pushBlueprints(argumentation) {
+    const {section} = argumentation
+    const {id: sectionId} = section
+    argumentation.rowsDrawn = 0
+    argumentation.sectionId = sectionId
+    startRow(argumentation)
+  }
+
+  const startRow = argumentation => {
+    const {rowsDrawn, rows} = argumentation
+    argumentation.x = 0
+    argumentation.rowY = 0
+    if (rowsDrawn < rows) pushBlueprint(argumentation)
+  }
+
+  const pushBlueprint = argumentation => {
+    const {x, layer, variationOptions, sectionId, isForeground} = argumentation
+    if (x >= layer.width) return callStartRow(argumentation)
+    const index = Math.floor(Math.random() * variationOptions.length)
+    const variation = argumentation.variation = variationOptions[index]
+    const {id: variationId} = variation
+    if (layer.y) layerY = layer.y
+    const blueprint = {sectionId, variationId, x, y: layerY}
+    layer.blueprints.push(blueprint)
+    if (isForeground) handleIsForeground(argumentation)
+    argumentation.x += variation.width
+    argumentation.rowY = variation.height
+    pushBlueprint(argumentation)
+  }
+
+  const callStartRow = argumentation => {
+    const {rowY} = argumentation
+    ++argumentation.rowsDrawn
+    layerY += rowY
+    startRow(argumentation)
+  }
+
+  const handleIsForeground = argumentation => {
+    const {layer, variation} = argumentation
+    if (layer.id < 3) return argumentation.x += 2000
+    const float = Math.random() * (3000 - 1000) + 1000
+    const gap = Math.floor(float)
+    argumentation.x += gap + variation.width
   }
 
   const callPushEntity = function (character) {
@@ -761,17 +756,65 @@ export const getDistrictKit = function (_districts = []) {
     vehicleId && vehicles.push(vehicleId)
   }
 
+  const detectRowCollisions = function (rowId) {
+    const {grid} = this
+    const row = grid[rowId]
+    const detectSectionCollisionsWithThis = detectSectionCollisions.bind({...this, row})
+    Object.keys(row).forEach(detectSectionCollisionsWithThis)
+  }
+
+  const detectSectionCollisions = function (sectionId) {
+    const {row, entities} = this
+    const section = row[sectionId]
+    const entitiesToCompare = section.a
+    const comparedEntities = section.b
+    comparedEntities.length = 0
+    while (entitiesToCompare.length) {
+      const entityToCompareId = entitiesToCompare.shift()
+      const entityToCompare = entities[entityToCompareId]
+      const pushCollisionsWithThis = pushCollisions.bind({...this, entityToCompare})
+      comparedEntities.forEach(pushCollisionsWithThis)
+      comparedEntities.push(entityToCompare)
+    }
+    return this
+  }
+
+  const pushCollisions = function (comparedEntityId) {
+    const {collisions, interactions, entityToCompare, entities} = this
+    const {vehiclesA, vehiclesB} = collisions
+    const {charactersA, charactersB} = interactions
+    const {x, y, width, height, type} = entityToCompare || {}
+    const comparedEntity = entities[comparedEntityId]
+    const {x: x_, y: y_, width: width_, height: height_, type: type_} = comparedEntity
+    const didCollide =
+      type === type_ &&
+      x < x_ + width_ &&
+      x + width > x_ &&
+      y < y_ + height_ &&
+      y + height > y_
+    if (!didCollide) return this
+    type === 'vehicle'
+      ? vehiclesA.push(entityToCompare) &&
+        vehiclesB.push(comparedEntity)
+      : charactersA.push(entityToCompare) &&
+        charactersB.push(comparedEntity)
+    return this
+  }
+
   var districtKit = {
 
     length: _districts.length,
 
-    create: isMayor => {
+    create: isMayoral => {
       const district = createDistrict()
       const districtClone = createDistrict()
       const {scenery} = district
-      if (!isMayor) {
-        assignElementId(scenery)
-        composeScenery(scenery)
+      const {backgroundLayers, foregroundLayers} = scenery
+      if (!isMayoral) {
+        backgroundLayers.forEach(assignElementId)
+        foregroundLayers.forEach(assignElementId)
+        backgroundLayers.forEach(handleLayer)
+        foregroundLayers.forEach(handleLayer.bind({isForeground: true}))
         district.grid = createGrid()
       }
       district.establishedAt = Date.now()
@@ -835,21 +878,22 @@ export const getDistrictKit = function (_districts = []) {
       return all
     },
 
-    refreshLength: () => {
-      districtKit.length = _districts.length
-    },
+    refreshLength: () => districtKit.length = _districts.length,
 
     choose: () => {
-      var district = _districts.find(district => (district.characters.length < 500 && district.id))
-      if (district) return district.id
-      else return undefined
+      const district = _districts.find(district => {
+        const {id, characters} = district
+        const {length} = characters
+        return id && length < 500
+      })
+      return district && district.id
     },
 
     emit: (districtId, socket) => socket.emit('district', _districts[districtId]),
 
     addToDistrict: (...things) => things.forEach(entity => {
       let {district, type, id: entityId} = entity
-      type = type + 's'
+      type += 's'
       _districts[district][type].push(entityId)
       districtKit[district][type].push(entityId)
     }),
@@ -862,81 +906,46 @@ export const getDistrictKit = function (_districts = []) {
       return {characters, vehicles}
     },
 
-    addToGrid: (entities) => {
-      entities.forEach(entity => {
-        var {x, y, width, height, district, id} = entity
-        var grid = _districts[district].grid
-        var xRight = x + width
-        var yBottom = y + height
-        var rowTop = getGridIndex(y)
-        var rowBottom = getGridIndex(yBottom)
-        var sectionLeft = getGridIndex(x)
-        var sectionRight = getGridIndex(xRight)
-        const row = grid[rowTop]
+    addToGrid: (entities) => entities.forEach(entity => {
+      const {x, y, width, height, district, id} = entity
+      const grid = _districts[district].grid
+      const xRight = x + width
+      const yBottom = y + height
+      const rowTop = getGridIndex(y)
+      const rowBottom = getGridIndex(yBottom)
+      const sectionLeft = getGridIndex(x)
+      const sectionRight = getGridIndex(xRight)
+      const row = grid[rowTop]
+      const section = row && row[sectionLeft]
+      section && section.a.push(id)
+      if (sectionLeft !== sectionRight) {
+        const section = row && row[sectionRight]
+        section && section.a.push(id)
+      }
+      if (rowTop !== rowBottom) {
+        const row = grid[rowBottom]
         const section = row && row[sectionLeft]
         section && section.a.push(id)
-        if (sectionLeft !== sectionRight) {
-          const section = row && row[sectionRight]
-          section && section.a.push(id)
-        }
-        if (rowTop !== rowBottom) {
-          const row = grid[rowBottom]
-          const section = row && row[sectionLeft]
-          section && section.a.push(id)
-          if (sectionLeft !== sectionRight) {
-            const section = row && row[sectionRight]
-            section && section.a.push(id)
-          }
-        }
-      })
-    },
+        if (sectionLeft === sectionRight) return
+        const section_ = row && row[sectionRight]
+        section_ && section_.a.push(id)
+      }
+    }),
 
     detectCollisions: entities => {
       const collisions = {vehiclesA: [], vehiclesB: []}
       const interactions = {charactersA: [], charactersB: []}
-      const {vehiclesA, vehiclesB} = collisions
-      const {charactersA, charactersB} = interactions
       _districts.forEach(district => {
-        var grid = district.grid
-        for (var rowId in grid) {
-          var row = grid[rowId]
-          for (var sectionId in row) {
-            var section = row[sectionId]
-            var cityElementsToCompare = section.a
-            var comparedCityElements = section.b
-            comparedCityElements.length = 0
-            while (cityElementsToCompare.length) {
-              var cityElementToCompareId = cityElementsToCompare.shift()
-              var cityElementToCompare = entities[cityElementToCompareId]
-              if (cityElementToCompare) var {x, y, width, height, type} = cityElementToCompare
-              comparedCityElements.forEach(comparedCityElementId => {
-                var comparedCityElement = entities[comparedCityElementId]
-                var {x: x_, y: y_, width: width_, height: height_, type: type_} = comparedCityElement
-                if (
-                  type === type_ &&
-                  x < x_ + width_ &&
-                  x + width > x_ &&
-                  y < y_ + height_ &&
-                  y + height > y_
-                ) {
-                  if (type === 'vehicle') {
-                    vehiclesA.push(cityElementToCompare)
-                    vehiclesB.push(comparedCityElement)
-                  }
-                  else {
-                    charactersA.push(cityElementToCompare)
-                    charactersB.push(comparedCityElement)
-                  }
-                }
-              })
-              comparedCityElements.push(cityElementToCompare)
-            }
-          }
-        }
+        const {grid} = district
+        const detectRowCollisionsWithThis = detectRowCollisions.bind({grid, entities})
+        grid && Object.keys(grid).forEach(detectRowCollisionsWithThis)
       })
       return {collisions, interactions}
     }
   }
+
+  let elementId = 0
+  let layerY = 0
 
   return districtKit
 }

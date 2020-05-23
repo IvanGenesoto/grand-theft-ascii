@@ -12,6 +12,18 @@ const server = Server(app)
 const io = socketIo(server)
 const port = process.env.PORT || 3000
 
+const matchingKit = {
+  characters: [],
+  vehicles: [],
+  checkedWalkers: [],
+  matchesForCharacter: []
+}
+
+const collisionKitByType = {
+  collisionKit: {vehiclesA: [], vehiclesB: []},
+  interactionKit: {charactersA: [], charactersB: []}
+}
+
 const state = {
   tick: 0,
   connectionQueue: [],
@@ -19,7 +31,9 @@ const state = {
   inputQueue: [],
   districtKit: getDistrictKit(),
   entityKit: getEntityKit(),
-  playerKit: getPlayerKit()
+  playerKit: getPlayerKit(),
+  matchingKit,
+  collisionKitByType
 }
 
 const createMayor = function () {
@@ -70,7 +84,7 @@ const refresh = function () {
   const {playerKit, entityKit, districtKit} = this
   const activeKit = {walkers: [], drivers: [], passengers: []}
   this.refreshStartTime = now()
-  this.tick += 1
+  ++this.tick
   const {tick} = this
   runQueues.call(this)
   const playerCharacterIds = playerKit.getPlayerCharacterIds()
@@ -203,8 +217,8 @@ const setDelay = function () { // #refactor
 const runQueues = function () {
   const {playerKit, connectionQueue, latencyQueue, inputQueue} = this
   const {updateLatencyBuffer, updateInput} = playerKit
-  const initiateDistrictWithThis = initiatePlayer.bind(this)
-  connectionQueue.forEach(initiateDistrictWithThis)
+  const initiatePlayerWithThis = initiatePlayer.bind(this)
+  connectionQueue.forEach(initiatePlayerWithThis)
   latencyQueue.forEach(({latency, wrappedPlayerId}) => {
     const {playerId} = wrappedPlayerId
     updateLatencyBuffer(latency, playerId)
