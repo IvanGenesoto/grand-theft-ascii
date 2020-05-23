@@ -212,7 +212,7 @@ export const getEntityKit = function (_entities = []) {
 
     cloneAll: () => {
       all.length = 0
-      _entities.forEach((item, id) => {
+      _entities.forEach((unusedItem, id) => {
         var cityElement = entityKit.clone(id)
         all.push(cityElement)
       })
@@ -419,7 +419,7 @@ export const getEntityKit = function (_entities = []) {
       character.y = y + height / 2
     },
 
-    updateOccupyingCharacterLocation: (character, districts) => {
+    updateOccupyingCharacterLocation: (character, districts) => { // eslint-disable-line no-unused-vars
     },
 
     updateWalkingCharacterLocation: (character, districts) => {
