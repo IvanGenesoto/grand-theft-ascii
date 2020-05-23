@@ -3,7 +3,6 @@ import now from 'performance-now'
 export const getEntityKit = function (_entities = []) {
 
   const all = []
-
   const multiple = []
 
   function createCityElement(type) {
