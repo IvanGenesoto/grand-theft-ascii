@@ -45,7 +45,7 @@ export const getEntityKit = function (_entities = []) {
       speed: undefined,
       maxSpeed: 6,
       active: 0,
-      element: 'img',
+      tag: 'img',
       elementId: undefined,
       src: 'images/characters/man.png'
     }
@@ -76,7 +76,7 @@ export const getEntityKit = function (_entities = []) {
       deceleration: 10,
       armor: undefined,
       weight: 0,
-      element: 'img',
+      tag: 'img',
       elementId: undefined,
       src: 'images/vehicles/delorean.png'
     }
@@ -96,7 +96,7 @@ export const getEntityKit = function (_entities = []) {
       y: 0,
       width: 0,
       height: 0,
-      element: 'canvas',
+      tag: 'canvas',
       background: undefined,
       foreground: undefined,
       inventory: undefined,

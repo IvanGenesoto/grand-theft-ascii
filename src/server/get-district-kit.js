@@ -25,623 +25,604 @@ export const getDistrictKit = function (_districts = []) {
   let elementId = 0
   let layerY = 0
 
-  function createDistrict(type) {
-
-    const districtPrototype = {
-      id: undefined,
-      established: undefined,
-      type: 'neon',
-      name: 'Neon District',
-      status: '',
-      width: 32000,
-      height: 8000,
-      grid: undefined,
-      scenery: undefined,
-      rooms: [],
-      characters: [],
-      vehicles: [],
-      unwelcomes: []
-    }
-
-    const sceneries = {
-      neon: {
-        backgrounds: {
-          1: {
-            id: 1,
-            blueprints: [],
-            element: 'canvas',
-            width: 16000,
-            height: 8000,
-            depth: 4,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/background/far/above-top.png',
-                    width: 1024,
-                    height: 367
-                  }
-                }
-              },
-              2: {
-                id: 2,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 4,
-                    element: 'img',
-                    src: 'images/background/far/top/top.png',
-                    width: 1024,
-                    height: 260
-                  },
-                  2: {
-                    id: 2,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/background/far/top/top-pink-jumbotron-left.png',
-                    width: 1024,
-                    height: 260
-                  },
-                  3: {
-                    id: 3,
-                    prevalence: 2,
-                    element: 'img',
-                    src: 'images/background/far/top/top-pink-jumbotron-right.png',
-                    width: 1024,
-                    height: 260
-                  }
-                }
-              },
-              3: {
-                id: 3,
-                rows: 48,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 3,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle.png',
-                    width: 1024,
-                    height: 134
-                  },
-                  2: {
-                    id: 2,
-                    prevalence: 2,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
-                    width: 1024,
-                    height: 134
-                  },
-                  3: {
-                    id: 3,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
-                    width: 1024,
-                    height: 134
-                  },
-                  4: {
-                    id: 4,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
-                    width: 1024,
-                    height: 134
-                  },
-                  5: {
-                    id: 5,
-                    prevalence: 2,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
-                    width: 1024,
-                    height: 134
-                  },
-                  6: {
-                    id: 6,
-                    prevalence: 2,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
-                    width: 1024,
-                    height: 134
-                  },
-                  7: {
-                    id: 7,
-                    prevalence: 3,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
-                    width: 1024,
-                    height: 134
-                  },
-                  8: {
-                    id: 8,
-                    prevalence: 2,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
-                    width: 1024,
-                    height: 134
-                  },
-                  9: {
-                    id: 9,
-                    prevalence: 3,
-                    element: 'img',
-                    src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
-                    width: 1024,
-                    height: 134
-                  }
-                }
-              },
-              4: {
-                id: 4,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/background/far/bottom.png',
-                    width: 1024,
-                    height: 673
-                  }
+  const createDistrict = () => {
+    const scenery = {
+      backgrounds: {
+        1: {
+          id: 1,
+          blueprints: [],
+          tag: 'canvas',
+          width: 16000,
+          height: 8000,
+          depth: 4,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/background/far/above-top.png',
+                  width: 1024,
+                  height: 367
                 }
               }
-            }
-          },
-          2: {
-            id: 2,
-            blueprints: [],
-            y: 7050,
-            element: 'canvas',
-            width: 24000,
-            height: 8000,
-            depth: 2,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    width: 1024,
-                    height: 768,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/background/middle.png'
-                  }
+            },
+            2: {
+              id: 2,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 4,
+                  tag: 'img',
+                  src: 'images/background/far/top/top.png',
+                  width: 1024,
+                  height: 260
+                },
+                2: {
+                  id: 2,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/background/far/top/top-pink-jumbotron-left.png',
+                  width: 1024,
+                  height: 260
+                },
+                3: {
+                  id: 3,
+                  prevalence: 2,
+                  tag: 'img',
+                  src: 'images/background/far/top/top-pink-jumbotron-right.png',
+                  width: 1024,
+                  height: 260
                 }
               }
-            }
-          },
-          3: {
-            id: 3,
-            blueprints: [],
-            y: 7232,
-            element: 'canvas',
-            width: 32000,
-            height: 8000,
-            depth: 1,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    width: 1408,
-                    height: 768,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/background/near.png'
-                  }
+            },
+            3: {
+              id: 3,
+              rows: 48,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 3,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle.png',
+                  width: 1024,
+                  height: 134
+                },
+                2: {
+                  id: 2,
+                  prevalence: 2,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
+                  width: 1024,
+                  height: 134
+                },
+                3: {
+                  id: 3,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
+                  width: 1024,
+                  height: 134
+                },
+                4: {
+                  id: 4,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
+                  width: 1024,
+                  height: 134
+                },
+                5: {
+                  id: 5,
+                  prevalence: 2,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
+                  width: 1024,
+                  height: 134
+                },
+                6: {
+                  id: 6,
+                  prevalence: 2,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
+                  width: 1024,
+                  height: 134
+                },
+                7: {
+                  id: 7,
+                  prevalence: 3,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
+                  width: 1024,
+                  height: 134
+                },
+                8: {
+                  id: 8,
+                  prevalence: 2,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
+                  width: 1024,
+                  height: 134
+                },
+                9: {
+                  id: 9,
+                  prevalence: 3,
+                  tag: 'img',
+                  src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
+                  width: 1024,
+                  height: 134
+                }
+              }
+            },
+            4: {
+              id: 4,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/background/far/bottom.png',
+                  width: 1024,
+                  height: 673
                 }
               }
             }
           }
         },
-        foregrounds: {
-          1: {
-            id: 1,
-            blueprints: [],
-            x: 0,
-            y: 7456,
-            width: 32000,
-            height: 8000,
-            depth: 0.5,
-            element: 'canvas',
-            scale: 16,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/lamp/left.png',
-                    width: 144,
-                    height: 544
-                  },
-                  2: {
-                    id: 2,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/lamp/right.png',
-                    width: 144,
-                    height: 544
-                  }
+        2: {
+          id: 2,
+          blueprints: [],
+          y: 7050,
+          tag: 'canvas',
+          width: 24000,
+          height: 8000,
+          depth: 2,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  width: 1024,
+                  height: 768,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/background/middle.png'
                 }
               }
             }
-          },
-          2: {
-            id: 2,
-            blueprints: [],
-            x: 32000,
-            y: 7456,
-            width: 32000,
-            height: 8000,
-            depth: 0.5,
-            element: 'canvas',
-            scale: 16,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/lamp/left.png',
-                    width: 144,
-                    height: 544
-                  },
-                  2: {
-                    id: 2,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/lamp/right.png',
-                    width: 144,
-                    height: 544
-                  }
+          }
+        },
+        3: {
+          id: 3,
+          blueprints: [],
+          y: 7232,
+          tag: 'canvas',
+          width: 32000,
+          height: 8000,
+          depth: 1,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  width: 1408,
+                  height: 768,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/background/near.png'
                 }
               }
             }
-          },
-          3: {
-            id: 3,
-            blueprints: [],
-            x: 0,
-            y: 6800,
-            width: 32000,
-            height: 8000,
-            depth: 0.25,
-            element: 'canvas',
-            scale: 64,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/up-left.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  2: {
-                    id: 2,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/up-right.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  3: {
-                    id: 3,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/down-left.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  4: {
-                    id: 4,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/down-right.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  5: {
-                    id: 5,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/left-up.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  6: {
-                    id: 6,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/left-down.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  7: {
-                    id: 7,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/right-up.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  8: {
-                    id: 8,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/right-down.png',
-                    width: 1248,
-                    height: 448
-                  }
+          }
+        }
+      },
+      foregrounds: {
+        1: {
+          id: 1,
+          blueprints: [],
+          x: 0,
+          y: 7456,
+          width: 32000,
+          height: 8000,
+          depth: 0.5,
+          tag: 'canvas',
+          scale: 16,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/lamp/left.png',
+                  width: 144,
+                  height: 544
+                },
+                2: {
+                  id: 2,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/lamp/right.png',
+                  width: 144,
+                  height: 544
                 }
               }
             }
-          },
-          4: {
-            id: 4,
-            blueprints: [],
-            x: 32000,
-            y: 6800,
-            width: 32000,
-            height: 8000,
-            depth: 0.25,
-            element: 'canvas',
-            scale: 64,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/up-left.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  2: {
-                    id: 2,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/up-right.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  3: {
-                    id: 3,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/down-left.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  4: {
-                    id: 4,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/down-right.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  5: {
-                    id: 5,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/left-up.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  6: {
-                    id: 6,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/left-down.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  7: {
-                    id: 7,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/right-up.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  8: {
-                    id: 8,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/right-down.png',
-                    width: 1248,
-                    height: 448
-                  }
+          }
+        },
+        2: {
+          id: 2,
+          blueprints: [],
+          x: 32000,
+          y: 7456,
+          width: 32000,
+          height: 8000,
+          depth: 0.5,
+          tag: 'canvas',
+          scale: 16,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/lamp/left.png',
+                  width: 144,
+                  height: 544
+                },
+                2: {
+                  id: 2,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/lamp/right.png',
+                  width: 144,
+                  height: 544
                 }
               }
             }
-          },
-          5: {
-            id: 5,
-            blueprints: [],
-            x: 64000,
-            y: 6800,
-            width: 32000,
-            height: 8000,
-            depth: 0.25,
-            element: 'canvas',
-            scale: 64,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/up-left.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  2: {
-                    id: 2,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/up-right.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  3: {
-                    id: 3,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/down-left.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  4: {
-                    id: 4,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/down-right.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  5: {
-                    id: 5,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/left-up.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  6: {
-                    id: 6,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/left-down.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  7: {
-                    id: 7,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/right-up.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  8: {
-                    id: 8,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/right-down.png',
-                    width: 1248,
-                    height: 448
-                  }
+          }
+        },
+        3: {
+          id: 3,
+          blueprints: [],
+          x: 0,
+          y: 6800,
+          width: 32000,
+          height: 8000,
+          depth: 0.25,
+          tag: 'canvas',
+          scale: 64,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/up-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                2: {
+                  id: 2,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/up-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                3: {
+                  id: 3,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/down-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                4: {
+                  id: 4,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/down-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                5: {
+                  id: 5,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/left-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                6: {
+                  id: 6,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/left-down.png',
+                  width: 1248,
+                  height: 448
+                },
+                7: {
+                  id: 7,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/right-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                8: {
+                  id: 8,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/right-down.png',
+                  width: 1248,
+                  height: 448
                 }
               }
             }
-          },
-          6: {
-            id: 6,
-            blueprints: [],
-            x: 96000,
-            y: 6800,
-            width: 32000,
-            height: 8000,
-            depth: 0.25,
-            element: 'canvas',
-            scale: 64,
-            sections: {
-              1: {
-                id: 1,
-                rows: 1,
-                variations: {
-                  1: {
-                    id: 1,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/up-left.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  2: {
-                    id: 2,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/up-right.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  3: {
-                    id: 3,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/down-left.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  4: {
-                    id: 4,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/down-right.png',
-                    width: 448,
-                    height: 1248
-                  },
-                  5: {
-                    id: 5,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/left-up.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  6: {
-                    id: 6,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/left-down.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  7: {
-                    id: 7,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/right-up.png',
-                    width: 1248,
-                    height: 448
-                  },
-                  8: {
-                    id: 8,
-                    prevalence: 1,
-                    element: 'img',
-                    src: 'images/foreground/arrow/right-down.png',
-                    width: 1248,
-                    height: 448
-                  }
+          }
+        },
+        4: {
+          id: 4,
+          blueprints: [],
+          x: 32000,
+          y: 6800,
+          width: 32000,
+          height: 8000,
+          depth: 0.25,
+          tag: 'canvas',
+          scale: 64,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/up-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                2: {
+                  id: 2,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/up-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                3: {
+                  id: 3,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/down-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                4: {
+                  id: 4,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/down-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                5: {
+                  id: 5,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/left-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                6: {
+                  id: 6,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/left-down.png',
+                  width: 1248,
+                  height: 448
+                },
+                7: {
+                  id: 7,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/right-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                8: {
+                  id: 8,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/right-down.png',
+                  width: 1248,
+                  height: 448
+                }
+              }
+            }
+          }
+        },
+        5: {
+          id: 5,
+          blueprints: [],
+          x: 64000,
+          y: 6800,
+          width: 32000,
+          height: 8000,
+          depth: 0.25,
+          tag: 'canvas',
+          scale: 64,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/up-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                2: {
+                  id: 2,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/up-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                3: {
+                  id: 3,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/down-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                4: {
+                  id: 4,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/down-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                5: {
+                  id: 5,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/left-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                6: {
+                  id: 6,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/left-down.png',
+                  width: 1248,
+                  height: 448
+                },
+                7: {
+                  id: 7,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/right-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                8: {
+                  id: 8,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/right-down.png',
+                  width: 1248,
+                  height: 448
+                }
+              }
+            }
+          }
+        },
+        6: {
+          id: 6,
+          blueprints: [],
+          x: 96000,
+          y: 6800,
+          width: 32000,
+          height: 8000,
+          depth: 0.25,
+          tag: 'canvas',
+          scale: 64,
+          sections: {
+            1: {
+              id: 1,
+              rows: 1,
+              variations: {
+                1: {
+                  id: 1,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/up-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                2: {
+                  id: 2,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/up-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                3: {
+                  id: 3,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/down-left.png',
+                  width: 448,
+                  height: 1248
+                },
+                4: {
+                  id: 4,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/down-right.png',
+                  width: 448,
+                  height: 1248
+                },
+                5: {
+                  id: 5,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/left-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                6: {
+                  id: 6,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/left-down.png',
+                  width: 1248,
+                  height: 448
+                },
+                7: {
+                  id: 7,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/right-up.png',
+                  width: 1248,
+                  height: 448
+                },
+                8: {
+                  id: 8,
+                  prevalence: 1,
+                  tag: 'img',
+                  src: 'images/foreground/arrow/right-down.png',
+                  width: 1248,
+                  height: 448
                 }
               }
             }
@@ -649,113 +630,112 @@ export const getDistrictKit = function (_districts = []) {
         }
       }
     }
-
-    var district = {...districtPrototype}
-
-    for (var property in districtPrototype) {
-      var value = districtPrototype[property]
-      if (Array.isArray(value)) district[property] = [...value]
-      else if (typeof value === 'object' && value !== null) {
-        for (var nestedProperty in value) {
-          var nestedValue = value[nestedProperty]
-          if (typeof nestedValue !== 'object' || nestedValue === null) {
-            district[property][nestedProperty] = nestedValue
-          }
-          else district[property][nestedProperty] = null
-        }
-      }
+    const defaultDistrict = {
+      id: null,
+      establishedAt: null,
+      type: 'neon',
+      name: 'Neon District',
+      status: '',
+      width: 32000,
+      height: 8000,
+      grid: null,
+      rooms: [],
+      characters: [],
+      vehicles: [],
+      unwelcomes: [],
+      scenery
     }
+    return Object
+      .entries(defaultDistrict)
+      .reduce(appendAttribute, {})
+  }
 
-    switch (type) {
-      case 'neon': var scenery = sceneries.neon; break
-      default:
-    }
-
-    if (type) district.scenery = scenery
-
+  const appendAttribute = (district, [key, value]) => {
+    district[key] =
+      Array.isArray(value) ? [...value]
+      : value && value === 'object' ? {...value}
+      : value
     return district
   }
 
-  function createGrid() {
-    var grid = {}
-    var row = -1
-    while (row < 8) {
-      var section = -1
-      row += 1
-      var rowId = getGridIndex(row * 1000)
-      grid[rowId] = {}
-      while (section < 32) {
-        section += 1
-        var sectionId = getGridIndex(section * 1000)
-        grid[rowId][sectionId] = {}
-        grid[rowId][sectionId].a = []
-        grid[rowId][sectionId].b = []
+  const createGrid = () => {
+    const grid = {}
+    let rowCount = 8
+    while (rowCount) {
+      --rowCount
+      const rowId = getGridIndex(rowCount * 1000)
+      const row = grid[rowId] = {}
+      let sectionCount = 32
+      while (sectionCount) {
+        --sectionCount
+        const sectionId = getGridIndex(sectionCount * 1000)
+        const section = row[sectionId] = {}
+        section.a = []
+        section.b = []
       }
     }
     return grid
   }
 
-  function getGridIndex(coordinate) {
+  const getGridIndex = coordinate => {
     coordinate = Math.round(coordinate)
     coordinate = coordinate.toString()
-    var zerosToAdd = 5 - coordinate.length
-    var zeros = ''
+    const {length} = coordinate
+    let zerosToAdd = 5 - length
+    let zeros = ''
     while (zerosToAdd > 0) {
       zeros += '0'
-      zerosToAdd -= 1
+      --zerosToAdd
     }
     coordinate = zeros + coordinate
     return coordinate.slice(0, 2)
   }
 
-  function assignElementIdsToScenery(cityElement) {
-    for (var property in cityElement) {
-      if (property === 'element') {
-        var id = elementId += 1
-        cityElement.elementId = 's' + id
-      }
-      else if (
-        typeof cityElement[property] !== 'string' &&
-        typeof cityElement[property] !== 'number' &&
-        typeof cityElement[property] !== 'boolean'
-      ) {
-        var nestedCityElement = cityElement[property]
-        assignElementIdsToScenery(nestedCityElement)
-      }
-    }
+  const assignElementId = scenery => Object
+    .entries(scenery)
+    .forEach(([key, value]) => {
+      if (key === 'tag') scenery.elementId = 's' + ++elementId
+      else if (value && typeof value === 'object') assignElementId(value)
+    })
+
+  const composeScenery = scenery => Object.entries(scenery).forEach(pair => {
+    const [type, layers] = pair
+    const handleLayerWithThis = handleLayer.bind({type})
+    layerY = 0
+    Object.values(layers).forEach(handleLayerWithThis)
+  })
+
+  const handleLayer = function (layer) {
+    const {type} = this
+    const {sections} = layer
+    const handleSectionWithThis = handleSection.bind({type, layer})
+    Object.values(sections).forEach(handleSectionWithThis)
   }
 
-  function composeScenery(district) {
-    for (var type in district.scenery) {
-      var layers = district.scenery[type]
-      layerY = 0
-      for (var layerId in layers) {
-        var layer = layers[layerId]
-        for (var sectionId in layer.sections) {
-          var section = layer.sections[sectionId]
-          var rows = section.rows
-          var variationsArray = []
-          for (var variationId in section.variations) {
-            var variation = section.variations[variationId]
-            for (var i = 0; i < variation.prevalence; i++) {
-              variationsArray.push(variation)
-            }
-          }
-          createBlueprints(type, layer, section, rows, variationsArray)
-        }
-      }
-    }
+  const handleSection = function (section) {
+    const {type, layer} = this
+    const {rows, variations} = section
+    const variationOptions = []
+    const pushVariationWithThis = pushVariation.bind({variationOptions})
+    Object.values(variations).forEach(pushVariationWithThis)
+    createBlueprints({type, layer, section, rows, variationOptions})
   }
 
-  function createBlueprints(type, layer, section, rows, variationsArray) {
+  const pushVariation = function (variation) {
+    const {variationOptions} = this
+    let {prevalence} = variation
+    while (prevalence) variationOptions.push(variation) && --prevalence
+  }
+
+  function createBlueprints({type, layer, section, rows, variationOptions}) {
     var rowsDrawn = 0
     function startRow() {
       var x = 0
       var rowY = 0
       function createBlueprint() {
         if (x < layer.width) {
-          var index = Math.floor(Math.random() * variationsArray.length)
-          var variation = variationsArray[index]
+          var index = Math.floor(Math.random() * variationOptions.length)
+          var variation = variationOptions[index]
           if (layer.y) layerY = layer.y
           var blueprint = {section: section.id, variation: variation.id, x, y: layerY}
           layer.blueprints.push(blueprint)
@@ -787,35 +767,28 @@ export const getDistrictKit = function (_districts = []) {
 
     length: _districts.length,
 
-    create: type => {
-
-      var district = createDistrict(type)
-      var districtClone = createDistrict(type)
-
-      if (type) {
-        assignElementIdsToScenery(district)
-        composeScenery(district)
-        var grid = createGrid()
-        district.grid = grid
+    create: isMayor => {
+      const district = createDistrict()
+      const districtClone = createDistrict()
+      const {scenery} = district
+      if (!isMayor) {
+        assignElementId(scenery)
+        composeScenery(scenery)
+        district.grid = createGrid()
       }
-
-      district.established = Date.now()
-
+      district.establishedAt = Date.now()
       district.id = _districts.length
       _districts.push(district)
-
-      const id = district.id
+      const {id} = district
       districtKit[id] = districtClone
       districtKit.clone(id)
       districtKit.refreshLength()
-
       return id
     },
 
     clone: id => {
       const districtClone = districtKit[id]
       const district = _districts[id]
-
       for (var property in district) {
         var value = district[property]
         if (typeof value !== 'object' || value === null) {
@@ -834,7 +807,6 @@ export const getDistrictKit = function (_districts = []) {
           }
         }
       }
-
       districtKit[id] = districtClone
       return districtClone
     },
@@ -858,7 +830,7 @@ export const getDistrictKit = function (_districts = []) {
 
     cloneAll: () => {
       all.length = 0
-      _districts.forEach((item, id) => {
+      _districts.forEach((unusedItem, id) => {
         var district = districtKit.clone(id)
         all.push(district)
       })

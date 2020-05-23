@@ -1,74 +1,59 @@
 export const getPlayerKit = function (_players = []) {
 
   const all = []
-
   const multiple = []
-
   const latencies = []
 
-  function createPlayer() {
-
-    const playerPrototype = {
-      id: undefined,
+  const createPlayer = () => {
+    const input = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      accelerate: false,
+      decelerate: false,
+      action: false
+    }
+    const defaultPlayer = {
+      id: null,
       status: 'on',
-      socketId: undefined,
+      socketId: null,
       character: null,
       predictionBuffer: [],
       latencyBuffer: [],
-      input: {
-        up: false,
-        down: false,
-        left: false,
-        right: false,
-        accelerate: false,
-        decelerate: false,
-        action: false
-      }
+      input
     }
+    return Object
+      .entries(defaultPlayer)
+      .reduce(appendAttribute, {})
+  }
 
-    var player = {...playerPrototype}
-
-    for (var property in playerPrototype) {
-      var value = playerPrototype[property]
-      if (Array.isArray(value)) player[property] = [...value]
-      else if (typeof value === 'object' && value !== null) {
-        for (var nestedProperty in value) {
-          var nestedValue = value[nestedProperty]
-          if (typeof nestedValue !== 'object' || nestedValue === null) {
-            player[property][nestedProperty] = nestedValue
-          }
-          else player[property][nestedProperty] = null
-        }
-      }
-    }
-
+  const appendAttribute = (player, [key, value]) => {
+    player[key] =
+      Array.isArray(value) ? [...value]
+      : value && value === 'object' ? {...value}
+      : value
     return player
   }
 
   const playerKit = {
 
     create: socketId => {
-
-      var player = createPlayer()
-      var playerClone = createPlayer()
-
+      const player = createPlayer()
+      const playerClone = createPlayer()
       player.socketId = socketId
-
       player.id = _players.length
       _players.push(player)
-
-      const id = player.id
+      const {id} = player
       playerKit[id] = playerClone
       playerKit.clone(id)
       playerKit.refreshLength()
-
       return id
     },
 
     clone: id => {
       const playerClone = playerKit[id]
       const player = _players[id]
-
       for (var property in player) {
         var value = player[property]
         if (typeof value !== 'object' || value === null) {
@@ -87,7 +72,6 @@ export const getPlayerKit = function (_players = []) {
           }
         }
       }
-
       playerKit[id] = playerClone
       return playerClone
     },
@@ -111,7 +95,7 @@ export const getPlayerKit = function (_players = []) {
 
     cloneAll: () => {
       all.length = 0
-      _players.forEach((item, id) => {
+      _players.forEach((unusedItem, id) => {
         var player = playerKit.clone(id)
         all.push(player)
       })
@@ -139,27 +123,28 @@ export const getPlayerKit = function (_players = []) {
     },
 
     updateLatencyBuffer: (latency, id) => {
-      var latencyBuffer = _players[id].latencyBuffer
+      const latencyBuffer = _players[id].latencyBuffer
       latencyBuffer.push(latency)
-      if (latencyBuffer.length > 20) latencyBuffer.shift()
+      latencyBuffer.length > 20 && latencyBuffer.shift()
     },
 
     getLatencies: () => {
       latencies.length = 0
       _players.forEach(player => {
-        if (player.status === 'on') {
-          latencies.push(player.character)
-          latencies.push(playerKit.getLatency(player.id))
-        }
+        const {status, character, id} = player
+        if (status !== 'on') return
+        latencies.push(character)
+        latencies.push(playerKit.getLatency(id))
       })
       return latencies
     },
 
     getLatency: id => {
-      var player = _players[id]
-      var latencyBuffer = player.latencyBuffer
-      var total = latencyBuffer.reduce((total, latency) => total + latency, 0)
-      return total / latencyBuffer.length
+      const player = _players[id]
+      const {latencyBuffer} = player
+      const {length} = latencyBuffer
+      const total = latencyBuffer.reduce((total, latency) => total + latency, 0)
+      return total / length
     }
   }
 

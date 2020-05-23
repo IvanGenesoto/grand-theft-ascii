@@ -22,27 +22,27 @@ const state = {
   playerKit: getPlayerKit()
 }
 
-function createMayor() {
+const createMayor = function () {
   const {playerKit, entityKit, districtKit} = this
   const playerId = playerKit.create()
   const characterId = entityKit.create('character')
-  const districtId = districtKit.create()
+  const districtId = districtKit.create(true)
   playerKit.assignCharacter(playerId, characterId)
   entityKit.assignPlayer(characterId, playerId)
   entityKit.assignDistrict(characterId, districtId)
   return this
 }
 
-function initiateDistrict(characterCount, vehicleCount) {
+const initiateDistrict = function (characterCount, vehicleCount) {
   const {districtKit} = this
   const populateWithThis = populate.bind(this)
-  var districtId = districtKit.create('neon')
+  const districtId = districtKit.create()
   populateWithThis('character', characterCount, districtId)
   populateWithThis('vehicle', vehicleCount, districtId)
   return this
 }
 
-function populate(entityType, count, districtId) {
+const populate = function (entityType, count, districtId) {
   const {entityKit, districtKit} = this
   while (count) {
     const entityId = entityKit.create(entityType, districtId)
@@ -53,7 +53,7 @@ function populate(entityType, count, districtId) {
   return this
 }
 
-function handleConnection(socket) {
+const handleConnection = function (socket) {
   const {connectionQueue, latencyQueue, inputQueue} = this
   const wrappedPlayerId = {}
   connectionQueue.push({socket, wrappedPlayerId})
@@ -66,7 +66,7 @@ function handleConnection(socket) {
   return this
 }
 
-function refresh() {
+const refresh = function () {
   const {playerKit, entityKit, districtKit} = this
   this.refreshStartTime = now()
   this.tick += 1
@@ -131,7 +131,7 @@ function collideVehicles({vehiclesA, vehiclesB}) { // eslint-disable-line no-unu
 function makeCharactersInteract({charactersA, charactersB}) { // eslint-disable-line no-unused-vars
 }
 
-function updateActive(allPlayers) {
+const updateActive = function (allPlayers) {
   const {entityKit} = this
   allPlayers.forEach(player => {
     const {id: playerId, input, character} = player
@@ -143,7 +143,7 @@ function updateActive(allPlayers) {
   return this
 }
 
-function walkOrDrive(playerCharacters, allPlayers) {
+const walkOrDrive = function (playerCharacters, allPlayers) {
   const {entityKit} = this
   playerCharacters.forEach(character => {
     const {player, driving, passenging, id} = character
@@ -154,7 +154,7 @@ function walkOrDrive(playerCharacters, allPlayers) {
   return this
 }
 
-function setDelay() { // #refactor
+const setDelay = function () { // #refactor
   const refreshWithState = refresh.bind(this)
   if (!this.setDelay) this.setDelay = {}
   var _ = this.setDelay
@@ -207,7 +207,7 @@ function setDelay() { // #refactor
   return this
 }
 
-function runQueues() {
+const runQueues = function () {
   const {playerKit, connectionQueue, latencyQueue, inputQueue} = this
   const {updateLatencyBuffer, updateInput} = playerKit
   const initiateDistrictWithThis = initiatePlayer.bind(this)
@@ -225,7 +225,7 @@ function runQueues() {
   inputQueue.length = 0
 }
 
-function initiatePlayer({socket, wrappedPlayerId}) {
+const initiatePlayer = function ({socket, wrappedPlayerId}) {
   const {playerKit, districtKit, entityKit} = this
   const {id: socketId} = socket
   const playerId = wrappedPlayerId.playerId = playerKit.create(socketId)
@@ -251,7 +251,7 @@ function initiatePlayer({socket, wrappedPlayerId}) {
   return this
 }
 
-function getVehicleX(characterX) {
+const getVehicleX = function (characterX) {
   const distance = Math.random() * (1000 - 200) + 200
   const sides = ['left', 'right']
   const random = Math.random()
