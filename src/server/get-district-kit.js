@@ -1,26 +1,7 @@
 export const getDistrictKit = function (_districts = []) {
 
   const all = []
-
   const multiple = []
-
-  const matches = {
-    characters: [],
-    vehicles: [],
-    checkedWalkers: [],
-    matchesForCharacter: []
-  }
-
-  const detected = {
-    collisions: {
-      vehiclesA: [],
-      vehiclesB: []
-    },
-    interactions: {
-      charactersA: [],
-      charactersB: []
-    }
-  }
 
   let elementId = 0
   let layerY = 0
@@ -858,28 +839,21 @@ export const getDistrictKit = function (_districts = []) {
       })
     },
 
-    checkVehicleKeyMatches: (walkers) => {
-      var {characters, vehicles, matchesForCharacter, checkedWalkers} = matches
-      characters.length = 0
-      vehicles.length = 0
-      checkedWalkers.length = 0
-      matchesForCharacter.length = 0
-
+    checkVehicleKeyMatches: walkers => {
+      const characters = []
+      const vehicles = []
       walkers.forEach(character => {
-        matchesForCharacter.length = 0
-        var {district, vehicleKeys, id} = character
-        var vehiclesInCharacterDistrict = _districts[district].vehicles
+        const {district, vehicleKeys, id: characterId} = character
+        const vehiclesInCharacterDistrict = _districts[district].vehicles
         vehicleKeys.forEach(key => {
-          var vehicleId = vehiclesInCharacterDistrict.find(vehicle => vehicle === key)
+          const vehicleId = vehiclesInCharacterDistrict.find(vehicle => vehicle === key)
           if (vehicleId) {
-            characters.push(id)
+            characters.push(characterId)
             vehicles.push(vehicleId)
-            matchesForCharacter.push(id)
           }
         })
-        if (!matchesForCharacter.length) checkedWalkers.push(id)
       })
-      return matches
+      return {characters, vehicles}
     },
 
     addToGrid: (entities) => {
@@ -892,28 +866,30 @@ export const getDistrictKit = function (_districts = []) {
         var rowBottom = getGridIndex(yBottom)
         var sectionLeft = getGridIndex(x)
         var sectionRight = getGridIndex(xRight)
-        grid[rowTop][sectionLeft].a.push(id)
+        const row = grid[rowTop]
+        const section = row && row[sectionLeft]
+        section && section.a.push(id)
         if (sectionLeft !== sectionRight) {
-          grid[rowTop][sectionRight].a.push(id)
+          const section = row && row[sectionRight]
+          section && section.a.push(id)
         }
         if (rowTop !== rowBottom) {
-          grid[rowBottom][sectionLeft].a.push(id)
+          const row = grid[rowBottom]
+          const section = row && row[sectionLeft]
+          section && section.a.push(id)
           if (sectionLeft !== sectionRight) {
-            grid[rowBottom][sectionRight].a.push(id)
+            const section = row && row[sectionRight]
+            section && section.a.push(id)
           }
         }
       })
     },
 
     detectCollisions: entities => {
-      var {collisions, interactions} = detected
+      const collisions = {vehiclesA: [], vehiclesB: []}
+      const interactions = {charactersA: [], charactersB: []}
       const {vehiclesA, vehiclesB} = collisions
       const {charactersA, charactersB} = interactions
-      vehiclesA.length = 0
-      vehiclesB.length = 0
-      charactersA.length = 0
-      charactersB.length = 0
-
       _districts.forEach(district => {
         var grid = district.grid
         for (var rowId in grid) {
@@ -922,17 +898,14 @@ export const getDistrictKit = function (_districts = []) {
             var section = row[sectionId]
             var cityElementsToCompare = section.a
             var comparedCityElements = section.b
-
             comparedCityElements.length = 0
             while (cityElementsToCompare.length) {
               var cityElementToCompareId = cityElementsToCompare.shift()
               var cityElementToCompare = entities[cityElementToCompareId]
               if (cityElementToCompare) var {x, y, width, height, type} = cityElementToCompare
-
               comparedCityElements.forEach(comparedCityElementId => {
                 var comparedCityElement = entities[comparedCityElementId]
                 var {x: x_, y: y_, width: width_, height: height_, type: type_} = comparedCityElement
-
                 if (
                   type === type_ &&
                   x < x_ + width_ &&
@@ -940,7 +913,6 @@ export const getDistrictKit = function (_districts = []) {
                   y < y_ + height_ &&
                   y + height > y_
                 ) {
-
                   if (type === 'vehicle') {
                     vehiclesA.push(cityElementToCompare)
                     vehiclesB.push(comparedCityElement)
@@ -956,7 +928,7 @@ export const getDistrictKit = function (_districts = []) {
           }
         }
       })
-      return detected
+      return {collisions, interactions}
     }
   }
 
