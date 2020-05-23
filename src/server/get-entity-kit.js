@@ -6,18 +6,6 @@ export const getEntityKit = function (_entities = []) {
 
   const multiple = []
 
-  const checked = {
-    charactersToEnter: [],
-    vehiclesToBeEntered: [],
-    nonEntereringWalkers: []
-  }
-
-  const putted = {
-    charactersPutInVehicles: [],
-    vehiclesCharactersWerePutIn: [],
-    strandedWalkers: []
-  }
-
   function createCityElement(type) {
 
     const characterPrototype = {
@@ -271,19 +259,15 @@ export const getEntityKit = function (_entities = []) {
     },
 
     checkForVehicleEntries: (characters, vehicles) => {
-      var {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = checked
-
-      charactersToEnter.length = 0
-      vehiclesToBeEntered.length = 0
-      nonEntereringWalkers.length = 0
-
+      const charactersToEnter = []
+      const vehiclesToBeEntered = []
+      const nonEntereringWalkers = []
       vehicles.forEach((vehicleId, index) => {
         var vehicle = _entities[vehicleId]
         var characterId = characters[index]
         var character = _entities[characterId]
         if (vehicle.driver) var driver = 1
         else driver = 0
-
         if (
           driver + vehicle.passengers.length < vehicle.seats &&
           character.x < vehicle.x + vehicle.width &&
@@ -291,29 +275,25 @@ export const getEntityKit = function (_entities = []) {
           character.y < vehicle.y + vehicle.height &&
           character.y + character.height > vehicle.y
         ) {
-
           charactersToEnter.push(characterId)
-          checked.vehiclesToBeEntered.push(vehicleId)
+          vehiclesToBeEntered.push(vehicleId)
         }
-        else checked.nonEntereringWalkers.push(character.id)
+        else nonEntereringWalkers.push(character.id)
       })
-      return checked
+      return {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers}
     },
 
     putCharactersInVehicles: (characterIds, vehicleIds) => {
-      var {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = putted
-      charactersPutInVehicles.length = 0
-      vehiclesCharactersWerePutIn.length = 0
-      strandedWalkers.length = 0
+      const charactersPutInVehicles = []
+      const vehiclesCharactersWerePutIn = []
+      const strandedWalkers = []
       characterIds.forEach((characterId, index) => {
-
         var character = _entities[characterId]
         var vehicleId = vehicleIds[index]
         var vehicle = _entities[vehicleId]
         var {driver, passengers, seats} = vehicle
         if (driver) {
           driver = 1
-
           if (driver + passengers.length < seats) {
             character.passenging = vehicleId
             character.active = 0
@@ -329,14 +309,14 @@ export const getEntityKit = function (_entities = []) {
           vehicle.driver = characterId
         }
       })
-      return putted
+      return {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers}
     },
 
-    active: function(characterId) {
+    active: function (characterId) {
       _entities[characterId].active += 1
     },
 
-    inactive: function(characterId) {
+    inactive: function (characterId) {
       _entities[characterId].active = 0
     },
 

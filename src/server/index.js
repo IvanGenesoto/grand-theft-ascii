@@ -68,32 +68,25 @@ const handleConnection = function (socket) {
 
 const refresh = function () {
   const {playerKit, entityKit, districtKit} = this
+  const activeKit = {walkers: [], drivers: [], passengers: []}
   this.refreshStartTime = now()
   this.tick += 1
   const {tick} = this
   runQueues.call(this)
   const playerCharacterIds = playerKit.getPlayerCharacterIds()
   const playerCharacters = entityKit.cloneMultiple(playerCharacterIds)
-  const activatedsByType = playerCharacters.reduce(pushIfActive, {})
-  const {walkers, drivers, passengers} = activatedsByType
+  const {walkers, drivers, passengers} = playerCharacters.reduce(pushIfActive, activeKit)
   const walkerClones = entityKit.cloneMultiple(walkers)
-  if (walkerClones.length) var matches = districtKit.checkVehicleKeyMatches(walkerClones)
-  if (matches) var {characters, vehicles} = matches
-  if (characters && characters.length) {
-    var checked = entityKit.checkForVehicleEntries(characters, vehicles)
-  }
-  if (checked) var {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = checked
-  if (charactersToEnter && charactersToEnter.length) {
-    var putted = entityKit.putCharactersInVehicles(charactersToEnter, vehiclesToBeEntered)
-  }
-  if (putted) var {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = putted
-  const driverClones = entityKit.cloneMultiple(drivers)
-  if (passengers && passengers.length) entityKit.exitVehicles(passengers)
-  if (driverClones && driverClones.length) entityKit.exitVehicles(drivers)
-  const collection = entityKit.cloneMultiple(drivers, nonEntereringWalkers, strandedWalkers)
-  districtKit.addToGrid(collection)
-  const detected = districtKit.detectCollisions(collection)
-  if (detected) var {collisions, interactions} = detected
+  const {characters, vehicles} = districtKit.checkVehicleKeyMatches(walkerClones)
+  const vehicleEntryKit = entityKit.checkForVehicleEntries(characters, vehicles)
+  const {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = vehicleEntryKit
+  const puttedKit = entityKit.putCharactersInVehicles(charactersToEnter, vehiclesToBeEntered)
+  const {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = puttedKit
+  entityKit.exitVehicles(passengers)
+  entityKit.exitVehicles(drivers)
+  const characters_ = entityKit.cloneMultiple(drivers, nonEntereringWalkers, strandedWalkers)
+  districtKit.addToGrid(characters_)
+  const {collisions, interactions} = districtKit.detectCollisions(characters_)
   if (collisions && collisions.length) var collidedVehicles = collideVehicles(collisions)
   if (interactions && interactions.length) var interacted = makeCharactersInteract(interactions)
   entityKit.cloneMultiple(
@@ -116,13 +109,13 @@ const refresh = function () {
   return this
 }
 
-const pushIfActive = (activatedsByType, character) => {
-  const {walkers = [], drivers = [], passengers = []} = activatedsByType
+const pushIfActive = (activeKit, character) => {
+  const {walkers, drivers, passengers} = activeKit
   const {active, driving, passenging, id: characterId} = character
   if (active >= 30 && driving) (character.active = 0) || drivers.push(characterId)
   else if (active >= 30 && passenging) (character.active = 0) || passengers.push(characterId)
   else if (active >= 30) (character.active = 0) || walkers.push(characterId)
-  return {walkers, drivers, passengers, character}
+  return activeKit
 }
 
 function collideVehicles({vehiclesA, vehiclesB}) { // eslint-disable-line no-unused-vars

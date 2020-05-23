@@ -7,12 +7,25 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Launch Program",
+      "name": "Debug",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "preLaunchTask": "npm: prestart",
+      "program": "${workspaceFolder}/build/server/index.js",
+      "runtimeArgs": [
+          "-r", "esm"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch",
       "skipFiles": [
         "<node_internals>/**"
       ],
       "preLaunchTask": "npm: start",
-      "program": "${workspaceFolder}/src/server/index.js"
+      "program": "${workspaceFolder}/build/server/index.js"
     }
   ]
 }
