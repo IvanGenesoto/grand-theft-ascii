@@ -7,7 +7,7 @@ var camera = {
   room: 0,
   x: 0,
   y: 0,
-  element: 'canvas',
+  tag: 'canvas',
   elementId: '_0',
   width: 1920,
   height: 1080
@@ -33,22 +33,22 @@ function initiateDistrict(district) {
 
 function createElements(cityElement, loop) {
   for (var property in cityElement) {
-    if (property === 'element') {
-      var $element = document.createElement(cityElement.element)
-      $element.id = cityElement.elementId
-      document.body.appendChild($element)
+    if (property === 'tag') {
+      var $element_ = document.createElement(cityElement.tag)
+      $element_.id = cityElement.elementId
+      document.body.appendChild($element_)
       if (cityElement !== state.camera) {
-        $element.classList.add('hidden')
+        $element_.classList.add('hidden')
       }
       if (cityElement.width) {
-        $element.width = cityElement.width
-        $element.height = cityElement.height
+        $element_.width = cityElement.width
+        $element_.height = cityElement.height
       }
       if (cityElement.src) {
         if (!state.imagesTotal) state.imagesTotal = 0
         state.imagesTotal += 1
-        $element.src = cityElement.src
-        $element.onload = () => {
+        $element_.src = cityElement.src
+        $element_.onload = () => {
           if (!state.imagesLoaded) state.imagesLoaded = 0
           state.imagesLoaded += 1
         }
