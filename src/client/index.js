@@ -1,19 +1,62 @@
 import socketIo from 'socket.io-client'
 
-var socket = socketIo()
+const socket = socketIo()
 
-var camera = {
+const camera = {
   following: 0,
   room: 0,
   x: 0,
   y: 0,
   tag: 'canvas',
-  elementId: '_0',
-  width: 1920,
-  height: 1080
+  elementId: 'c0',
+  maxWidth: 1280,
+  maxHeight: 720,
+  style: {}
 }
 
-var state = {player: {}, camera}
+const state = {camera, player: {}}
+const $game = document.getElementById('game')
+
+const adjustCameraSize = function ($camera_) {
+  const {camera} = this
+  const {style: style_, maxWidth, maxHeight} = camera
+  const horizontalMargin = (innerWidth - maxWidth) / 2 + 'px'
+  const verticalMargin = (innerHeight - maxHeight) / 2 + 'px'
+  const $camera = $camera_ || document.getElementById(state.camera.elementId)
+  const {style} = $camera || {}
+  if (innerWidth < maxWidth) {
+    camera.width = innerWidth
+    style_.marginLeft = 0
+    style_.marginRight = 0
+    $camera && ($camera.width = innerWidth)
+    $camera && (style.marginLeft = 0)
+    $camera && (style.marginRight = 0)
+  }
+  if (innerHeight < maxHeight) {
+    camera.height = innerHeight
+    style_.marginTop = 0
+    style_.marginBottom = 0
+    $camera && ($camera.height = innerHeight)
+    $camera && (style.marginTop = 0)
+    $camera && (style.marginBottom = 0)
+  }
+  if (innerWidth > maxWidth) {
+    camera.width = maxWidth
+    style_.marginLeft = horizontalMargin
+    style_.marginRight = horizontalMargin
+    $camera && ($camera.width = maxWidth)
+    $camera && (style.marginLeft = horizontalMargin)
+    $camera && (style.marginRight = horizontalMargin)
+  }
+  if (innerHeight > maxHeight) {
+    camera.height = maxHeight
+    style_.marginTop = verticalMargin
+    style_.marginBottom = verticalMargin
+    $camera && ($camera.height = maxHeight)
+    $camera && (style.marginTop = verticalMargin)
+    $camera && (style.marginBottom = verticalMargin)
+  }
+}
 
 function initiateDistrict(district) {
   if (district) {
@@ -31,24 +74,26 @@ function initiateDistrict(district) {
   }
 }
 
-function createElements(cityElement, loop) {
-  for (var property in cityElement) {
+function createElements(entity, loop) {
+  const {elementId} = entity
+  for (var property in entity) {
     if (property === 'tag') {
-      var $element_ = document.createElement(cityElement.tag)
-      $element_.id = cityElement.elementId
-      document.body.appendChild($element_)
-      if (cityElement !== state.camera) {
-        $element_.classList.add('hidden')
+      var $element = document.createElement(entity.tag)
+      $element.id = elementId
+      elementId === 'c0' && adjustCameraSize.call(state, $element)
+      $game.appendChild($element)
+      if (entity !== state.camera) {
+        $element.classList.add('hidden')
       }
-      if (cityElement.width) {
-        $element_.width = cityElement.width
-        $element_.height = cityElement.height
+      if (entity.width) {
+        $element.width = entity.width
+        $element.height = entity.height
       }
-      if (cityElement.src) {
+      if (entity.src) {
         if (!state.imagesTotal) state.imagesTotal = 0
         state.imagesTotal += 1
-        $element_.src = cityElement.src
-        $element_.onload = () => {
+        $element.src = entity.src
+        $element.onload = () => {
           if (!state.imagesLoaded) state.imagesLoaded = 0
           state.imagesLoaded += 1
         }
@@ -56,11 +101,11 @@ function createElements(cityElement, loop) {
     }
     else if (
          loop
-      && typeof cityElement[property] !== 'string'
-      && typeof cityElement[property] !== 'number'
-      && typeof cityElement[property] !== 'boolean'
+      && typeof entity[property] !== 'string'
+      && typeof entity[property] !== 'number'
+      && typeof entity[property] !== 'boolean'
     ) {
-      var nestedObject = cityElement[property]
+      var nestedObject = entity[property]
       createElements(nestedObject, 'loop')
     }
   }
@@ -145,7 +190,7 @@ function refresh(first) {
   updatePlayerCharacterBehavior(input)
   updatePlayerCharacterLocation()
   updateCamera()
-  clearCanvas()
+  // clearCanvas()
   render(first)
   setDelay()
 }
@@ -168,17 +213,17 @@ function getInterpolationRatio() {
 function interpolateDistrict(ratio) {
   var a = state.cityElementsBuffer[0]
   var b = state.cityElementsBuffer[1]
-  state.entities.forEach(cityElement => {
+  state.entities.forEach(entity => {
     if (
-         cityElement.district === state.district.id
-      && cityElement.type !== 'room'
-      && cityElement.id !== state.player.character
+         entity.district === state.district.id
+      && entity.type !== 'room'
+      && entity.id !== state.player.character
     ) {
-      var id = cityElement.id
+      var id = entity.id
       var properties = ['x', 'y']
       properties.forEach(property => {
         var difference = b[id][property] - a[id][property]
-        cityElement[property] = a[id][property] + difference * ratio
+        entity[property] = a[id][property] + difference * ratio
       })
     }
   })
@@ -269,24 +314,24 @@ function render(first) {
     $camera.classList.add('hidden')
   }
   renderScenery('backgroundLayers')
-  renderCityElements('characters')
-  renderCityElements('vehicles')
+  renderEntities('characters')
+  renderEntities('vehicles')
   renderScenery('foregroundLayers')
   if (first) setTimeout(() => $camera.classList.remove('hidden'), 1250)
 }
 
 function updateCamera() {
   if (state.camera.following) {
-    var cityElementId = state.camera.following
+    var entityId = state.camera.following
     if (
-         state.district.characters.find(item => item === cityElementId)
-      || state.district.vehicles.find(item => item === cityElementId)
-      || state.district.rooms.find(item => item === cityElementId)
+         state.district.characters.find(item => item === entityId)
+      || state.district.vehicles.find(item => item === entityId)
+      || state.district.rooms.find(item => item === entityId)
     ) {
-      var cityElement = state.entities[cityElementId]
-      if (cityElement.driving) cityElement = state.entities[cityElement.driving]
-      state.camera.x = Math.round(cityElement.x - state.camera.width / 2)
-      state.camera.y = Math.round(cityElement.y - state.camera.height / 2)
+      var entity = state.entities[entityId]
+      if (entity.driving) entity = state.entities[entity.driving]
+      state.camera.x = Math.round(entity.x - state.camera.width / 2)
+      state.camera.y = Math.round(entity.y - state.camera.height / 2)
       var cameraMaxX = state.district.width - state.camera.width
       var cameraMaxY = state.district.height - state.camera.height
       if (state.camera.x < 0) state.camera.x = 0
@@ -297,24 +342,24 @@ function updateCamera() {
   }
 }
 
-function clearCanvas() {
-  var $camera = document.getElementById(state.camera.elementId)
-  var context = $camera.getContext('2d')
-  context.clearRect(0, 0, state.camera.width, state.camera.height)
-}
+// function clearCanvas() {
+//   var $camera = document.getElementById(state.camera.elementId)
+//   var context = $camera.getContext('2d')
+//   context.clearRect(0, 0, state.camera.width, state.camera.height)
+// }
 
 function renderScenery(type) {
   var layers = state.district.scenery[type]
   for (var layerId in layers) {
     var layer = layers[layerId]
-    var cityElementId = state.camera.following
-    var cityElement = state.entities[cityElementId]
+    var entityId = state.camera.following
+    var entity = state.entities[entityId]
     var $layer = document.getElementById(layer.elementId)
     var $camera = document.getElementById(state.camera.elementId)
     var context = $camera.getContext('2d')
     if (layer.x) var layerX = layer.x
     else layerX = 0
-    var cameraX = Math.round(cityElement.x / layer.depth - state.camera.width / 2 / layer.depth - layerX)
+    var cameraX = Math.round(entity.x / layer.depth - state.camera.width / 2 / layer.depth - layerX)
     var cameraMaxX = Math.round(state.district.width / layer.depth - state.camera.width / layer.depth - layerX)
     if (cameraX > cameraMaxX) cameraX = cameraMaxX
     if (!layer.x && cameraX < 0) cameraX = 0
@@ -323,25 +368,25 @@ function renderScenery(type) {
   }
 }
 
-function renderCityElements(cityElementType) {
-  state.district[cityElementType].forEach(cityElementId => {
-    var cityElement = state.entities[cityElementId]
-    var {driving, passenging, occupying} = cityElement
+function renderEntities(entityType) {
+  const {camera} = state
+  state.district[entityType].forEach(entityId => {
+    const entity = state.entities[entityId]
+    const {driving, passenging, occupying} = entity
     if (!(driving || passenging || occupying)) {
-      var xInCamera = cityElement.x - state.camera.x
-      var yInCamera = cityElement.y - state.camera.y
+      let xInCamera = entity.x - camera.x
+      let yInCamera = entity.y - camera.y
       if (!(
-           xInCamera > state.camera.width + cityElement.width
-        || xInCamera < 0 - cityElement.width
-        || yInCamera > state.camera.height + cityElement.height
-        || yInCamera < 0 - cityElement.height
+           xInCamera > camera.width
+        || xInCamera < 0 - entity.width
+        || yInCamera > camera.height
+        || yInCamera < 0 - entity.height
       )) {
-
-        var $cityElement = document.getElementById(cityElement.elementId)
-        var $camera = document.getElementById(state.camera.elementId)
-        var context = $camera.getContext('2d')
-        if (cityElement.direction) {
-          var {direction, previousDirection} = cityElement
+        const $entity = document.getElementById(entity.elementId)
+        const $camera = document.getElementById(camera.elementId)
+        const context = $camera.getContext('2d')
+        if (entity.direction) {
+          const {direction, previousDirection} = entity
           if (
                direction === 'left'
             || direction === 'up-left'
@@ -354,13 +399,12 @@ function renderCityElements(cityElementType) {
             || (direction === 'down' && previousDirection === 'down-left')
           ) {
             context.scale(-1, 1)
-            xInCamera = -cityElement.x + state.camera.x - cityElement.width / 2
+            xInCamera = -entity.x + camera.x - entity.width / 2
           }
         }
-
         xInCamera = Math.round(xInCamera)
         yInCamera = Math.round(yInCamera)
-        context.drawImage($cityElement, xInCamera, yInCamera)
+        context.drawImage($entity, xInCamera, yInCamera)
         context.setTransform(1, 0, 0, 1, 0, 0)
       }
     }
@@ -449,15 +493,7 @@ function control(key, action) {
   }
 }
 
-window.addEventListener('resize', () => {
-  if (document.getElementById(state.camera.elementId)) {
-    var $camera = document.getElementById(state.camera.elementId)
-    state.camera.width = innerWidth
-    state.camera.height = innerHeight
-    $camera.width = innerWidth
-    $camera.height = innerHeight
-  }
-}, false)
+window.addEventListener('resize', adjustCameraSize.bind(state, null), false)
 
 window.addEventListener('keydown', event => {
   control(event.key, 'down')
@@ -481,12 +517,12 @@ socket.on('player', player => {
   state.camera.following = state.player.character
 })
 
-socket.on('cityElement', cityElement => {
+socket.on('entity', entity => {
   if (state.district) {
-    var match = state.district[cityElement.type + 's'].find(id => id === cityElement.id)
+    var match = state.district[entity.type + 's'].find(id => id === entity.id)
     if (!match) {
-      state.district[cityElement.type + 's'].push(cityElement.id)
-      createElements(cityElement)
+      state.district[entity.type + 's'].push(entity.id)
+      createElements(entity)
     }
   }
 })
@@ -495,10 +531,9 @@ socket.on('entities', entities => {
   var timestamp = entities[0].timestamp
   entities[0].timestamp = performance.now()
   socket.emit('timestamp', timestamp)
-  if (!state.entities) entities.forEach(cityElement => createElements(cityElement))
+  if (!state.entities) entities.forEach(entity => createElements(entity))
   state.cityElementsBuffer.push(entities)
 })
 
-state.camera.width = innerWidth
-state.camera.height = innerHeight
+adjustCameraSize.call(state)
 createElements(state.camera)
