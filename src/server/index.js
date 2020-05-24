@@ -49,10 +49,9 @@ const createMayor = function () {
 
 const initiateDistrict = function (characterCount, vehicleCount) {
   const {districtKit} = this
-  const populateWithThis = populate.bind(this)
   const districtId = districtKit.create()
-  populateWithThis('character', characterCount, districtId)
-  populateWithThis('vehicle', vehicleCount, districtId)
+  populate.call(this, 'character', characterCount, districtId)
+  populate.call(this, 'vehicle', vehicleCount, districtId)
   return this
 }
 
@@ -68,15 +67,25 @@ const populate = function (entityType, count, districtId) {
 }
 
 const handleConnection = function (socket) {
-  const {connectionQueue, latencyQueue, inputQueue} = this
+  const {connectionQueue} = this
   const wrappedPlayerId = {}
   connectionQueue.push({socket, wrappedPlayerId})
-  socket.on('timestamp', timestamp => {
-    const newTimestamp = now()
-    const latency = newTimestamp - timestamp
-    latencyQueue.push({latency, wrappedPlayerId})
-  })
-  socket.on('input', input => inputQueue.push({input, wrappedPlayerId}))
+  socket.on('timestamp', handleTimestamp.bind({...this, wrappedPlayerId}))
+  socket.on('input', handleInput.bind({...this, wrappedPlayerId}))
+  return this
+}
+
+const handleTimestamp = function (timestamp) {
+  const {latencyQueue, wrappedPlayerId} = this
+  const newTimestamp = now()
+  const latency = newTimestamp - timestamp
+  latencyQueue.push({latency, wrappedPlayerId})
+  return this
+}
+
+const handleInput = function (input) {
+  const {inputQueue, wrappedPlayerId} = this
+  inputQueue.push({input, wrappedPlayerId})
   return this
 }
 
@@ -114,12 +123,11 @@ const refresh = function () {
   walkOrDrive.call(this, playerCharacters_, allPlayers)
   const allDistricts = districtKit.cloneAll()
   entityKit.updateLocations(allDistricts)
-  const setDelayWithThis = setDelay.bind(this)
-  if (tick % 3) return setDelayWithThis() && this
+  if (tick % 3) return setDelay.call(this) && this
   const latencies = playerKit.getLatencies()
   entityKit.updateLatencies(latencies)
   entityKit.emit(io)
-  setDelayWithThis()
+  setDelay.call(this)
   return this
 }
 
@@ -217,19 +225,13 @@ const setDelay = function () { // #refactor
 const runQueues = function () {
   const {playerKit, connectionQueue, latencyQueue, inputQueue} = this
   const {updateLatencyBuffer, updateInput} = playerKit
-  const initiatePlayerWithThis = initiatePlayer.bind(this)
-  connectionQueue.forEach(initiatePlayerWithThis)
-  latencyQueue.forEach(({latency, wrappedPlayerId}) => {
-    const {playerId} = wrappedPlayerId
-    updateLatencyBuffer(latency, playerId)
-  })
-  inputQueue.forEach(({input, wrappedPlayerId}) => {
-    const {playerId} = wrappedPlayerId
-    updateInput(input, playerId)
-  })
+  connectionQueue.forEach(initiatePlayer, this)
+  latencyQueue.forEach(updateLatencyBuffer)
+  inputQueue.forEach(updateInput)
   connectionQueue.length = 0
   latencyQueue.length = 0
   inputQueue.length = 0
+  return this
 }
 
 const initiatePlayer = function ({socket, wrappedPlayerId}) {

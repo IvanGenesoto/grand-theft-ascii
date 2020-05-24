@@ -55,10 +55,10 @@ function createElements(cityElement, loop) {
       }
     }
     else if (
-      loop &&
-      typeof cityElement[property] !== 'string' &&
-      typeof cityElement[property] !== 'number' &&
-      typeof cityElement[property] !== 'boolean'
+         loop
+      && typeof cityElement[property] !== 'string'
+      && typeof cityElement[property] !== 'number'
+      && typeof cityElement[property] !== 'boolean'
     ) {
       var nestedObject = cityElement[property]
       createElements(nestedObject, 'loop')
@@ -170,9 +170,9 @@ function interpolateDistrict(ratio) {
   var b = state.cityElementsBuffer[1]
   state.entities.forEach(cityElement => {
     if (
-      cityElement.district === state.district.id &&
-      cityElement.type !== 'room' &&
-      cityElement.id !== state.player.character
+         cityElement.district === state.district.id
+      && cityElement.type !== 'room'
+      && cityElement.id !== state.player.character
     ) {
       var id = cityElement.id
       var properties = ['x', 'y']
@@ -279,9 +279,9 @@ function updateCamera() {
   if (state.camera.following) {
     var cityElementId = state.camera.following
     if (
-      state.district.characters.find(item => item === cityElementId) ||
-      state.district.vehicles.find(item => item === cityElementId) ||
-      state.district.rooms.find(item => item === cityElementId)
+         state.district.characters.find(item => item === cityElementId)
+      || state.district.vehicles.find(item => item === cityElementId)
+      || state.district.rooms.find(item => item === cityElementId)
     ) {
       var cityElement = state.entities[cityElementId]
       if (cityElement.driving) cityElement = state.entities[cityElement.driving]
@@ -331,10 +331,10 @@ function renderCityElements(cityElementType) {
       var xInCamera = cityElement.x - state.camera.x
       var yInCamera = cityElement.y - state.camera.y
       if (!(
-        xInCamera > state.camera.width + cityElement.width ||
-        xInCamera < 0 - cityElement.width ||
-        yInCamera > state.camera.height + cityElement.height ||
-        yInCamera < 0 - cityElement.height
+           xInCamera > state.camera.width + cityElement.width
+        || xInCamera < 0 - cityElement.width
+        || yInCamera > state.camera.height + cityElement.height
+        || yInCamera < 0 - cityElement.height
       )) {
 
         var $cityElement = document.getElementById(cityElement.elementId)
@@ -343,15 +343,15 @@ function renderCityElements(cityElementType) {
         if (cityElement.direction) {
           var {direction, previousDirection} = cityElement
           if (
-            direction === 'left' ||
-            direction === 'up-left' ||
-            direction === 'down-left' ||
-            (direction === 'up' && previousDirection === 'left') ||
-            (direction === 'up' && previousDirection === 'up-left') ||
-            (direction === 'up' && previousDirection === 'down-left') ||
-            (direction === 'down' && previousDirection === 'left') ||
-            (direction === 'down' && previousDirection === 'up-left') ||
-            (direction === 'down' && previousDirection === 'down-left')
+               direction === 'left'
+            || direction === 'up-left'
+            || direction === 'down-left'
+            || (direction === 'up' && previousDirection === 'left')
+            || (direction === 'up' && previousDirection === 'up-left')
+            || (direction === 'up' && previousDirection === 'down-left')
+            || (direction === 'down' && previousDirection === 'left')
+            || (direction === 'down' && previousDirection === 'up-left')
+            || (direction === 'down' && previousDirection === 'down-left')
           ) {
             context.scale(-1, 1)
             xInCamera = -cityElement.x + state.camera.x - cityElement.width / 2

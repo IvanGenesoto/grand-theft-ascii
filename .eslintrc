@@ -14,8 +14,12 @@
     "object-curly-spacing": ["error", "never"],
     "indent": ["error", 2, {
       "SwitchCase": 1,
-      "flatTernaryExpressions": true
+      "flatTernaryExpressions": true,
+      "ignoredNodes": ["ConditionalExpression", "LogicalExpression"]
     }],
+    "operator-linebreak": ["error", "before", { "overrides": {
+      "=": "after", "+=": "after", "-=": "after"
+    }}],
     "quotes": [1, "single", {"avoidEscape": true, "allowTemplateLiterals": true}],
     "no-return-assign": "off",
     "no-unused-vars": ["error", {

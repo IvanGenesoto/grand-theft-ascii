@@ -14,7 +14,7 @@ export const getPlayerKit = function (_players = []) {
       decelerate: false,
       action: false
     }
-    const defaultPlayer = {
+    const prototype = {
       id: null,
       status: 'on',
       socketId: null,
@@ -24,13 +24,13 @@ export const getPlayerKit = function (_players = []) {
       input
     }
     return Object
-      .entries(defaultPlayer)
+      .entries(prototype)
       .reduce(appendAttribute, {})
   }
 
   const appendAttribute = (player, [key, value]) => {
     player[key] =
-      Array.isArray(value) ? [...value]
+        Array.isArray(value) ? [...value]
       : value && value === 'object' ? {...value}
       : value
     return player
@@ -117,12 +117,14 @@ export const getPlayerKit = function (_players = []) {
 
     emit: (playerId, socket) => socket.emit('player', _players[playerId]),
 
-    updateInput: (input, playerId) => {
-      const player = _players[playerId]
+    updateInput: ({input, wrappedPlayerId}) => {
+      const {playerId: id} = wrappedPlayerId
+      const player = _players[id]
       player && (player.input = input)
     },
 
-    updateLatencyBuffer: (latency, id) => {
+    updateLatencyBuffer: ({latency, wrappedPlayerId}) => {
+      const {playerId: id} = wrappedPlayerId
       const latencyBuffer = _players[id].latencyBuffer
       latencyBuffer.push(latency)
       latencyBuffer.length > 20 && latencyBuffer.shift()

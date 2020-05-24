@@ -5,8 +5,7 @@ export const getEntityKit = function (_entities = []) {
   const all = []
   const multiple = []
 
-  function createCityElement(type) {
-
+  function createEntity(type) {
     const characterPrototype = {
       id: undefined,
       type: 'character',
@@ -36,7 +35,6 @@ export const getEntityKit = function (_entities = []) {
       elementId: undefined,
       src: 'images/characters/man.png'
     }
-
     const vehiclePrototype = {
       id: undefined,
       type: 'vehicle',
@@ -59,15 +57,14 @@ export const getEntityKit = function (_entities = []) {
       maxSpeed: 80,
       slowing: false,
       falling: false,
-      acceleration: 4,
-      deceleration: 10,
+      acceleration: 0.04,
+      deceleration: 0.10,
       armor: undefined,
       weight: 0,
       tag: 'img',
       elementId: undefined,
       src: 'images/vehicles/delorean.png'
     }
-
     const roomPrototype = {
       id: undefined,
       type: 'room',
@@ -92,116 +89,149 @@ export const getEntityKit = function (_entities = []) {
         foreground: undefined
       }
     }
+    const prototype =
+      type === 'character' ? characterPrototype
+      : type === 'vehicle' ? vehiclePrototype
+      : roomPrototype
+    return Object
+      .entries(prototype)
+      .reduce(appendAttribute, {})
+  }
 
-    switch (type) {
-      case 'character': var cityElementPrototype = characterPrototype; break
-      case 'vehicle': cityElementPrototype = vehiclePrototype; break
-      case 'room': cityElementPrototype = roomPrototype; break
-      default:
+  const appendAttribute = (district, [key, value]) => {
+    district[key] =
+        Array.isArray(value) ? [...value]
+      : value && value === 'object' ? {...value}
+      : value
+    return district
+  }
+
+  const pushIfVehicleEntry = function (entryKit, vehicleId, index) {
+    const {characters} = this
+    const {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = entryKit
+    const characterId = characters[index]
+    const character = _entities[characterId]
+    const vehicle = _entities[vehicleId]
+    const {driver} = vehicle
+    const driverCount = driver ? 1 : 0
+    const isEntry =
+         driverCount + vehicle.passengers.length < vehicle.seats
+      && character.x < vehicle.x + vehicle.width
+      && character.x + character.width > vehicle.x
+      && character.y < vehicle.y + vehicle.height
+      && character.y + character.height > vehicle.y
+    if (!isEntry) return nonEntereringWalkers.push(character.id) && entryKit
+    charactersToEnter.push(characterId)
+    vehiclesToBeEntered.push(vehicleId)
+    return entryKit
+  }
+
+  const pushIfCanBePut = function (puttedKit, characterId, index) {
+    const {vehicleIds} = this
+    const {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = puttedKit
+    const vehicleId = vehicleIds[index]
+    const vehicle = _entities[vehicleId]
+    const character = _entities[characterId]
+    const {driver, passengers, seats} = vehicle
+    const {length: passengerCount} = passengers
+    driver && passengerCount + 1 >= seats && strandedWalkers.push(characterId)
+    if (driver) {
+      character.passenging = vehicleId
+      character.active = 0
+      vehicle.passengers.push(characterId)
+      charactersPutInVehicles.push(characterId)
+      vehiclesCharactersWerePutIn.push(vehicleId)
     }
-
-    var cityElement = {...cityElementPrototype}
-
-    for (var property in cityElementPrototype) {
-      var value = cityElementPrototype[property]
-      if (Array.isArray(value)) cityElement[property] = [...value]
-      else if (typeof value === 'object' && value !== null) {
-        for (var nestedProperty in value) {
-          var nestedValue = value[nestedProperty]
-          if (typeof nestedValue !== 'object' || nestedValue === null) {
-            cityElement[property][nestedProperty] = nestedValue
-          }
-          else cityElement[property][nestedProperty] = null
-        }
-      }
+    else {
+      character.driving = vehicleId
+      character.active = 0
+      vehicle.driver = characterId
     }
-
-    return cityElement
+    return puttedKit
   }
 
   const entityKit = {
 
     length: _entities.length,
 
-    create: (type, districtId, configuration) => {
+    create: function (type, districtId, configuration) {
       const {x, y, speed} = configuration || {}
       const districtWidth = 3200
       const districtHeight = 8000
-      const directions = {
+      const directionsByType = {
         character: ['left', 'right'],
         vehicle: ['left', 'right', 'up', 'down', 'up-left', 'up-right', 'down-left', 'down-right']
       }
-      const percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 0.1, 0.2,
-        0.3, 0.4, 0.5, 0.6, 0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.3, 0.4]
-
-      const cityElement = createCityElement(type)
-      const cityElementClone = createCityElement(type)
-
-      cityElement.district = districtId
-
+      const directions = directionsByType[type]
+      const percentages = [
+        0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 0.1, 0.2, 0.3,
+        0.4, 0.5, 0.6, 0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.3, 0.4
+      ]
+      const entity = createEntity(type)
+      const entityClone = createEntity(type)
+      const id = entity.id = _entities.length
+      entity.district = districtId
+      entityClone.id = id
+      entity.elementId = 'o' + id
+      _entities.push(entity)
+      this[id] = entityClone
+      this.clone(id)
+      this.refreshLength()
       if (type !== 'room') {
-        cityElement.direction = directions[type][Math.floor(Math.random() * directions[type].length)]
-        cityElement.x = x ? x : Math.random() * (districtWidth - cityElement.width) // eslint-disable-line no-unneeded-ternary
+        const float = Math.random() * directions.length
+        const index = Math.floor(float)
+        entity.direction = directions[index]
+        entity.x = x || x === 0 ? x : Math.random() * (districtWidth - entity.width)
       }
       if (type === 'vehicle') {
-        var index = Math.floor(Math.random() * percentages.length)
-        var percentage = percentages[index]
-        cityElement.speed = (speed || speed === 0) ? speed : Math.round(Math.random() * cityElement.maxSpeed * percentage)
-        cityElement.y = y ? y : Math.random() * (districtHeight - cityElement.height - 77) // eslint-disable-line no-unneeded-ternary
+        const float = Math.random() * percentages.length
+        const index = Math.floor(float)
+        const percentage = percentages[index]
+        entity.speed = speed || speed === 0 ? speed : Math.random() * entity.maxSpeed * percentage
+        entity.y = y || y === 0 ? y : Math.random() * (districtHeight - entity.height - 77)
       }
       if (type === 'character') {
-        cityElement.y = districtHeight - 168
-        cityElement.speed = (speed || speed === 0) ? speed : Math.round(Math.random() * cityElement.maxSpeed)
+        entity.y = districtHeight - 168
+        entity.speed = speed || speed === 0 ? speed : Math.random() * entity.maxSpeed
       }
-
-      cityElement.id = _entities.length
-      cityElementClone.id = cityElement.id
-      cityElement.elementId = 'o' + cityElement.id
-      _entities.push(cityElement)
-
-      const id = cityElement.id
-      entityKit[id] = cityElementClone
-      entityKit.clone(id)
-      entityKit.refreshLength()
-
       return id
     },
 
-    clone: id => {
-      const cityElementClone = entityKit[id]
-      const cityElement = _entities[id]
+    clone: function (id) {
+      const entityClone = this[id]
+      const entity = _entities[id]
 
-      for (var property in cityElement) {
-        var value = cityElement[property]
+      for (var property in entity) {
+        var value = entity[property]
         if (typeof value !== 'object' || value === null) {
-          cityElementClone[property] = value
+          entityClone[property] = value
         }
         else if (Array.isArray(value)) {
-          cityElementClone[property].length = 0
-          value.forEach(item => cityElementClone[property].push(item))
+          entityClone[property].length = 0
+          value.forEach(item => entityClone[property].push(item))
         }
         else if (typeof value === 'object' && value !== null) {
           for (var nestedProperty in value) {
             var nestedValue = value[nestedProperty]
             if (typeof nestedValue !== 'object' || nestedValue === null) {
-              cityElementClone[property][nestedProperty] = nestedValue
+              entityClone[property][nestedProperty] = nestedValue
             }
           }
         }
       }
 
-      return cityElementClone
+      return entityClone
     },
 
-    cloneMultiple: (...idArrays) => {
+    cloneMultiple: function (...idArrays) {
       multiple.length = 0
       if (idArrays.length) {
         idArrays.forEach(idArray => {
           if (idArray) {
             idArray.forEach(id => {
               if (id) {
-                var cityElementClone = entityKit.clone(id)
-                multiple.push(cityElementClone)
+                var entityClone = this.clone(id)
+                multiple.push(entityClone)
               }
             })
           }
@@ -210,126 +240,84 @@ export const getEntityKit = function (_entities = []) {
       return multiple
     },
 
-    cloneAll: () => {
+    cloneAll: function () {
       all.length = 0
       _entities.forEach((unusedItem, id) => {
-        var cityElement = entityKit.clone(id)
-        all.push(cityElement)
+        var entity = this.clone(id)
+        all.push(entity)
       })
       return all
     },
 
-    refreshLength: () => {
-      entityKit.length = _entities.length
+    refreshLength: function () {
+      this.length = _entities.length
     },
 
-    assignPlayer: (characterId, playerId) => {
+    assignPlayer: function (characterId, playerId) {
       _entities[characterId].player = playerId
-      entityKit[characterId].player = playerId
+      this[characterId].player = playerId
     },
 
-    assignDistrict: (cityElementId, districtId) => {
-      _entities[cityElementId].district = districtId
-      entityKit[cityElementId].district = districtId
+    assignDistrict: function (entityId, districtId) {
+      _entities[entityId].district = districtId
+      this[entityId].district = districtId
     },
 
-    giveKey: (characterId, cityElementId, isMasterKey) => {
-      var character = _entities[characterId]
-      var cityElement = _entities[cityElementId]
-      var type = cityElement.type
-
-      switch (true) {
-        case type === 'vehicle' && isMasterKey: var keysType = 'vehicleMasterKeys'; break
-        case type === 'vehicle': keysType = 'vehicleKeys'; break
-        case type === 'room' && isMasterKey: keysType = 'roomMasterKeys'; break
-        case type === 'room': keysType = 'roomKeys'; break
-        default:
-      }
-
-      var keys = character[keysType]
-      var duplicateKey = keys.find(key => key === cityElementId)
-      if (!duplicateKey) keys.push(cityElementId)
-      if (isMasterKey) var keyHoldersType = 'masterKeyHolders'
-      else keyHoldersType = 'keyHolders'
-      var keyHolders = cityElement[keyHoldersType]
-      var duplicateKeyHolder = keyHolders.find(keyHolder => keyHolder === characterId)
-      if (!duplicateKeyHolder) keyHolders.push(characterId)
-      if (isMasterKey) entityKit.giveKey(characterId, cityElementId)
+    giveKey: function (characterId, entityId, isMasterKey) {
+      const character = _entities[characterId]
+      const entity = _entities[entityId]
+      const type = entity.type
+      const keysType =
+          type === 'vehicle' && isMasterKey ? 'vehicleMasterKeys'
+        : type === 'vehicle' ? 'vehicleKeys'
+        : type === 'room' && isMasterKey ? 'roomMasterKeys'
+        : 'roomKeys'
+      const keys = character[keysType]
+      const duplicateKey = keys.find(key => key === entityId)
+      duplicateKey || keys.push(entityId)
+      const keyHoldersType = isMasterKey ? 'masterKeyHolders' : 'keyHolders'
+      const keyHolders = entity[keyHoldersType]
+      const duplicateKeyHolder = keyHolders.find(keyHolder => keyHolder === characterId)
+      duplicateKeyHolder || keyHolders.push(characterId)
+      isMasterKey && this.giveKey(characterId, entityId)
     },
 
     checkForVehicleEntries: (characters, vehicles) => {
-      const charactersToEnter = []
-      const vehiclesToBeEntered = []
-      const nonEntereringWalkers = []
-      vehicles.forEach((vehicleId, index) => {
-        var vehicle = _entities[vehicleId]
-        var characterId = characters[index]
-        var character = _entities[characterId]
-        if (vehicle.driver) var driver = 1
-        else driver = 0
-        if (
-          driver + vehicle.passengers.length < vehicle.seats &&
-          character.x < vehicle.x + vehicle.width &&
-          character.x + character.width > vehicle.x &&
-          character.y < vehicle.y + vehicle.height &&
-          character.y + character.height > vehicle.y
-        ) {
-          charactersToEnter.push(characterId)
-          vehiclesToBeEntered.push(vehicleId)
-        }
-        else nonEntereringWalkers.push(character.id)
-      })
-      return {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers}
+      const entryKit = {
+        charactersToEnter: [],
+        vehiclesToBeEntered: [],
+        nonEntereringWalkers: []
+      }
+      const pushIfVehicleEntryWithThis = pushIfVehicleEntry.bind({characters})
+      return vehicles.reduce(pushIfVehicleEntryWithThis, entryKit)
     },
 
     putCharactersInVehicles: (characterIds, vehicleIds) => {
-      const charactersPutInVehicles = []
-      const vehiclesCharactersWerePutIn = []
-      const strandedWalkers = []
-      characterIds.forEach((characterId, index) => {
-        var character = _entities[characterId]
-        var vehicleId = vehicleIds[index]
-        var vehicle = _entities[vehicleId]
-        var {driver, passengers, seats} = vehicle
-        if (driver) {
-          driver = 1
-          if (driver + passengers.length < seats) {
-            character.passenging = vehicleId
-            character.active = 0
-            vehicle.passengers.push(characterId)
-            charactersPutInVehicles.push(characterId)
-            vehiclesCharactersWerePutIn.push(vehicleId)
-          }
-          else strandedWalkers.push(characterId)
-        }
-        else {
-          character.driving = vehicleId
-          character.active = 0
-          vehicle.driver = characterId
-        }
-      })
-      return {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers}
+      const puttedKit = {
+        charactersPutInVehicles: [],
+        vehiclesCharactersWerePutIn: [],
+        strandedWalkers: []
+      }
+      const pushIfCanBePutWithThis = pushIfCanBePut.bind({vehicleIds})
+      characterIds.reduce(pushIfCanBePutWithThis, puttedKit)
+      return puttedKit
     },
 
-    active: function (characterId) {
-      _entities[characterId].active += 1
-    },
+    active: characterId => _entities[characterId].active += 1,
+    inactive: characterId => _entities[characterId].active = 0,
 
-    inactive: function (characterId) {
-      _entities[characterId].active = 0
-    },
-
-    exitVehicles: characterIds => {
+    exitVehicles: function (characterIds) {
       characterIds.forEach(characterId => {
-        var {active, id} = _entities[characterId]
-        if (active >= 30) entityKit.exitVehicle(id)
+        const entity = _entities[characterId]
+        const {active} = entity
+        if (active >= 30) this.exitVehicle(characterId)
       })
     },
 
     exitVehicle: characterId => {
-      var character = _entities[characterId]
-      var {driving} = character
-      var vehicle = _entities[driving]
+      const character = _entities[characterId]
+      const {driving} = character
+      const vehicle = _entities[driving]
       character.driving = 0
       character.passenging = 0
       character.active = 0
@@ -339,82 +327,73 @@ export const getEntityKit = function (_entities = []) {
     },
 
     graduallyStopVehicle: vehicle => {
-      vehicle.speed -= vehicle.deceleration / 100
-      if (vehicle.speed < 0) {
-        vehicle.speed = 0
-        vehicle.slowing = false
-      }
+      vehicle.speed -= vehicle.deceleration
+      if (vehicle.speed > 0) return
+      vehicle.speed = 0
+      vehicle.slowing = false
     },
 
     fallVehicle: vehicle => {
       vehicle.y += 2
-      if (vehicle.y < 7843) {
-        vehicle.falling = false
-        vehicle.y = 7843
-      }
+      if (vehicle.y < 7843) return
+      vehicle.falling = false
+      vehicle.y = 7843
     },
 
     walk: (characterId, input) => {
-      var character = _entities[characterId]
-      var {right, left} = input
-      if (right) {
-        character.direction = 'right'
-        character.speed = 5
-      }
-      else if (left) {
-        character.direction = 'left'
-        character.speed = 5
-      }
-      else character.speed = 0
+      const character = _entities[characterId]
+      const {direction} = character
+      const {right, left} = input
+      character.speed = right || left ? 5 : 0
+      character.direction =
+          right ? 'right'
+        : left ? 'left'
+        : direction
     },
 
     drive: (characterId, input) => {
-      var character = _entities[characterId]
-      var vehicleId = character.driving
-      var vehicle = _entities[vehicleId]
-      var {up, down, left, right, accelerate, decelerate} = input
-      var {direction} = vehicle
-      if (direction !== 'up' && direction !== 'down') {
-        vehicle.previousDirection = direction
-      }
-
-      switch (true) {
-        case up && left: vehicle.direction = 'up-left'; break
-        case up && right : vehicle.direction = 'up-right'; break
-        case down && left: vehicle.direction = 'down-left'; break
-        case down && right : vehicle.direction = 'down-right'; break
-        case up: vehicle.direction = 'up'; break
-        case down: vehicle.direction = 'down'; break
-        case left: vehicle.direction = 'left'; break
-        case right: vehicle.direction = 'right'; break
-        default:
-      }
-      if (accelerate) vehicle.speed += vehicle.acceleration / 100
-      if (decelerate) vehicle.speed -= vehicle.deceleration / 100
-      if (vehicle.speed > vehicle.maxSpeed) vehicle.speed = vehicle.maxSpeed
-      if (vehicle.speed < 0) vehicle.speed = 0
+      const character = _entities[characterId]
+      const vehicleId = character.driving
+      const vehicle = _entities[vehicleId]
+      const {up, down, left, right, accelerate, decelerate} = input
+      const {direction} = vehicle
+      direction !== 'up' && direction !== 'down' && (vehicle.previousDirection = direction)
+      vehicle.direction =
+          up && left ? 'up-left'
+        : up && right ? 'up-right'
+        : down && left ? 'down-left'
+        : down && right ? 'down-right'
+        : up ? 'up'
+        : down ? 'down'
+        : left ? 'left'
+        : right ? 'right'
+        : direction
+      accelerate && (vehicle.speed += vehicle.acceleration)
+      decelerate && (vehicle.speed -= vehicle.deceleration)
+      vehicle.speed > vehicle.maxSpeed && (vehicle.speed = vehicle.maxSpeed)
+      vehicle.speed < 0 && (vehicle.speed = 0)
     },
 
-    updateLocations: (districts) => {
-      _entities.forEach(cityElement => {
-        if (cityElement.id) {
-          var {driving, passenging, occupying, type, slowing, falling} = cityElement
-          if (driving || passenging) entityKit.updateTravelingCharacterLocation(cityElement)
-          else if (occupying) entityKit.updateOccupyingCharacterLocation(cityElement, districts)
-          else if (type === 'character') entityKit.updateWalkingCharacterLocation(cityElement, districts)
-          else if (type === 'vehicle') {
-            if (falling) entityKit.fallVehicle(cityElement)
-            if (slowing) entityKit.graduallyStopVehicle(cityElement)
-            entityKit.updateVehicleLocation(cityElement, districts)
-          }
-        }
+    updateLocations: function (districts) {
+      _entities.forEach(entity => {
+        const {id} = entity
+        if (!id) return
+        const {driving, passenging, occupying, type, slowing, falling} = entity
+        if (driving || passenging) return this.updateTravelingCharacterLocation(entity)
+        if (occupying) return this.updateOccupyingCharacterLocation(entity, districts)
+        if (type === 'character') return this.updateWalkingCharacterLocation(entity, districts)
+        if (type !== 'vehicle') return
+        if (falling) this.fallVehicle(entity)
+        if (slowing) this.graduallyStopVehicle(entity)
+        this.updateVehicleLocation(entity, districts)
       })
+      return this
     },
 
     updateTravelingCharacterLocation: (character) => {
-      var {driving, passenging} = character
-      var vehicle = driving ? _entities[driving] : _entities[passenging]
-      var {x, y, width, height} = vehicle
+      const {driving, passenging} = character
+      const vehicle = driving ? _entities[driving] : _entities[passenging]
+      const {x, y, width, height} = vehicle
       character.x = x + width / 2
       character.y = y + height / 2
     },
@@ -423,154 +402,93 @@ export const getEntityKit = function (_entities = []) {
     },
 
     updateWalkingCharacterLocation: (character, districts) => {
-      var {speed, direction, district, width, y} = character
-      if (y < 7832) {
-        character.y += 6
+      const {speed, direction, district, width, player, x, y} = character
+      const district_ = districts[district]
+      const {width: districtWidth} = district_
+      y < 7832 && (character.y += 6)
+      y > 7832 && (character.y = 7832)
+      if (speed <= 0) return
+      const x_ = character.x = direction === 'left' ? x - speed : x + speed
+      const max = districtWidth - width
+      if (player) {
+        x_ < 0 && (character.x = 0)
+        x_ > max && (character.x = max)
+        return
       }
-      else if (y > 7832) character.y = 7832
-      if (speed > 0) {
-        if (direction === 'left') {
-          character.x -= speed
-          var nextX = character.x - speed
-        }
-        else if (direction === 'right') {
-          character.x += speed
-          nextX = character.x + speed
-        }
-        var min = 0
-        var max = districts[district].width - width
-        if (character.player) {
-          if (nextX < min) {
-            character.x = min
-          }
-          if (nextX > max) {
-            character.x = max
-          }
-        }
-        else {
-          if (nextX < min) {
-            character.direction = 'right'
-          }
-          if (nextX > max) {
-            character.direction = 'left'
-          }
-        }
-      }
+      x_ < 0 && (character.direction = 'right')
+      x_ > max && (character.direction = 'left')
     },
 
     updateVehicleLocation: (vehicle, districts) => {
-      var {speed, direction, district, width, height, driver, y} = vehicle
-      var distance = Math.pow((speed / 2), 2)
-      var maxY = districts[district].height - height - 77
-      if (y > maxY) vehicle.y = maxY
-
-      switch (direction) {
-        case 'up':
-          vehicle.y -= speed
-          var nextY = vehicle.y - speed
-          var directions = ['left', 'right', 'down', 'down-left', 'down-right', 'down-left', 'down-right']
-          break
-        case 'down':
-          vehicle.y += speed
-          nextY = vehicle.y + speed
-          directions = ['left', 'right', 'up', 'up-left', 'up-right', 'up-left', 'up-right']
-          break
-        case 'left':
-          vehicle.x -= speed
-          var nextX = vehicle.x - speed
-          directions = ['up', 'down', 'right', 'up-right', 'down-right', 'right', 'up-right', 'down-right']
-          break
-        case 'right':
-          vehicle.x += speed
-          nextX = vehicle.x + speed
-          directions = ['up', 'down', 'up-left', 'down-left', 'left', 'up-left', 'down-left', 'left']
-          break
-        case 'up-right':
-          vehicle.y -= distance
-          vehicle.x += distance
-          nextY = vehicle.y - distance
-          nextX = vehicle.x + distance
-          directions = ['left', 'up-left', 'down-left', 'down-right']
-          break
-        case 'down-right':
-          vehicle.y += distance
-          vehicle.x += distance
-          nextY = vehicle.y + distance
-          nextX = vehicle.x + distance
-          directions = ['left', 'up-left', 'up-right', 'down-left']
-          break
-        case 'up-left':
-          vehicle.y -= distance
-          vehicle.x -= distance
-          nextY = vehicle.y - distance
-          nextX = vehicle.x - distance
-          directions = ['right', 'up-right', 'down-left', 'down-right']
-          break
-        case 'down-left':
-          vehicle.y += distance
-          vehicle.x -= distance
-          nextY = vehicle.y + distance
-          nextX = vehicle.x - distance
-          directions = ['right', 'up-left', 'up-right', 'down-right']
-          break
-        default:
+      const {speed, direction, district, width, height, driver, x, y} = vehicle
+      const character = driver && _entities[driver]
+      const {player} = character || {}
+      const district_ = districts[district]
+      const {height: districtHeight, width: districtWidth} = district_
+      const distance = Math.pow((speed / 2), 2)
+      const min = 0
+      const maxX = districtWidth - width
+      const maxY = districtHeight - height - 77
+      const x_ = vehicle.x =
+          direction === 'left' ? x - speed
+        : direction === 'right' ? x + speed
+        : direction === 'up-right' ? x + distance
+        : direction === 'down-right' ? x + distance
+        : direction === 'up-left' ? x - distance
+        : direction === 'down-left' ? x - distance
+        : x
+      const y_ = vehicle.y =
+          y > maxY ? maxY
+        : direction === 'up' ? y - speed
+        : direction === 'down' ? y + speed
+        : direction === 'up-right' ? y - distance
+        : direction === 'down-right' ? y + distance
+        : direction === 'up-left' ? y - distance
+        : direction === 'down-left' ? y + distance
+        : y
+      const directions =
+          direction === 'up' ? ['left', 'right', 'down', 'down-left', 'down-right', 'down-left', 'down-right']
+        : direction === 'down' ? ['left', 'right', 'up', 'up-left', 'up-right', 'up-left', 'up-right']
+        : direction === 'left' ? ['up', 'down', 'right', 'up-right', 'down-right', 'right', 'up-right', 'down-right']
+        : direction === 'right' ? ['up', 'down', 'up-left', 'down-left', 'left', 'up-left', 'down-left', 'left']
+        : direction === 'up-right' ? ['left', 'up-left', 'down-left', 'down-right']
+        : direction === 'down-right' ? ['left', 'up-left', 'up-right', 'down-left']
+        : direction === 'up-left' ? ['right', 'up-right', 'down-left', 'down-right']
+        : direction === 'down-left' ? ['right', 'up-left', 'up-right', 'down-right']
+        : direction
+      if (player) {
+        x_ < min && (vehicle.x = min)
+        x_ > maxX && (vehicle.x = maxX)
+        y_ < min && (vehicle.y = min)
+        y_ > maxY && (vehicle.y = maxY)
+        return
       }
-
-      var min = 0
-      var maxX = districts[district].width - width
-      if (driver) var character = _entities[driver]
-      if (driver && character.player) {
-
-        if (nextX < min) {
-          vehicle.x = min
-        }
-        if (nextX > maxX) {
-          vehicle.x = maxX
-        }
-        if (nextY < min) {
-          vehicle.y = min
-        }
-        if (nextY > maxY) {
-          vehicle.y = maxY
-        }
-      }
-
-      else {
-        if (nextX < min || nextX > maxX || nextY < min || nextY > maxY) {
-          vehicle.direction = directions[Math.floor(Math.random() * directions.length)]
-          switch (true) {
-            case nextX < min:
-              vehicle.x = min
-              break
-            case nextX > maxX:
-              vehicle.x = maxX; break
-            case nextY < min:
-              vehicle.y = min
-              break
-            case nextY > maxY:
-              vehicle.y = maxY
-              break
-            default:
-          }
-        }
-      }
+      x_ < min && (vehicle.x = min)
+      x_ > maxX && (vehicle.x = maxX)
+      y_ < min && (vehicle.y = min)
+      y_ > maxY && (vehicle.y = maxY)
+      if (x_ >= min && x_ <= maxX && y_ >= min && y_ <= maxY) return
+      const {length: directionCount} = directions
+      const float = Math.random() * directionCount
+      const index = Math.floor(float)
+      vehicle.direction = directions[index]
     },
 
-    updateLatencies: (latencies) => {
-      var characterId = null
-      var latency = null
+    updateLatencies: latencies => {
+      let characterId = null
+      let latency = null
       latencies.forEach((item, index) => {
-        if (!(index % 2) || index === 0) characterId = item
+        if (index % 2 === 0) characterId = item
         else latency = item
-        if (characterId && latency) {
-          _entities[characterId].latency = latency
-          characterId = null
-          latency = null
-        }
+        if (!characterId || !latency) return
+        const character = _entities[characterId]
+        character.latency = latency
+        characterId = null
+        latency = null
       })
     },
 
-    emit: (io) => {
+    emit: io => {
       _entities[0].timestamp = now()
       io.volatile.emit('entities', _entities)
     }
