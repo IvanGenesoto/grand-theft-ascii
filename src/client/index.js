@@ -14,15 +14,41 @@ const camera = {
   style: {}
 }
 
-const state = {camera, player: {}}
-const $game = document.getElementById('game')
+const state = {
+  socket,
+  camera,
+  imagesTotal: 0,
+  imagesLoaded: 0,
+  player: {},
+  delayKit: {},
+  entitiesBuffer: [],
+  $game: document.getElementById('game')
+}
 
-const adjustCameraSize = function ($camera_) {
-  const {camera} = this
-  const {style: style_, maxWidth, maxHeight} = camera
+const createElement = function (component) {
+  const {state} = this
+  const {$game, camera} = state
+  const {tag, elementId, src, width, height} = component
+  const $element = document.createElement(tag)
+  $element.id = elementId
+  $game.appendChild($element)
+  component === camera || $element.classList.add('hidden')
+  width && ($element.width = width)
+  height && ($element.height = height)
+  if (!src) return state
+  ++state.imagesTotal
+  $element.src = src
+  $element.onload = () => ++state.imagesLoaded
+  return state
+}
+
+const adjustCameraSize = function () {
+  const {state} = this
+  const {camera} = state
+  const {style: style_, maxWidth, maxHeight, elementId} = camera
   const horizontalMargin = (innerWidth - maxWidth) / 2 + 'px'
   const verticalMargin = (innerHeight - maxHeight) / 2 + 'px'
-  const $camera = $camera_ || document.getElementById(state.camera.elementId)
+  const $camera = document.getElementById(elementId)
   const {style} = $camera || {}
   if (innerWidth < maxWidth) {
     camera.width = innerWidth
@@ -56,69 +82,79 @@ const adjustCameraSize = function ($camera_) {
     $camera && (style.marginTop = verticalMargin)
     $camera && (style.marginBottom = verticalMargin)
   }
+  return state
 }
 
-function initiateDistrict(district) {
-  if (district) {
-    state.imagesTotal = 0
-    state.imagesLoaded = null
-    state.district = district
-    state.cityElementsBuffer = []
-    createElements(district, 'loop')
-    checkImagesLoaded()
-  }
-  else {
-    drawToLayer('backgroundLayers')
-    drawToLayer('foregroundLayers')
-    shiftCityElementsBuffer('initiateRefresh')
-  }
+const emitToken = function () {
+  const {state, socket} = this
+  const {player} = state
+  const {token} = player
+  socket.emit('token', token)
 }
 
-function createElements(entity, loop) {
-  const {elementId} = entity
-  for (var property in entity) {
-    if (property === 'tag') {
-      var $element = document.createElement(entity.tag)
-      $element.id = elementId
-      elementId === 'c0' && adjustCameraSize.call(state, $element)
-      $game.appendChild($element)
-      if (entity !== state.camera) {
-        $element.classList.add('hidden')
-      }
-      if (entity.width) {
-        $element.width = entity.width
-        $element.height = entity.height
-      }
-      if (entity.src) {
-        if (!state.imagesTotal) state.imagesTotal = 0
-        state.imagesTotal += 1
-        $element.src = entity.src
-        $element.onload = () => {
-          if (!state.imagesLoaded) state.imagesLoaded = 0
-          state.imagesLoaded += 1
-        }
-      }
-    }
-    else if (
-         loop
-      && typeof entity[property] !== 'string'
-      && typeof entity[property] !== 'number'
-      && typeof entity[property] !== 'boolean'
-    ) {
-      var nestedObject = entity[property]
-      createElements(nestedObject, 'loop')
-    }
-  }
+const handlePlayer = function (player) {
+  const {state} = this
+  const {camera} = state
+  const {character} = player
+  state.player = player
+  camera.following = character
+}
+
+const handleEntity = function (entity) {
+  const {state} = this
+  const {district} = state
+  const {type, id: entityId} = entity
+  const key = type + 's'
+  const entityIds = district[key]
+  const match = entityIds.find(id => id === entityId)
+  if (!district || match) return state
+  state.district[entity.type + 's'].push(entity.id)
+  createElement.call({state}, entity)
+}
+
+const handleEntities = function (entities) {
+  const {state} = this
+  const {socket, entitiesBuffer, entities: entities_} = state
+  const [mayor] = entities
+  const timestamp = mayor.timestamp
+  mayor.timestamp = performance.now()
+  socket.emit('timestamp', timestamp)
+  if (!entities_) entities.forEach(createElement.bind({state}))
+  entitiesBuffer.push(entities)
+}
+
+function initializeDistrict(district) {
+  const {state} = this
+  const {backgroundLayers, foregroundLayers} = district
+  state.district = district
+  backgroundLayers.forEach(createElements.bind({state}))
+  foregroundLayers.forEach(createElements.bind({state}))
+  checkImagesLoaded()
+}
+
+function initiateDistrict() {
+  const {state} = this
+  const {district} = state
+  const {backgroundLayers, foregroundLayers} = district
+  drawToLayer(backgroundLayers)
+  drawToLayer(foregroundLayers)
+  shiftEntitiesBuffer('initiateRefresh')
+}
+
+function createElements(component) {
+  const {tag, sections, variations} = component
+  tag && createElement.call(this, component)
+  sections && sections.map(createElements.bind(this))
+  variations && variations.map(createElements.bind(this))
 }
 
 function checkImagesLoaded() {
   clearTimeout(state.timeout)
-  if (state.imagesLoaded === state.imagesTotal) initiateDistrict()
+  if (state.imagesLoaded === state.imagesTotal) initiateDistrict.call({state})
   else state.timeout = setTimeout(checkImagesLoaded, 50)
 }
 
-function drawToLayer(type) {
-  var layers = state.district.scenery[type]
+function drawToLayer(layers) {
   layers.forEach(layer => {
     var {blueprints} = layer
     blueprints.forEach(blueprint => {
@@ -145,20 +181,20 @@ function drawToLayer(type) {
   })
 }
 
-function shiftCityElementsBuffer(initiatingRefresh) {
+function shiftEntitiesBuffer(initiatingRefresh) {
   clearTimeout(state.shiftTimeout)
-  if (state.cityElementsBuffer.length > 2) {
-    while (state.cityElementsBuffer.length > 2) state.cityElementsBuffer.shift()
+  if (state.entitiesBuffer.length > 2) {
+    while (state.entitiesBuffer.length > 2) state.entitiesBuffer.shift()
     if (initiatingRefresh) {
-      state.entities = state.cityElementsBuffer[0]
+      state.entities = state.entitiesBuffer[0]
     }
-    preservePlayerCharacterLocation(state.cityElementsBuffer[0])
+    preservePlayerCharacterLocation(state.entitiesBuffer[0])
     state.ratioIndex = -1
-    if (initiatingRefresh) refresh('first')
+    if (initiatingRefresh) refresh(true)
   }
   else if (initiatingRefresh) {
     state.shiftTimeout = setTimeout(() => {
-      shiftCityElementsBuffer(initiatingRefresh)
+      shiftEntitiesBuffer(initiatingRefresh)
     }, 1000 / 30)
   }
 }
@@ -175,12 +211,12 @@ function preservePlayerCharacterLocation(newCityElements) {
   character.y = y
 }
 
-function refresh(first) {
+function refresh(isInitial) {
   state.refreshStartTime = performance.now()
   var ratio = getInterpolationRatio()
   if (ratio) interpolateDistrict(ratio)
   if (state.ratioIndex > 1) {
-    shiftCityElementsBuffer()
+    shiftEntitiesBuffer()
     var result = checkPredictionOutcome()
     if (result) reconcilePlayerCharacter(result)
   }
@@ -191,8 +227,8 @@ function refresh(first) {
   updatePlayerCharacterLocation()
   updateCamera()
   // clearCanvas()
-  render(first)
-  setDelay()
+  render(isInitial)
+  callRefresh()
 }
 
 function getInterpolationRatio() {
@@ -211,8 +247,8 @@ function getInterpolationRatio() {
 }
 
 function interpolateDistrict(ratio) {
-  var a = state.cityElementsBuffer[0]
-  var b = state.cityElementsBuffer[1]
+  var a = state.entitiesBuffer[0]
+  var b = state.entitiesBuffer[1]
   state.entities.forEach(entity => {
     if (
          entity.district === state.district.id
@@ -276,11 +312,11 @@ function updatePlayerCharacterBehavior(input) {
   var character = state.entities[index]
   if (input.right === true) {
     character.direction = 'right'
-    character.speed = 5
+    character.speed = character.maxSpeed
   }
   else if (input.left === true) {
     character.direction = 'left'
-    character.speed = 5
+    character.speed = character.maxSpeed
   }
   else character.speed = 0
 }
@@ -308,16 +344,18 @@ function updatePlayerCharacterLocation() {
   }
 }
 
-function render(first) {
-  if (first) {
+function render(isInitial) {
+  const {district} = state
+  const {backgroundLayers, foregroundLayers} = district
+  if (isInitial) {
     var $camera = document.getElementById(state.camera.elementId)
     $camera.classList.add('hidden')
   }
-  renderScenery('backgroundLayers')
+  renderLayers(backgroundLayers)
   renderEntities('characters')
   renderEntities('vehicles')
-  renderScenery('foregroundLayers')
-  if (first) setTimeout(() => $camera.classList.remove('hidden'), 1250)
+  renderLayers(foregroundLayers)
+  if (isInitial) setTimeout(() => $camera.classList.remove('hidden'), 1250)
 }
 
 function updateCamera() {
@@ -348,10 +386,8 @@ function updateCamera() {
 //   context.clearRect(0, 0, state.camera.width, state.camera.height)
 // }
 
-function renderScenery(type) {
-  var layers = state.district.scenery[type]
-  for (var layerId in layers) {
-    var layer = layers[layerId]
+function renderLayers(layers) {
+  layers.forEach(layer => {
     var entityId = state.camera.following
     var entity = state.entities[entityId]
     var $layer = document.getElementById(layer.elementId)
@@ -365,7 +401,7 @@ function renderScenery(type) {
     if (!layer.x && cameraX < 0) cameraX = 0
     context.drawImage($layer, cameraX, state.camera.y, state.camera.width,
       state.camera.height, 0, 0, state.camera.width, state.camera.height)
-  }
+  })
 }
 
 function renderEntities(entityType) {
@@ -411,53 +447,52 @@ function renderEntities(entityType) {
   })
 }
 
-function setDelay() {
-  if (!state.setDelay) state.setDelay = {}
-  var __ = state.setDelay
-  if (!__.loopStartTime) __.loopStartTime = performance.now() - 1000 / 30
-  if (!__.millisecondsAhead) __.millisecondsAhead = 0
+function callRefresh() {
+  const {delayKit: _} = state
+  if (!_.loopStartTime) _.loopStartTime = performance.now() - 1000 / 30
+  if (!_.millisecondsAhead) _.millisecondsAhead = 0
   var refreshDuration = performance.now() - state.refreshStartTime
-  var loopDuration = performance.now() - __.loopStartTime
-  __.loopStartTime = performance.now()
+  var loopDuration = performance.now() - _.loopStartTime
+  _.loopStartTime = performance.now()
   var delayDuration = loopDuration - refreshDuration
-  if (__.checkForSlowdown) {
-    if (delayDuration > __.delay * 1.2) {
-      __.slowdownCompensation = __.delay / delayDuration
-      __.slowdownConfirmed = true
+  if (_.checkForSlowdown) {
+    if (delayDuration > _.delay * 1.2) {
+      _.slowdownCompensation = _.delay / delayDuration
+      _.slowdownConfirmed = true
     }
   }
   var millisecondsPerFrame = 1000 / 30
-  __.millisecondsAhead += millisecondsPerFrame - loopDuration
-  __.delay = millisecondsPerFrame + __.millisecondsAhead - refreshDuration
-  clearTimeout(__.timeout)
-  if (__.delay < 5) {
-    __.checkForSlowdown = false
+  _.millisecondsAhead += millisecondsPerFrame - loopDuration
+  _.delay = millisecondsPerFrame + _.millisecondsAhead - refreshDuration
+  clearTimeout(_.timeout)
+  if (_.delay < 5) {
+    _.checkForSlowdown = false
     refresh()
   }
   else {
-    if (__.slowdownConfirmed) {
-      __.delay = __.delay * __.slowdownCompensation
-      if (__.delay < 14) {
-        if (__.delay < 7) {
+    if (_.slowdownConfirmed) {
+      _.delay = _.delay * _.slowdownCompensation
+      if (_.delay < 14) {
+        if (_.delay < 7) {
           refresh()
         }
         else {
-          __.checkForSlowdown = true
-          __.slowdownConfirmed = false
-          __.timeout = setTimeout(refresh, 0)
+          _.checkForSlowdown = true
+          _.slowdownConfirmed = false
+          _.timeout = setTimeout(refresh, 0)
         }
       }
       else {
-        __.checkForSlowdown = true
-        __.slowdownConfirmed = false
-        var delay = Math.round(__.delay)
-        __.timeout = setTimeout(refresh, delay - 2)
+        _.checkForSlowdown = true
+        _.slowdownConfirmed = false
+        var delay = Math.round(_.delay)
+        _.timeout = setTimeout(refresh, delay - 2)
       }
     }
     else {
-      __.checkForSlowdown = true
-      delay = Math.round(__.delay - 2)
-      __.timeout = setTimeout(refresh, delay)
+      _.checkForSlowdown = true
+      delay = Math.round(_.delay - 2)
+      _.timeout = setTimeout(refresh, delay)
     }
   }
 }
@@ -493,47 +528,13 @@ function control(key, action) {
   }
 }
 
-window.addEventListener('resize', adjustCameraSize.bind(state, null), false)
-
-window.addEventListener('keydown', event => {
-  control(event.key, 'down')
-})
-
-window.addEventListener('keyup', event => {
-  control(event.key, 'up')
-})
-
-socket.on('request_token', () => {
-  var token = state.player.token
-  socket.emit('token', token)
-})
-
-socket.on('district', district => {
-  initiateDistrict(district)
-})
-
-socket.on('player', player => {
-  state.player = player
-  state.camera.following = state.player.character
-})
-
-socket.on('entity', entity => {
-  if (state.district) {
-    var match = state.district[entity.type + 's'].find(id => id === entity.id)
-    if (!match) {
-      state.district[entity.type + 's'].push(entity.id)
-      createElements(entity)
-    }
-  }
-})
-
-socket.on('entities', entities => {
-  var timestamp = entities[0].timestamp
-  entities[0].timestamp = performance.now()
-  socket.emit('timestamp', timestamp)
-  if (!state.entities) entities.forEach(entity => createElements(entity))
-  state.cityElementsBuffer.push(entities)
-})
-
-adjustCameraSize.call(state)
-createElements(state.camera)
+window.addEventListener('resize', adjustCameraSize.bind({state}), false)
+window.addEventListener('keydown', event => control(event.key, 'down'))
+window.addEventListener('keyup', event => control(event.key, 'up'))
+socket.on('request_token', emitToken.bind({state, socket}))
+socket.on('district', initializeDistrict.bind({state}))
+socket.on('player', handlePlayer.bind({state}))
+socket.on('entity', handleEntity.bind({state}))
+socket.on('entities', handleEntities.bind({state}))
+createElement.call({state}, camera)
+adjustCameraSize.call({state})
