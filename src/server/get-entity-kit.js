@@ -7,13 +7,13 @@ export const getEntityKit = function (_entities = []) {
 
   function createEntity(type) {
     const characterPrototype = {
-      id: undefined,
+      id: null,
       type: 'character',
       name: 'Fred',
       status: 'alive',
-      player: undefined,
-      latency: undefined,
-      district: undefined,
+      player: null,
+      latency: null,
+      district: null,
       driving: null,
       passenging: null,
       occupying: null,
@@ -22,55 +22,56 @@ export const getEntityKit = function (_entities = []) {
       vehicleWelcomes: [],
       roomMasterKeys: [],
       roomKeys: [],
-      x: undefined,
-      y: undefined,
+      x: null,
+      y: null,
       width: 105,
       height: 155,
       depth: 1,
-      direction: undefined,
-      speed: undefined,
-      maxSpeed: 6,
+      direction: null,
+      speed: null,
+      maxSpeed: 10,
       active: 0,
       tag: 'img',
-      elementId: undefined,
+      elementId: null,
       src: 'images/characters/man.png'
     }
     const vehiclePrototype = {
-      id: undefined,
+      id: null,
       type: 'vehicle',
       model: 'delorean',
       status: 'operational',
-      district: undefined,
+      district: null,
       seats: 2,
       driver: 0,
       masterKeyHolders: [],
       keyHolders: [],
       welcomes: [],
       passengers: [],
-      x: undefined,
-      y: undefined,
+      x: null,
+      y: null,
       width: 268,
       height: 80,
-      direction: undefined,
-      previousDirection: undefined,
-      speed: undefined,
-      maxSpeed: 80,
+      direction: null,
+      previousDirection: null,
+      speed: null,
+      maxSpeed: 50,
+      speedAtExit: null,
       slowing: false,
       falling: false,
-      acceleration: 0.04,
-      deceleration: 0.10,
-      armor: undefined,
+      acceleration: 0.4,
+      deceleration: 0.8,
+      armor: null,
       weight: 0,
       tag: 'img',
-      elementId: undefined,
+      elementId: null,
       src: 'images/vehicles/delorean.png'
     }
     const roomPrototype = {
-      id: undefined,
+      id: null,
       type: 'room',
       name: 'Pad',
       status: 'locked',
-      district: undefined,
+      district: null,
       capacity: 50,
       occupants: [],
       masterKeyHolders: [],
@@ -81,16 +82,16 @@ export const getEntityKit = function (_entities = []) {
       width: 0,
       height: 0,
       tag: 'canvas',
-      background: undefined,
-      foreground: undefined,
-      inventory: undefined,
+      background: null,
+      foreground: null,
+      inventory: null,
       scenery: {
-        background: undefined,
-        foreground: undefined
+        background: null,
+        foreground: null
       }
     }
     const prototype =
-      type === 'character' ? characterPrototype
+        type === 'character' ? characterPrototype
       : type === 'vehicle' ? vehiclePrototype
       : roomPrototype
     return Object
@@ -310,7 +311,7 @@ export const getEntityKit = function (_entities = []) {
       characterIds.forEach(characterId => {
         const entity = _entities[characterId]
         const {active} = entity
-        if (active >= 30) this.exitVehicle(characterId)
+        if (active >= 15) this.exitVehicle(characterId)
       })
     },
 
@@ -326,15 +327,22 @@ export const getEntityKit = function (_entities = []) {
       vehicle.falling = true
     },
 
-    graduallyStopVehicle: vehicle => {
-      vehicle.speed -= vehicle.deceleration
+    slowDownVehicle: vehicle => {
+      const {speed, maxSpeed} = vehicle
+      const percentage = speed / maxSpeed
+      const multiplier =
+          percentage > 0.5 ? percentage * 2
+        : percentage > 0.25 ? 1
+        : 0.5
+      vehicle.speed -= vehicle.deceleration * multiplier
       if (vehicle.speed > 0) return
       vehicle.speed = 0
+      vehicle.speedAtExit = null
       vehicle.slowing = false
     },
 
-    fallVehicle: vehicle => {
-      vehicle.y += 2
+    descendVehicle: vehicle => {
+      vehicle.y += 4
       if (vehicle.y < 7843) return
       vehicle.falling = false
       vehicle.y = 7843
@@ -342,9 +350,9 @@ export const getEntityKit = function (_entities = []) {
 
     walk: (characterId, input) => {
       const character = _entities[characterId]
-      const {direction} = character
+      const {direction, maxSpeed} = character
       const {right, left} = input
-      character.speed = right || left ? 5 : 0
+      character.speed = right || left ? maxSpeed : 0
       character.direction =
           right ? 'right'
         : left ? 'left'
@@ -383,8 +391,8 @@ export const getEntityKit = function (_entities = []) {
         if (occupying) return this.updateOccupyingCharacterLocation(entity, districts)
         if (type === 'character') return this.updateWalkingCharacterLocation(entity, districts)
         if (type !== 'vehicle') return
-        if (falling) this.fallVehicle(entity)
-        if (slowing) this.graduallyStopVehicle(entity)
+        if (falling) this.descendVehicle(entity)
+        if (slowing) this.slowDownVehicle(entity)
         this.updateVehicleLocation(entity, districts)
       })
       return this
@@ -425,7 +433,7 @@ export const getEntityKit = function (_entities = []) {
       const {player} = character || {}
       const district_ = districts[district]
       const {height: districtHeight, width: districtWidth} = district_
-      const distance = Math.pow((speed / 2), 2)
+      const distance = Math.sqrt(speed ** 2 * 2)
       const min = 0
       const maxX = districtWidth - width
       const maxY = districtHeight - height - 77
