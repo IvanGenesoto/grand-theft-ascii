@@ -343,7 +343,7 @@ export const getEntityKit = function (_entities = []) {
     },
 
     descendVehicle: vehicle => {
-      vehicle.y += 4
+      vehicle.y += 5
       if (vehicle.y < 7843) return
       vehicle.falling = false
       vehicle.y = 7843
@@ -413,7 +413,7 @@ export const getEntityKit = function (_entities = []) {
       const {speed, direction, district, width, player, x, y} = character
       const district_ = districts[district]
       const {width: districtWidth} = district_
-      y < 7832 && (character.y += 6)
+      y < 7832 && (character.y += 20)
       y > 7832 && (character.y = 7832)
       if (speed <= 0) return
       const x_ = character.x = direction === 'left' ? x - speed : x + speed
