@@ -271,10 +271,15 @@ const interpolateEntity = function () {
 const interpolateProperty = function (propertyName) {
   const {state, entity, ratio} = this
   const {entitiesBuffer} = state
-  const [a, b] = entitiesBuffer
+  const [entitiesA, entitiesB] = entitiesBuffer
   const {id: index} = entity
-  const difference = b[index][propertyName] - a[index][propertyName]
-  entity[propertyName] = a[index][propertyName] + difference * ratio
+  const entityA = entitiesA[index]
+  const entityB = entitiesB[index]
+  if (!entityA || !entityB) return
+  const propertyA = entityA[propertyName]
+  const propertyB = entityB[propertyName]
+  const difference = propertyB - propertyA
+  entity[propertyName] = propertyA + difference * ratio
 }
 
 const checkPredictions = state => {
@@ -389,6 +394,7 @@ function updateCamera() {
     ) {
       var entity = state.entities[entityId]
       if (entity.driving) entity = state.entities[entity.driving]
+      if (entity.passenging) entity = state.entities[entity.passenging]
       state.camera.x = Math.round(entity.x - state.camera.width / 2)
       state.camera.y = Math.round(entity.y - state.camera.height / 2)
       var cameraMaxX = state.district.width - state.camera.width
@@ -406,6 +412,7 @@ function renderLayers(layers) {
     var entityId = state.camera.following
     var entity = state.entities[entityId]
     if (entity.driving) entity = state.entities[entity.driving]
+    if (entity.passenging) entity = state.entities[entity.passenging]
     var $layer = document.getElementById(layer.elementId)
     var $camera = document.getElementById(state.camera.elementId)
     var context = $camera.getContext('2d')
@@ -424,6 +431,7 @@ function renderEntities(entityType) {
   const {camera} = state
   state.district[entityType].forEach(entityId => {
     const entity = state.entities[entityId]
+    if (!entity) return
     const {driving, passenging, occupying} = entity
     if (!(driving || passenging || occupying)) {
       let xInCamera = entity.x - camera.x

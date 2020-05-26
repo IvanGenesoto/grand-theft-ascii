@@ -735,20 +735,33 @@ export const getDistrictKit = function (_districts = []) {
     argumentation.x += gap + variation.width
   }
 
-  const callPushEntity = function (character) {
-    const {characters, vehicles} = this
-    const {district, vehicleKeys, id: characterId} = character
-    const vehiclesInCharacterDistrict = _districts[district].vehicles
-    vehicleKeys.forEach(pushEntityId, {
+  const callPushEntityPairIfKey = function (keyMatchKit, character) {
+    const {characters, vehicles} = keyMatchKit
+    const {district: districtId, vehicleKeys, id: characterId} = character
+    const district = _districts[districtId]
+    const {vehicles: vehiclesInCharacterDistrict} = district
+    vehicleKeys.forEach(pushEntityPairIfKey, {
       vehiclesInCharacterDistrict, characters, characterId, vehicles
     })
   }
 
-  const pushEntityId = function (key) {
+  const pushEntityPairIfKey = function (key) {
     const {vehiclesInCharacterDistrict, characters, characterId, vehicles} = this
     const vehicleId = vehiclesInCharacterDistrict.find(vehicle => vehicle === key)
     vehicleId && characters.push(characterId)
     vehicleId && vehicles.push(vehicleId)
+  }
+
+  const pushEntityPair = function (keyMatchKit, character) {
+    const {characters, vehicles} = keyMatchKit
+    const {district: districtId, id: characterId} = character
+    const district = _districts[districtId]
+    const {vehicles: vehiclesInCharacterDistrict} = district
+    vehiclesInCharacterDistrict.forEach(vehicleId => {
+      characters.push(characterId)
+      vehicles.push(vehicleId)
+    })
+    return keyMatchKit
   }
 
   const detectRowCollisions = function (rowId) {
@@ -766,14 +779,15 @@ export const getDistrictKit = function (_districts = []) {
     while (entitiesToCompare.length) {
       const entityToCompareId = entitiesToCompare.shift()
       const entityToCompare = entities[entityToCompareId]
-      comparedEntities.forEach(pushCollisions, {...this, entityToCompare})
-      comparedEntities.push(entityToCompare)
+      entityToCompare && comparedEntities.forEach(pushCollisions, {...this, entityToCompare})
+      entityToCompare && comparedEntities.push(entityToCompare)
     }
     return this
   }
 
   const pushCollisions = function (comparedEntityId) {
-    const {collisions, interactions, entityToCompare, entities} = this
+    const {collisionKit, entityToCompare, entities} = this
+    const {collisions, interactions} = collisionKit
     const {vehiclesA, vehiclesB} = collisions
     const {charactersA, charactersB} = interactions
     const {x, y, width, height, type} = entityToCompare || {}
@@ -788,8 +802,8 @@ export const getDistrictKit = function (_districts = []) {
     if (!didCollide) return this
     type === 'vehicle' && vehiclesA.push(entityToCompare)
     type === 'vehicle' && vehiclesB.push(comparedEntity)
-    type === 'vehicle' || charactersA.push(entityToCompare)
-    type === 'vehicle' || charactersB.push(comparedEntity)
+    type === 'character' && charactersA.push(entityToCompare)
+    type === 'character' && charactersB.push(comparedEntity)
     return this
   }
 
@@ -889,12 +903,13 @@ export const getDistrictKit = function (_districts = []) {
       districtKit[district][type].push(entityId)
     }),
 
-    checkVehicleKeyMatches: walkers => {
-      const characters = []
-      const vehicles = []
-      walkers.forEach(callPushEntity, {characters, vehicles})
-      return {characters, vehicles}
-    },
+    checkVehicleKeyMatches: walkers => walkers.reduce(callPushEntityPairIfKey, {
+      characters: [], vehicles: []
+    }),
+
+    checkVehicleKeylessMatches: walkers => walkers.reduce(pushEntityPair, {
+      characters: [], vehicles: []
+    }),
 
     addToGrid: (entities) => entities.forEach(entity => {
       const {x, y, width, height, district, id} = entity
@@ -923,13 +938,17 @@ export const getDistrictKit = function (_districts = []) {
     }),
 
     detectCollisions: entities => {
-      const collisions = {vehiclesA: [], vehiclesB: []}
-      const interactions = {charactersA: [], charactersB: []}
+      const collisionKit = {
+        collisions: {vehiclesA: [], vehiclesB: []},
+        interactions: {charactersA: [], charactersB: []}
+      }
+      const {length} = entities
+      if (!length) return collisionKit
       _districts.forEach(district => {
         const {grid} = district
-        grid && Object.keys(grid).forEach(detectRowCollisions, {grid, entities})
+        grid && Object.keys(grid).forEach(detectRowCollisions, {grid, entities, collisionKit})
       })
-      return {collisions, interactions}
+      return collisionKit
     }
   }
 
