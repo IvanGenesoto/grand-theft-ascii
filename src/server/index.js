@@ -132,8 +132,8 @@ const refresh = function () {
   const allDistricts = districtKit.cloneAll()
   entityKit.updateLocations(allDistricts)
   if (tick % 3) return callRefresh.call(this) && state
-  const latencies = playerKit.getLatencies()
-  entityKit.updateLatencies(latencies)
+  const latencyKits = playerKit.getLatencyKits()
+  entityKit.updateLatencies(latencyKits)
   entityKit.emit(io)
   callRefresh.call(this)
   return state
@@ -181,9 +181,10 @@ const walkOrDrive = function (playerCharacters, allPlayers) {
 
 const callRefresh = function () { // #refactor
   const {state} = this
-  const {fps, delayKit: _} = state
+  const {delayKit: _, fps} = state
+  const millisecondsPerFrame = 1000 / fps
   const refreshWithThis = refresh.bind(this)
-  if (!_.loopStartTime) _.loopStartTime = now() - 1000 / fps
+  if (!_.loopStartTime) _.loopStartTime = now() - millisecondsPerFrame
   if (!_.millisecondsAhead) _.millisecondsAhead = 0
   var refreshDuration = now() - state.refreshStartTime
   var loopDuration = now() - _.loopStartTime
@@ -195,7 +196,6 @@ const callRefresh = function () { // #refactor
       _.slowdownConfirmed = true
     }
   }
-  var millisecondsPerFrame = 1000 / fps
   _.millisecondsAhead += millisecondsPerFrame - loopDuration
   _.delay = millisecondsPerFrame + _.millisecondsAhead - refreshDuration
   clearTimeout(_.timeout)
@@ -238,7 +238,7 @@ const runQueues = function () {
   const {updateLatencyBuffer, updateInput} = playerKit
   connectionQueue.forEach(initiatePlayer, this)
   latencyQueue.forEach(updateLatencyBuffer)
-  inputQueue.forEach(updateInput)
+  inputQueue.forEach(updateInput, this)
   connectionQueue.length = 0
   latencyQueue.length = 0
   inputQueue.length = 0

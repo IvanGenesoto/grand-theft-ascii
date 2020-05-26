@@ -17,11 +17,15 @@ const camera = {
 const state = {
   socket,
   camera,
+  performance,
+  fps: 30,
+  tick: 0,
   imagesTotal: 0,
   imagesLoaded: 0,
   player: {},
   delayKit: {},
   entitiesBuffer: [],
+  predictionBuffer: [],
   $game: document.getElementById('game')
 }
 
@@ -58,6 +62,14 @@ const adjustCameraSize = function () {
     $camera && (style.marginLeft = 0)
     $camera && (style.marginRight = 0)
   }
+  else {
+    camera.width = maxWidth
+    style_.marginLeft = horizontalMargin
+    style_.marginRight = horizontalMargin
+    $camera && ($camera.width = maxWidth)
+    $camera && (style.marginLeft = horizontalMargin)
+    $camera && (style.marginRight = horizontalMargin)
+  }
   if (innerHeight < maxHeight) {
     camera.height = innerHeight
     style_.marginTop = 0
@@ -66,15 +78,7 @@ const adjustCameraSize = function () {
     $camera && (style.marginTop = 0)
     $camera && (style.marginBottom = 0)
   }
-  if (innerWidth > maxWidth) {
-    camera.width = maxWidth
-    style_.marginLeft = horizontalMargin
-    style_.marginRight = horizontalMargin
-    $camera && ($camera.width = maxWidth)
-    $camera && (style.marginLeft = horizontalMargin)
-    $camera && (style.marginRight = horizontalMargin)
-  }
-  if (innerHeight > maxHeight) {
+  else {
     camera.height = maxHeight
     style_.marginTop = verticalMargin
     style_.marginBottom = verticalMargin
@@ -116,8 +120,7 @@ const handleEntities = function (entities) {
   const {state} = this
   const {socket, entitiesBuffer, entities: entities_} = state
   const [mayor] = entities
-  const timestamp = mayor.timestamp
-  mayor.timestamp = performance.now()
+  const {timestamp} = mayor
   socket.emit('timestamp', timestamp)
   if (!entities_) entities.forEach(createElement.bind({state}))
   entitiesBuffer.push(entities)
@@ -129,16 +132,15 @@ function initializeDistrict(district) {
   state.district = district
   backgroundLayers.forEach(createElements.bind({state}))
   foregroundLayers.forEach(createElements.bind({state}))
-  checkImagesLoaded()
+  checkImagesLoaded.call(this)
 }
 
-function initiateDistrict() {
-  const {state} = this
+const initiateDistrict = state => {
   const {district} = state
   const {backgroundLayers, foregroundLayers} = district
-  drawToLayer(backgroundLayers)
-  drawToLayer(foregroundLayers)
-  shiftEntitiesBuffer('initiateRefresh')
+  backgroundLayers.forEach(drawBlueprints)
+  foregroundLayers.forEach(drawBlueprints)
+  shiftEntitiesBuffer(state, true)
 }
 
 function createElements(component) {
@@ -149,90 +151,89 @@ function createElements(component) {
 }
 
 function checkImagesLoaded() {
-  clearTimeout(state.timeout)
-  if (state.imagesLoaded === state.imagesTotal) initiateDistrict.call({state})
-  else state.timeout = setTimeout(checkImagesLoaded, 50)
+  const {state} = this
+  const {timeoutId, imagesLoaded, imagesTotal} = state
+  clearTimeout(timeoutId)
+  if (imagesLoaded === imagesTotal) return initiateDistrict(state)
+  state.timeoutId = setTimeout(checkImagesLoaded.bind(this), 50)
 }
 
-function drawToLayer(layers) {
-  layers.forEach(layer => {
-    var {blueprints} = layer
-    blueprints.forEach(blueprint => {
-      const {sectionId} = blueprint
-      const {variationId} = blueprint
-      const variation = layer.sections[sectionId - 1].variations[variationId - 1]
-      const $variation = document.getElementById(variation.elementId)
-      const $layer = document.getElementById(layer.elementId)
-      const context = $layer.getContext('2d')
-      if (layer.scale) {
-        context.scale(layer.scale, layer.scale)
-        var x = blueprint.x / layer.scale
-        var y = blueprint.y / layer.scale
-      }
-      else {
-        x = blueprint.x
-        y = blueprint.y
-      }
-      context.drawImage(
-        $variation, 0, 0, variation.width, variation.height, x, y, variation.width, variation.height
-      )
-      context.setTransform(1, 0, 0, 1, 0, 0)
-    })
-  })
+const drawBlueprints = layer => {
+  const {blueprints} = layer
+  blueprints.forEach(drawBlueprint, {layer})
 }
 
-function shiftEntitiesBuffer(initiatingRefresh) {
-  clearTimeout(state.shiftTimeout)
-  if (state.entitiesBuffer.length > 2) {
-    while (state.entitiesBuffer.length > 2) state.entitiesBuffer.shift()
-    if (initiatingRefresh) {
-      state.entities = state.entitiesBuffer[0]
-    }
-    preservePlayerCharacterLocation(state.entitiesBuffer[0])
-    state.ratioIndex = -1
-    if (initiatingRefresh) refresh(true)
-  }
-  else if (initiatingRefresh) {
-    state.shiftTimeout = setTimeout(() => {
-      shiftEntitiesBuffer(initiatingRefresh)
-    }, 1000 / 30)
-  }
+const drawBlueprint = function (blueprint) {
+  const {layer} = this
+  const {sections, elementId, scale} = layer
+  const {sectionIndex, variationIndex} = blueprint
+  const section = sections[sectionIndex]
+  const {variations} = section
+  const variation = variations[variationIndex]
+  const {width, height} = variation
+  const $variation = document.getElementById(variation.elementId)
+  const $layer = document.getElementById(elementId)
+  const context = $layer.getContext('2d')
+  scale && context.scale(scale, scale)
+  const x = scale ? blueprint.x / scale : blueprint.x
+  const y = scale ? blueprint.y / scale : blueprint.y
+  context.drawImage($variation, 0, 0, width, height, x, y, width, height)
+  context.setTransform(1, 0, 0, 1, 0, 0)
 }
 
-function preservePlayerCharacterLocation(newCityElements) {
-  var index = state.player.character
-  state.xFromNewCityElements = newCityElements[index].x
-  state.yFromNewCityElements = newCityElements[index].y
-  var character = state.entities[index]
-  var {x, y} = character
-  state.entities = newCityElements
-  character = state.entities[index]
-  character.x = x
-  character.y = y
+const shiftEntitiesBuffer = (state, isInitial) => {
+  const {shiftingTimeoutId, entitiesBuffer, fps} = state
+  const {length} = entitiesBuffer
+  const shiftEntitiesBufferWithThese = shiftEntitiesBuffer.bind(null, state, isInitial)
+  const delay = 1000 / fps
+  clearTimeout(shiftingTimeoutId)
+  if (length <= 2) return isInitial && (state.shiftingTimeoutId = setTimeout(
+    shiftEntitiesBufferWithThese, delay
+  ))
+  while (entitiesBuffer.length > 2) entitiesBuffer.shift()
+  const [entities] = entitiesBuffer
+  isInitial && (state.entities = entities)
+  preservePlayerCharacterLocation(entities, state)
+  state.ratioIndex = -1
+  isInitial && refresh(state, true)
 }
 
-function refresh(isInitial) {
+function preservePlayerCharacterLocation(newEntities, state) {
+  const {player, entities} = state
+  const index = player.character
+  const playerCharacter = entities[index]
+  const {x, y} = playerCharacter
+  const newPlayerCharacter = newEntities[index]
+  state.xFromNewEntities = newPlayerCharacter.x
+  state.yFromNewEntities = newPlayerCharacter.y
+  state.entities = newEntities
+  newPlayerCharacter.x = x
+  newPlayerCharacter.y = y
+}
+
+const refresh = (state, isInitial) => {
+  const {performance, player, entities} = state
+  const {character: characterId} = player
+  const character = entities[characterId]
+  const {driving} = character
+  const tick = ++state.tick
+  const input = {...player.input, tick}
+  const ratio = getInterpolationRatio(state)
   state.refreshStartTime = performance.now()
-  var ratio = getInterpolationRatio()
-  if (ratio) interpolateDistrict(ratio)
-  if (state.ratioIndex > 1) {
-    shiftEntitiesBuffer()
-    var result = checkPredictionOutcome()
-    if (result) reconcilePlayerCharacter(result)
-  }
-  var input = {...state.player.input}
   socket.emit('input', input)
-  updatePredictionBuffer(input)
-  updatePlayerCharacterBehavior(input)
-  updatePlayerCharacterLocation()
+  shiftEntitiesBuffer(state)
+  driving || updatePlayerCharacterBehavior(input)
+  driving || updatePlayerCharacterLocation()
+  driving || checkPredictions(state)
+  driving || updatePredictionBuffer(input, state)
+  interpolateDistrict(ratio, state)
   updateCamera()
-  // clearCanvas()
   render(isInitial)
-  callRefresh()
+  callRefresh(state)
 }
 
-function getInterpolationRatio() {
-  var ratios = [
+const getInterpolationRatio = state => {
+  const ratios = [
     0,
     1 / 3,
     2 / 3,
@@ -241,70 +242,94 @@ function getInterpolationRatio() {
     5 / 3,
     2
   ]
-  state.ratioIndex += 1
-  if (state.ratioIndex > 6) state.ratioIndex = 6
-  return ratios[state.ratioIndex]
+  const {ratioIndex} = state
+  const index = ratioIndex > 6 ? 6 : ++state.ratioIndex
+  return ratios[index]
 }
 
-function interpolateDistrict(ratio) {
-  var a = state.entitiesBuffer[0]
-  var b = state.entitiesBuffer[1]
-  state.entities.forEach(entity => {
-    if (
-         entity.district === state.district.id
-      && entity.type !== 'room'
-      && entity.id !== state.player.character
-    ) {
-      var id = entity.id
-      var properties = ['x', 'y']
-      properties.forEach(property => {
-        var difference = b[id][property] - a[id][property]
-        entity[property] = a[id][property] + difference * ratio
-      })
-    }
+const interpolateDistrict = (ratio, state) => {
+  const {entities} = state
+  entities.forEach(interpolateEntityIfShould, {state, ratio})
+}
+
+const interpolateEntityIfShould = function (entity) {
+  const {state} = this
+  const {player, district} = state
+  const shouldInterpolate = getShouldInterpolate(entity, district, player)
+  shouldInterpolate && interpolateEntity.call({...this, entity})
+}
+
+const getShouldInterpolate = (entity, district, player) => (
+     entity.district === district.id
+  && entity.type !== 'room'
+  && entity.id !== player.character
+)
+
+const interpolateEntity = function () {
+  const propertyNames = ['x', 'y']
+  propertyNames.forEach(interpolateProperty, this)
+}
+
+const interpolateProperty = function (propertyName) {
+  const {state, entity, ratio} = this
+  const {entitiesBuffer} = state
+  const [a, b] = entitiesBuffer
+  const {id: index} = entity
+  const difference = b[index][propertyName] - a[index][propertyName]
+  entity[propertyName] = a[index][propertyName] + difference * ratio
+}
+
+const checkPredictions = state => {
+  const index = checkPredictionFromTick(state)
+  if (index || index === 0) reconcilePlayerCharacter(index, state)
+}
+
+const checkPredictionFromTick = state => {
+  const {predictionBuffer, entities, player} = state
+  const characterId = player.character
+  const character = entities[characterId]
+  const {tick} = character
+  const tick_ = tick
+  const index = predictionBuffer.findIndex(({tick}) => tick === tick_)
+  return index === -1 ? 0 : comparePrediction(index, state)
+}
+
+const comparePrediction = (index, state) => {
+  const {predictionBuffer, xFromNewEntities, yFromNewEntities} = state
+  const prediction = predictionBuffer[index]
+  const {x, y} = prediction || {}
+  const x_ = Math.round(x)
+  const y_ = Math.round(y)
+  const xFromNewEntities_ = Math.round(xFromNewEntities)
+  const yFromNewEntities_ = Math.round(yFromNewEntities)
+  const wasWrong = x_ !== xFromNewEntities_ || y_ !== yFromNewEntities_
+  return !wasWrong || index
+}
+
+function reconcilePlayerCharacter(index, state) {
+  const {predictionBuffer, player, entities, xFromNewEntities, yFromNewEntities} = state
+  const {character: characterId} = player
+  const character = entities[characterId]
+  const predictionBuffer_ = predictionBuffer.slice(index)
+  character.x = xFromNewEntities
+  character.y = yFromNewEntities
+  predictionBuffer.length = 0
+  predictionBuffer_.forEach(({input}, index) => {
+    index && updatePlayerCharacterBehavior(input)
+    index && updatePlayerCharacterLocation()
+    updatePredictionBuffer(input, state)
   })
 }
 
-function checkPredictionOutcome() {
-  var {predictionBuffer} = state.player
-  if (!predictionBuffer[0]) return
-  var characterIndex = state.player.character
-  var character = state.entities[characterIndex]
-  var {latency} = character
-  if (!latency) return
-  var timestamp = state.entities[0].timestamp
-  var differences = predictionBuffer.map((prediction) => {
-    var duration = timestamp - prediction.timestamp
-    return Math.abs(duration - latency)
-  })
-  var smallest = Math.min(...differences)
-  var index = differences.findIndex(difference => difference === smallest)
-  var prediction = predictionBuffer[index]
-  if (prediction.x !== state.xFromNewCityElements || prediction.y !== state.yFromNewCityElements) {
-    return index
-  }
-}
-
-function reconcilePlayerCharacter(index) {
-  var {predictionBuffer} = state.player
-  var characterIndex = state.player.character
-  var character = state.entities[characterIndex]
-  character.x = state.xFromNewCityElements
-  character.y = state.yFromNewCityElements
-  for (var i = index; i < predictionBuffer.length; i++) {
-    var input = predictionBuffer[i].input
-    updatePlayerCharacterBehavior(input)
-    updatePlayerCharacterLocation()
-  }
-}
-
-function updatePredictionBuffer(input) {
-  var index = state.player.character
-  var character = state.entities[index]
-  var {x, y} = character
-  var prediction = {x, y, input, timestamp: performance.now()}
-  state.player.predictionBuffer.push(prediction)
-  if (state.player.predictionBuffer.length > 20) state.player.predictionBuffer.shift()
+function updatePredictionBuffer(input, state) {
+  const {player, entities, predictionBuffer} = state
+  const {character: characterId} = player
+  const character = entities[characterId]
+  const {tick} = input || {}
+  const {x, y} = character
+  const prediction = {x, y, tick, input}
+  predictionBuffer.push(prediction)
+  if (predictionBuffer.length > 60) predictionBuffer.shift()
 }
 
 function updatePlayerCharacterBehavior(input) {
@@ -380,16 +405,11 @@ function updateCamera() {
   }
 }
 
-// function clearCanvas() {
-//   var $camera = document.getElementById(state.camera.elementId)
-//   var context = $camera.getContext('2d')
-//   context.clearRect(0, 0, state.camera.width, state.camera.height)
-// }
-
 function renderLayers(layers) {
   layers.forEach(layer => {
     var entityId = state.camera.following
     var entity = state.entities[entityId]
+    if (entity.driving) entity = state.entities[entity.driving]
     var $layer = document.getElementById(layer.elementId)
     var $camera = document.getElementById(state.camera.elementId)
     var context = $camera.getContext('2d')
@@ -447,9 +467,11 @@ function renderEntities(entityType) {
   })
 }
 
-function callRefresh() {
-  const {delayKit: _} = state
-  if (!_.loopStartTime) _.loopStartTime = performance.now() - 1000 / 30
+const callRefresh = state => {
+  const {delayKit: _, fps, performance} = state
+  const millisecondsPerFrame = 1000 / fps
+  const refreshWithState = refresh.bind(null, state)
+  if (!_.loopStartTime) _.loopStartTime = performance.now() - millisecondsPerFrame
   if (!_.millisecondsAhead) _.millisecondsAhead = 0
   var refreshDuration = performance.now() - state.refreshStartTime
   var loopDuration = performance.now() - _.loopStartTime
@@ -461,38 +483,37 @@ function callRefresh() {
       _.slowdownConfirmed = true
     }
   }
-  var millisecondsPerFrame = 1000 / 30
   _.millisecondsAhead += millisecondsPerFrame - loopDuration
   _.delay = millisecondsPerFrame + _.millisecondsAhead - refreshDuration
   clearTimeout(_.timeout)
   if (_.delay < 5) {
     _.checkForSlowdown = false
-    refresh()
+    refreshWithState()
   }
   else {
     if (_.slowdownConfirmed) {
       _.delay = _.delay * _.slowdownCompensation
       if (_.delay < 14) {
         if (_.delay < 7) {
-          refresh()
+          refreshWithState()
         }
         else {
           _.checkForSlowdown = true
           _.slowdownConfirmed = false
-          _.timeout = setTimeout(refresh, 0)
+          _.timeout = setTimeout(refreshWithState, 0)
         }
       }
       else {
         _.checkForSlowdown = true
         _.slowdownConfirmed = false
         var delay = Math.round(_.delay)
-        _.timeout = setTimeout(refresh, delay - 2)
+        _.timeout = setTimeout(refreshWithState, delay - 2)
       }
     }
     else {
       _.checkForSlowdown = true
       delay = Math.round(_.delay - 2)
-      _.timeout = setTimeout(refresh, delay)
+      _.timeout = setTimeout(refreshWithState, delay)
     }
   }
 }
