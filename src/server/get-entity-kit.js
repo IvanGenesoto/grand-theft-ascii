@@ -12,6 +12,7 @@ export const getEntityKit = function (_entities = []) {
       name: 'Fred',
       status: 'alive',
       player: null,
+      tick: null,
       latency: null,
       district: null,
       driving: null,
@@ -384,9 +385,8 @@ export const getEntityKit = function (_entities = []) {
 
     updateLocations: function (districts) {
       _entities.forEach(entity => {
-        const {id} = entity
+        const {id, driving, passenging, occupying, type, slowing, falling} = entity
         if (!id) return
-        const {driving, passenging, occupying, type, slowing, falling} = entity
         if (driving || passenging) return this.updateTravelingCharacterLocation(entity)
         if (occupying) return this.updateOccupyingCharacterLocation(entity, districts)
         if (type === 'character') return this.updateWalkingCharacterLocation(entity, districts)
@@ -398,7 +398,7 @@ export const getEntityKit = function (_entities = []) {
       return this
     },
 
-    updateTravelingCharacterLocation: (character) => {
+    updateTravelingCharacterLocation: character => {
       const {driving, passenging} = character
       const vehicle = driving ? _entities[driving] : _entities[passenging]
       const {x, y, width, height} = vehicle
@@ -482,22 +482,23 @@ export const getEntityKit = function (_entities = []) {
       vehicle.direction = directions[index]
     },
 
-    updateLatencies: latencies => {
-      let characterId = null
-      let latency = null
-      latencies.forEach((item, index) => {
-        if (index % 2 === 0) characterId = item
-        else latency = item
-        if (!characterId || !latency) return
+    updateLatencies: latencyKits => {
+      latencyKits.forEach(latencyKit => {
+        if (!latencyKit) return
+        const {characterId, latency} = latencyKit
         const character = _entities[characterId]
         character.latency = latency
-        characterId = null
-        latency = null
       })
     },
 
+    handleTick: (tick, characterId) => {
+      const character = _entities[characterId]
+      character.tick = tick
+    },
+
     emit: io => {
-      _entities[0].timestamp = now()
+      const [mayor] = _entities
+      mayor.timestamp = now()
       io.volatile.emit('entities', _entities)
     }
   }

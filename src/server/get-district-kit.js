@@ -15,7 +15,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -29,7 +29,7 @@ export const getDistrictKit = function (_districts = []) {
           },
           {
             id: 2,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -59,7 +59,7 @@ export const getDistrictKit = function (_districts = []) {
           },
           {
             id: 3,
-            rows: 48,
+            rowCount: 48,
             variations: [
               {
                 id: 1,
@@ -137,7 +137,7 @@ export const getDistrictKit = function (_districts = []) {
           },
           {
             id: 4,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -162,7 +162,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -187,7 +187,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -216,7 +216,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -251,7 +251,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -286,7 +286,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -369,7 +369,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -452,7 +452,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -535,7 +535,7 @@ export const getDistrictKit = function (_districts = []) {
         sections: [
           {
             id: 1,
-            rows: 1,
+            rowCount: 1,
             variations: [
               {
                 id: 1,
@@ -677,45 +677,43 @@ export const getDistrictKit = function (_districts = []) {
     sections.forEach(handleSection, {isForeground, layer})
   }
 
-  const handleSection = function (section) {
-    const {isForeground, layer} = this
-    const {rows, variations} = section
+  const handleSection = function (section, sectionIndex) {
+    const {variations} = section
     const variationOptions = []
     variations.forEach(pushVariation, {variationOptions})
-    pushBlueprints({isForeground, layer, section, rows, variationOptions})
+    pushBlueprints({...this, section, sectionIndex, variationOptions})
   }
 
-  const pushVariation = function (variation) {
+  const pushVariation = function (variation, index) {
     const {variationOptions} = this
     let {prevalence} = variation
-    while (prevalence) variationOptions.push(variation) && --prevalence
+    while (prevalence) variationOptions.push({variation, index}) && --prevalence
   }
 
   function pushBlueprints(argumentation) {
-    const {section} = argumentation
-    const {id: sectionId} = section
     argumentation.rowsDrawn = 0
-    argumentation.sectionId = sectionId
     startRow(argumentation)
   }
 
   const startRow = argumentation => {
-    const {rowsDrawn, rows} = argumentation
+    const {rowsDrawn, section} = argumentation
+    const {rowCount} = section
     argumentation.x = 0
     argumentation.rowY = 0
-    if (rowsDrawn < rows) pushBlueprint(argumentation)
+    if (rowsDrawn < rowCount) pushBlueprint(argumentation)
   }
 
   const pushBlueprint = argumentation => {
-    const {x, layer, variationOptions, sectionId, isForeground} = argumentation
+    const {x, layer, variationOptions, sectionIndex, isForeground} = argumentation
     if (x >= layer.width) return callStartRow(argumentation)
-    const index = Math.floor(Math.random() * variationOptions.length)
-    const variation = argumentation.variation = variationOptions[index]
-    const {id: variationId} = variation
-    if (layer.y) layerY = layer.y
-    const blueprint = {sectionId, variationId, x, y: layerY}
+    const float = Math.random() * variationOptions.length
+    const index = Math.floor(float)
+    const variationChoice = argumentation.variationChoice = variationOptions[index]
+    const {variation, index: variationIndex} = variationChoice
+    layer.y && (layerY = layer.y)
+    const blueprint = {sectionIndex, variationIndex, x, y: layerY}
     layer.blueprints.push(blueprint)
-    if (isForeground) handleIsForeground(argumentation)
+    isForeground && handleIsForeground(argumentation)
     argumentation.x += variation.width
     argumentation.rowY = variation.height
     pushBlueprint(argumentation)
@@ -729,7 +727,8 @@ export const getDistrictKit = function (_districts = []) {
   }
 
   const handleIsForeground = argumentation => {
-    const {layer, variation} = argumentation
+    const {layer, variationChoice} = argumentation
+    const {variation} = variationChoice
     if (layer.id < 3) return argumentation.x += 2000
     const float = Math.random() * (3000 - 1000) + 1000
     const gap = Math.floor(float)
