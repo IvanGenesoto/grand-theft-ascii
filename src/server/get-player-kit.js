@@ -17,7 +17,7 @@ export const getPlayerKit = function (_players = []) {
       id: null,
       status: 'on',
       socketId: null,
-      character: null,
+      characterId: null,
       latencyBuffer: [],
       input
     }
@@ -101,12 +101,12 @@ export const getPlayerKit = function (_players = []) {
     },
 
     assignCharacter: (playerId, characterId) => {
-      _players[playerId].character = characterId
-      playerKit[playerId].character = characterId
+      _players[playerId].characterId = characterId
+      playerKit[playerId].characterId = characterId
     },
 
     getPlayerCharacterIds: () => {
-      return _players.map(player => player.character)
+      return _players.map(player => player.characterId)
     },
 
     refreshLength: () => {
@@ -120,7 +120,7 @@ export const getPlayerKit = function (_players = []) {
       const {entityKit} = state
       const {playerId: id} = wrappedPlayerId
       const player = _players[id]
-      const {character: characterId} = player
+      const {characterId} = player
       const {tick} = input
       entityKit.handleTick(tick, characterId)
       player && (player.input = input)
@@ -136,7 +136,7 @@ export const getPlayerKit = function (_players = []) {
 
     getLatencyKits: function () {
       return _players.map(player => {
-        const {status, character: characterId, id} = player
+        const {status, characterId, id} = player
         const latency = this.getLatency(id)
         if (status !== 'on') return
         return {characterId, latency}

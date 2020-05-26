@@ -11,16 +11,15 @@ export const getEntityKit = function (_entities = []) {
       type: 'character',
       name: 'Fred',
       status: 'alive',
-      player: null,
-      tick: null,
+      playerId: null,
       latency: null,
-      district: null,
-      driving: null,
-      passenging: null,
-      occupying: null,
+      districtId: null,
+      drivingId: null,
+      passengingId: null,
+      occupyingId: null,
       vehicleMasterKeys: [],
       vehicleKeys: [],
-      vehicleWelcomes: [],
+      vehicleWelcomeIds: [],
       roomMasterKeys: [],
       roomKeys: [],
       x: null,
@@ -41,13 +40,13 @@ export const getEntityKit = function (_entities = []) {
       type: 'vehicle',
       model: 'delorean',
       status: 'operational',
-      district: null,
-      seats: 2,
-      driver: 0,
-      masterKeyHolders: [],
-      keyHolders: [],
-      welcomes: [],
-      passengers: [],
+      districtId: null,
+      seatCount: 2,
+      driverId: null,
+      masterKeyHolderIds: [],
+      keyHolderIds: [],
+      welcomIds: [],
+      passengerIds: [],
       x: null,
       y: null,
       width: 268,
@@ -55,14 +54,13 @@ export const getEntityKit = function (_entities = []) {
       direction: null,
       previousDirection: null,
       speed: null,
-      maxSpeed: 50,
-      speedAtExit: null,
-      slowing: false,
-      falling: false,
+      maxSpeed: 70,
+      isSlowing: false,
+      isDescending: false,
       acceleration: 0.4,
       deceleration: 0.8,
-      armor: null,
-      weight: 0,
+      armorLevel: 0,
+      weight: 2712,
       tag: 'img',
       elementId: null,
       src: 'images/vehicles/delorean.png'
@@ -72,12 +70,12 @@ export const getEntityKit = function (_entities = []) {
       type: 'room',
       name: 'Pad',
       status: 'locked',
-      district: null,
+      districtId: null,
       capacity: 50,
-      occupants: [],
-      masterKeyHolders: [],
-      keyHolders: [],
-      unwelcomes: [],
+      occupantIds: [],
+      masterKeyHolderIds: [],
+      keyHolderIds: [],
+      unwelcomeIds: [],
       x: 0,
       y: 0,
       width: 0,
@@ -85,11 +83,9 @@ export const getEntityKit = function (_entities = []) {
       tag: 'canvas',
       background: null,
       foreground: null,
-      inventory: null,
-      scenery: {
-        background: null,
-        foreground: null
-      }
+      inventory: [],
+      backgroundLayers: [],
+      foregroundLayers: []
     }
     const prototype =
         type === 'character' ? characterPrototype
@@ -109,53 +105,53 @@ export const getEntityKit = function (_entities = []) {
   }
 
   const pushIfVehicleEntry = function (entryKit, vehicleId, index) {
-    const {characters} = this
-    const {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = entryKit
-    const characterId = characters[index]
+    const {characterIds} = this
+    const {characterIdsToEnter, vehicleIdsToBeEntered, nonEntereringWalkerIdss} = entryKit
+    const characterId = characterIds[index]
     const character = _entities[characterId]
     const vehicle = _entities[vehicleId]
-    const {driver} = vehicle
-    const driverCount = driver ? 1 : 0
+    const {driverId, passengerIds, seatCount} = vehicle
+    const {length: passengerCount} = passengerIds
+    const driverCount = driverId ? 1 : 0
     const isEntry =
-         driverCount + vehicle.passengers.length < vehicle.seats
+         driverCount + passengerCount < seatCount
       && character.x < vehicle.x + vehicle.width
       && character.x + character.width > vehicle.x
       && character.y < vehicle.y + vehicle.height
       && character.y + character.height > vehicle.y
-    if (!isEntry) return nonEntereringWalkers.push(character.id) && entryKit
-    charactersToEnter.push(characterId)
-    vehiclesToBeEntered.push(vehicleId)
+    if (!isEntry) return nonEntereringWalkerIdss.push(character.id) && entryKit
+    characterIdsToEnter.push(characterId)
+    vehicleIdsToBeEntered.push(vehicleId)
     return entryKit
   }
 
   const pushIfCanBePut = function (puttedKit, characterId, index) {
     const {vehicleIds} = this
-    const {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = puttedKit
+    const {characterIdsPutInVehicles, vehicleIdsCharactersWerePutIn, strandedWalkerIdss} = puttedKit
     const vehicleId = vehicleIds[index]
     const vehicle = _entities[vehicleId]
     const character = _entities[characterId]
-    const {driver, passengers, seats} = vehicle
-    const {length: passengerCount} = passengers
-    driver && passengerCount + 1 >= seats && strandedWalkers.push(characterId)
-    if (driver) {
-      character.passenging = vehicleId
+    const {driverId, passengerIds, seatCount} = vehicle
+    const {length: passengerCount} = passengerIds
+    if (driverId && passengerCount + 1 >= seatCount) return strandedWalkerIdss.push(characterId)
+    if (driverId) {
+      character.passengingId = vehicleId
+      vehicle.passengerIds.push(characterId)
       character.active = 0
-      vehicle.passengers.push(characterId)
-      charactersPutInVehicles.push(characterId)
-      vehiclesCharactersWerePutIn.push(vehicleId)
+      characterIdsPutInVehicles.push(characterId)
+      vehicleIdsCharactersWerePutIn.push(vehicleId)
+      return
     }
-    else {
-      character.driving = vehicleId
-      character.active = 0
-      vehicle.driver = characterId
-    }
+    character.drivingId = vehicleId
+    vehicle.driverId = characterId
+    character.active = 0
     return puttedKit
   }
 
   const exitVehicleAsPassenger = (characterId, vehicle) => {
-    const {passengers} = vehicle
-    const index = passengers.indexOf(characterId)
-    index + 1 && passengers.splice(index, 1)
+    const {passengerIds} = vehicle
+    const index = passengerIds.indexOf(characterId)
+    index + 1 && passengerIds.splice(index, 1)
   }
 
   const entityKit = {
@@ -178,7 +174,7 @@ export const getEntityKit = function (_entities = []) {
       const entity = createEntity(type)
       const entityClone = createEntity(type)
       const id = entity.id = _entities.length
-      entity.district = districtId
+      entity.districtId = districtId
       entityClone.id = id
       entity.elementId = 'o' + id
       _entities.push(entity)
@@ -262,13 +258,14 @@ export const getEntityKit = function (_entities = []) {
     },
 
     assignPlayer: function (characterId, playerId) {
-      _entities[characterId].player = playerId
-      this[characterId].player = playerId
+      _entities[characterId].playerId = playerId
+      this[characterId].playerId = playerId
     },
 
     assignDistrict: function (entityId, districtId) {
-      _entities[entityId].district = districtId
-      this[entityId].district = districtId
+      const entity = _entities[entityId]
+      entity.districtId = districtId
+      this[entityId].districtId = districtId
     },
 
     giveKey: function (characterId, entityId, isMasterKey) {
@@ -283,36 +280,36 @@ export const getEntityKit = function (_entities = []) {
       const keys = character[keysType]
       const duplicateKey = keys.find(key => key === entityId)
       duplicateKey || keys.push(entityId)
-      const keyHoldersType = isMasterKey ? 'masterKeyHolders' : 'keyHolders'
-      const keyHolders = entity[keyHoldersType]
-      const duplicateKeyHolder = keyHolders.find(keyHolder => keyHolder === characterId)
-      duplicateKeyHolder || keyHolders.push(characterId)
+      const keyHoldersType = isMasterKey ? 'masterKeyHolderIds' : 'keyHolderIds'
+      const keyHolderIds = entity[keyHoldersType]
+      const duplicateKeyHolderId = keyHolderIds.find(keyHolder => keyHolder === characterId)
+      duplicateKeyHolderId || keyHolderIds.push(characterId)
       isMasterKey && this.giveKey(characterId, entityId)
     },
 
-    checkForVehicleEntries: (characters, vehicles) => {
+    checkForVehicleEntries: (characterIds, vehicleIds) => {
       const entryKit = {
-        charactersToEnter: [],
-        vehiclesToBeEntered: [],
-        nonEntereringWalkers: []
+        characterIdsToEnter: [],
+        vehicleIdsToBeEntered: [],
+        nonEntereringWalkerIdss: []
       }
-      const pushIfVehicleEntryWithThis = pushIfVehicleEntry.bind({characters})
-      return vehicles.reduce(pushIfVehicleEntryWithThis, entryKit)
+      const pushIfVehicleEntryWithThis = pushIfVehicleEntry.bind({characterIds})
+      return vehicleIds.reduce(pushIfVehicleEntryWithThis, entryKit)
     },
 
     putCharactersInVehicles: (characterIds, vehicleIds) => {
       const puttedKit = {
-        charactersPutInVehicles: [],
-        vehiclesCharactersWerePutIn: [],
-        strandedWalkers: []
+        characterIdsPutInVehicles: [],
+        vehicleIdsCharactersWerePutIn: [],
+        strandedWalkerIdss: []
       }
       const pushIfCanBePutWithThis = pushIfCanBePut.bind({vehicleIds})
       characterIds.reduce(pushIfCanBePutWithThis, puttedKit)
       return puttedKit
     },
 
-    active: characterId => _entities[characterId].active += 1,
-    inactive: characterId => _entities[characterId].active = 0,
+    activate: characterId => _entities[characterId].active += 1,
+    inactivate: characterId => _entities[characterId].active = 0,
 
     exitVehicles: function (characterIds) {
       characterIds.forEach(characterId => {
@@ -324,19 +321,19 @@ export const getEntityKit = function (_entities = []) {
 
     exitVehicle: characterId => {
       const character = _entities[characterId]
-      const {driving, passenging} = character
+      const {drivingId, passengingId} = character
       const vehicle =
-          driving ? _entities[driving]
-        : passenging ? _entities[passenging]
+          drivingId ? _entities[drivingId]
+        : passengingId ? _entities[passengingId]
         : null
       if (!vehicle) return
-      character.driving = 0
-      character.passenging = 0
+      character.drivingId = null
+      character.passengingId = null
       character.active = 0
-      driving && (vehicle.driver = 0)
-      passenging && exitVehicleAsPassenger(characterId, vehicle)
-      driving && (vehicle.slowing = true)
-      driving && (vehicle.falling = true)
+      drivingId && (vehicle.driverId = null)
+      passengingId && exitVehicleAsPassenger(characterId, vehicle)
+      drivingId && (vehicle.isSlowing = true)
+      drivingId && (vehicle.isDescending = true)
     },
 
     slowDownVehicle: vehicle => {
@@ -349,14 +346,13 @@ export const getEntityKit = function (_entities = []) {
       vehicle.speed -= vehicle.deceleration * multiplier
       if (vehicle.speed > 0) return
       vehicle.speed = 0
-      vehicle.speedAtExit = null
-      vehicle.slowing = false
+      vehicle.isSlowing = false
     },
 
     descendVehicle: vehicle => {
       vehicle.y += 5
       if (vehicle.y < 7843) return
-      vehicle.falling = false
+      vehicle.isDescending = false
       vehicle.y = 7843
     },
 
@@ -373,7 +369,7 @@ export const getEntityKit = function (_entities = []) {
 
     drive: (characterId, input) => {
       const character = _entities[characterId]
-      const vehicleId = character.driving
+      const vehicleId = character.drivingId
       const vehicle = _entities[vehicleId]
       const {up, down, left, right, accelerate, decelerate} = input
       const {direction} = vehicle
@@ -396,34 +392,38 @@ export const getEntityKit = function (_entities = []) {
 
     updateLocations: function (districts) {
       _entities.forEach(entity => {
-        const {id, driving, passenging, occupying, type, slowing, falling} = entity
+        const {id, drivingId, passengingId, occupyingId, type, isSlowing, isDescending} = entity
         if (!id) return
-        if (driving || passenging) return this.updateTravelingCharacterLocation(entity)
-        if (occupying) return this.updateOccupyingCharacterLocation(entity, districts)
+        if (drivingId || passengingId) return this.updateTravelingCharacterLocation(entity)
+        if (occupyingId) return this.updateOccupyingCharacterLocation(entity, districts)
         if (type === 'character') return this.updateWalkingCharacterLocation(entity, districts)
         if (type !== 'vehicle') return
-        if (falling) this.descendVehicle(entity)
-        if (slowing) this.slowDownVehicle(entity)
+        if (isDescending) this.descendVehicle(entity)
+        if (isSlowing) this.slowDownVehicle(entity)
         this.updateVehicleLocation(entity, districts)
       })
       return this
     },
 
     updateTravelingCharacterLocation: character => {
-      const {driving, passenging} = character
-      const vehicle = driving ? _entities[driving] : _entities[passenging]
-      const {x, y, width, height} = vehicle
+      const {drivingId, passengingId} = character
+      const vehicle = drivingId ? _entities[drivingId] : _entities[passengingId]
+      const {x, y, width, height, direction} = vehicle
+      const leftDirections = ['left', 'up-left', 'down-left']
+      const rightDirections = ['right', 'up-right', 'down-right']
       character.x = x + width / 2
       character.y = y + height / 2
+      leftDirections.includes(direction) && (character.direction = 'left')
+      rightDirections.includes(direction) && (character.direction = 'right')
     },
 
     updateOccupyingCharacterLocation: (character, districts) => { // eslint-disable-line no-unused-vars
     },
 
     updateWalkingCharacterLocation: (character, districts) => {
-      const {speed, direction, district, width, player, x, y} = character
-      const district_ = districts[district]
-      const {width: districtWidth} = district_
+      const {speed, direction, districtId, width, player, x, y} = character
+      const district = districts[districtId]
+      const {width: districtWidth} = district
       y < 7832 && (character.y += 20)
       y > 7832 && (character.y = 7832)
       if (speed <= 0) return
@@ -439,11 +439,11 @@ export const getEntityKit = function (_entities = []) {
     },
 
     updateVehicleLocation: (vehicle, districts) => {
-      const {speed, direction, district, width, height, driver, x, y} = vehicle
-      const character = driver && _entities[driver]
-      const {player} = character || {}
-      const district_ = districts[district]
-      const {height: districtHeight, width: districtWidth} = district_
+      const {speed, direction, districtId, width, height, driverId, x, y} = vehicle
+      const character = driverId && _entities[driverId]
+      const {playerId} = character || {}
+      const district = districts[districtId]
+      const {height: districtHeight, width: districtWidth} = district
       const distance = Math.sqrt(speed ** 2 * 2)
       const min = 0
       const maxX = districtWidth - width
@@ -475,7 +475,7 @@ export const getEntityKit = function (_entities = []) {
         : direction === 'up-left' ? ['right', 'up-right', 'down-left', 'down-right']
         : direction === 'down-left' ? ['right', 'up-left', 'up-right', 'down-right']
         : direction
-      if (player) {
+      if (playerId) {
         x_ < min && (vehicle.x = min)
         x_ > maxX && (vehicle.x = maxX)
         y_ < min && (vehicle.y = min)

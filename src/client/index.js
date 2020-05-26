@@ -99,20 +99,20 @@ const emitToken = function () {
 const handlePlayer = function (player) {
   const {state} = this
   const {camera} = state
-  const {character} = player
+  const {characterId} = player
   state.player = player
-  camera.following = character
+  camera.following = characterId
 }
 
 const handleEntity = function (entity) {
   const {state} = this
   const {district} = state
   const {type, id: entityId} = entity
-  const key = type + 's'
+  const key = type + 'Ids'
   const entityIds = district[key]
   const match = entityIds.find(id => id === entityId)
   if (!district || match) return state
-  state.district[entity.type + 's'].push(entity.id)
+  entityIds.push(entityId)
   createElement.call({state}, entity)
 }
 
@@ -200,7 +200,7 @@ const shiftEntitiesBuffer = (state, isInitial) => {
 
 function preservePlayerCharacterLocation(newEntities, state) {
   const {player, entities} = state
-  const index = player.character
+  const index = player.characterId
   const playerCharacter = entities[index]
   const {x} = playerCharacter
   const newPlayerCharacter = newEntities[index]
@@ -211,19 +211,19 @@ function preservePlayerCharacterLocation(newEntities, state) {
 
 const refresh = (state, isInitial) => {
   const {performance, player, entities} = state
-  const {character: characterId} = player
+  const {characterId} = player
   const character = entities[characterId]
-  const {driving} = character
+  const {drivingId} = character
   const tick = ++state.tick
   const input = {...player.input, tick}
   const ratio = getInterpolationRatio(state)
   state.refreshStartTime = performance.now()
   socket.emit('input', input)
   shiftEntitiesBuffer(state)
-  driving || updatePlayerCharacterBehavior(input)
-  driving || updatePlayerCharacterLocation()
-  driving || checkPredictions(state)
-  driving || updatePredictionBuffer(input, state)
+  drivingId || updatePlayerCharacterBehavior(input)
+  drivingId || updatePlayerCharacterLocation()
+  drivingId || checkPredictions(state)
+  drivingId || updatePredictionBuffer(input, state)
   interpolateDistrict(ratio, state)
   updateCamera()
   render(isInitial)
@@ -258,9 +258,9 @@ const interpolateEntityIfShould = function (entity) {
 }
 
 const getShouldInterpolate = (entity, district, player) => (
-     entity.district === district.id
+     entity.districtId === district.id
   && entity.type !== 'room'
-  && entity.id !== player.character
+  && entity.id !== player.characterId
 )
 
 const interpolateEntity = function () {
@@ -289,7 +289,7 @@ const checkPredictions = state => {
 
 const checkPredictionFromTick = state => {
   const {predictionBuffer, entities, player} = state
-  const {character: characterId} = player
+  const {characterId} = player
   const character = entities[characterId]
   const {tick} = character
   const tick_ = tick
@@ -299,7 +299,7 @@ const checkPredictionFromTick = state => {
 
 const comparePrediction = (index, state) => {
   const {predictionBuffer, xFromNewEntities, player, entities} = state
-  const {character: characterId} = player
+  const {characterId} = player
   const character = entities[characterId]
   const {maxSpeed} = character
   const prediction = predictionBuffer[index]
@@ -310,7 +310,7 @@ const comparePrediction = (index, state) => {
 
 function reconcilePlayerCharacter(index, state) {
   const {predictionBuffer, player, entities, xFromNewEntities} = state
-  const {character: characterId} = player
+  const {characterId} = player
   const character = entities[characterId]
   const predictionBuffer_ = predictionBuffer.slice(index)
   character.x = xFromNewEntities
@@ -324,7 +324,7 @@ function reconcilePlayerCharacter(index, state) {
 
 function updatePredictionBuffer(input, state) {
   const {player, entities, predictionBuffer} = state
-  const {character: characterId} = player
+  const {characterId} = player
   const character = entities[characterId]
   const {tick} = input || {}
   const {x} = character
@@ -334,8 +334,8 @@ function updatePredictionBuffer(input, state) {
 }
 
 function updatePlayerCharacterBehavior(input) {
-  var index = state.player.character
-  var character = state.entities[index]
+  const index = state.player.characterId
+  const character = state.entities[index]
   if (input.right === true) {
     character.direction = 'right'
     character.speed = character.maxSpeed
@@ -348,7 +348,7 @@ function updatePlayerCharacterBehavior(input) {
 }
 
 function updatePlayerCharacterLocation() {
-  var index = state.player.character
+  var index = state.player.characterId
   var character = state.entities[index]
   if (character.speed > 0) {
     if (character.direction === 'left') {
@@ -378,8 +378,8 @@ function render(isInitial) {
     $camera.classList.add('hidden')
   }
   renderLayers(backgroundLayers)
-  renderEntities('characters')
-  renderEntities('vehicles')
+  renderEntities('characterIds')
+  renderEntities('vehicleIds')
   renderLayers(foregroundLayers)
   if (isInitial) setTimeout(() => $camera.classList.remove('hidden'), 1250)
 }
@@ -388,13 +388,13 @@ function updateCamera() {
   if (state.camera.following) {
     var entityId = state.camera.following
     if (
-         state.district.characters.find(item => item === entityId)
-      || state.district.vehicles.find(item => item === entityId)
-      || state.district.rooms.find(item => item === entityId)
+         state.district.characterIds.find(item => item === entityId)
+      || state.district.vehicleIds.find(item => item === entityId)
+      || state.district.roomIds.find(item => item === entityId)
     ) {
       var entity = state.entities[entityId]
-      if (entity.driving) entity = state.entities[entity.driving]
-      if (entity.passenging) entity = state.entities[entity.passenging]
+      if (entity.drivingId) entity = state.entities[entity.drivingId]
+      if (entity.passengingId) entity = state.entities[entity.passengingId]
       state.camera.x = Math.round(entity.x - state.camera.width / 2)
       state.camera.y = Math.round(entity.y - state.camera.height / 2)
       var cameraMaxX = state.district.width - state.camera.width
@@ -411,8 +411,8 @@ function renderLayers(layers) {
   layers.forEach(layer => {
     var entityId = state.camera.following
     var entity = state.entities[entityId]
-    if (entity.driving) entity = state.entities[entity.driving]
-    if (entity.passenging) entity = state.entities[entity.passenging]
+    if (entity.drivingId) entity = state.entities[entity.drivingId]
+    if (entity.passengingId) entity = state.entities[entity.passengingId]
     var $layer = document.getElementById(layer.elementId)
     var $camera = document.getElementById(state.camera.elementId)
     var context = $camera.getContext('2d')
@@ -432,8 +432,8 @@ function renderEntities(entityType) {
   state.district[entityType].forEach(entityId => {
     const entity = state.entities[entityId]
     if (!entity) return
-    const {driving, passenging, occupying} = entity
-    if (!(driving || passenging || occupying)) {
+    const {drivingId, passengingId} = entity
+    if (!(drivingId || passengingId)) {
       let xInCamera = entity.x - camera.x
       let yInCamera = entity.y - camera.y
       if (!(
