@@ -12,18 +12,6 @@ const server = Server(app)
 const io = socketIo(server)
 const port = process.env.PORT || 3000
 
-const matchingKit = {
-  characters: [],
-  vehicles: [],
-  checkedWalkers: [],
-  matchesForCharacter: []
-}
-
-const collisionKitByType = {
-  collisionKit: {vehiclesA: [], vehiclesB: []},
-  interactionKit: {charactersA: [], charactersB: []}
-}
-
 const state = {
   tick: 0,
   fps: 30,
@@ -33,9 +21,7 @@ const state = {
   delayKit: {},
   districtKit: getDistrictKit(),
   entityKit: getEntityKit(),
-  playerKit: getPlayerKit(),
-  matchingKit,
-  collisionKitByType
+  playerKit: getPlayerKit()
 }
 
 const createMayor = function () {
@@ -100,29 +86,29 @@ const handleInput = function (input) {
 const refresh = function () {
   const {state} = this
   const {playerKit, entityKit, districtKit} = state
-  const activeKit = {walkers: [], drivers: [], passengers: []}
+  const activeKit = {walkerIds: [], driverIds: [], passengerIds: []}
   const tick = ++state.tick
   state.refreshStartTime = now()
   runQueues.call(this)
   const playerCharacterIds = playerKit.getPlayerCharacterIds()
   const playerCharacters = entityKit.cloneMultiple(playerCharacterIds)
-  const {walkers, drivers, passengers} = playerCharacters.reduce(pushIfActive, activeKit)
-  const walkerClones = entityKit.cloneMultiple(walkers)
-  const {characters, vehicles} = districtKit.checkVehicleKeylessMatches(walkerClones)
-  const vehicleEntryKit = entityKit.checkForVehicleEntries(characters, vehicles)
-  const {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = vehicleEntryKit
-  const puttedKit = entityKit.putCharactersInVehicles(charactersToEnter, vehiclesToBeEntered)
-  const {charactersPutInVehicles, vehiclesCharactersWerePutIn, strandedWalkers} = puttedKit
-  entityKit.exitVehicles(passengers)
-  entityKit.exitVehicles(drivers)
-  const characters_ = entityKit.cloneMultiple(drivers, nonEntereringWalkers, strandedWalkers)
-  const characters__ = characters_.reduce(pushIfUnique.bind({}), [])
-  districtKit.addToGrid(characters__)
-  const {collisions, interactions} = districtKit.detectCollisions(characters__)
+  const {walkerIds, driverIds, passengerIds} = playerCharacters.reduce(pushIfActive, activeKit)
+  const walkerClones = entityKit.cloneMultiple(walkerIds)
+  const {characterIds, vehicleIds} = districtKit.checkVehicleKeylessMatches(walkerClones)
+  const vehicleEntryKit = entityKit.checkForVehicleEntries(characterIds, vehicleIds)
+  const {characterIdsToEnter, vehicleIdsToBeEntered, nonEntereringWalkerIdss} = vehicleEntryKit
+  const puttedKit = entityKit.putCharactersInVehicles(characterIdsToEnter, vehicleIdsToBeEntered)
+  const {characterIdsPutInVehicles, vehicleIdsCharactersWerePutIn, strandedWalkerIdss} = puttedKit
+  entityKit.exitVehicles(passengerIds)
+  entityKit.exitVehicles(driverIds)
+  const characterIds_ = entityKit.cloneMultiple(driverIds, nonEntereringWalkerIdss, strandedWalkerIdss)
+  const characterIds__ = characterIds_.reduce(pushIfUnique.bind({}), [])
+  districtKit.addToGrid(characterIds__)
+  const {collisions, interactions} = districtKit.detectCollisions(characterIds__)
   if (collisions && collisions.length) var collidedVehicles = collideVehicles(collisions)
   if (interactions && interactions.length) var interacted = makeCharactersInteract(interactions)
   entityKit.cloneMultiple(
-    charactersPutInVehicles, vehiclesCharactersWerePutIn, collidedVehicles, interacted
+    characterIdsPutInVehicles, vehicleIdsCharactersWerePutIn, collidedVehicles, interacted
   )
   const playerCharacterIds_ = playerKit.getPlayerCharacterIds()
   const playerCharacters_ = entityKit.cloneMultiple(playerCharacterIds_)
@@ -141,11 +127,11 @@ const refresh = function () {
 }
 
 const pushIfActive = (activeKit, character) => {
-  const {walkers, drivers, passengers} = activeKit
-  const {active, driving, passenging, id: characterId} = character
-  if (active >= 30 && driving) (character.active = 0) || drivers.push(characterId)
-  else if (active >= 30 && passenging) (character.active = 0) || passengers.push(characterId)
-  else if (active >= 30) (character.active = 0) || walkers.push(characterId)
+  const {walkerIds, driverIds, passengerIds} = activeKit
+  const {active, drivingId, passengingId, id: characterId} = character
+  if (active >= 30 && drivingId) (character.active = 0) || driverIds.push(characterId)
+  else if (active >= 30 && passengingId) (character.active = 0) || passengerIds.push(characterId)
+  else if (active >= 30) (character.active = 0) || walkerIds.push(characterId)
   return activeKit
 }
 
@@ -158,21 +144,21 @@ const pushIfUnique = function (uniques, entity) {
   return uniques
 }
 
-function collideVehicles({vehiclesA, vehiclesB}) { // eslint-disable-line no-unused-vars
+function collideVehicles({vehicleIdsA, vehicleIdsB}) { // eslint-disable-line no-unused-vars
 }
 
-function makeCharactersInteract({charactersA, charactersB}) { // eslint-disable-line no-unused-vars
+function makeCharactersInteract({characterIdsA, characterIdsB}) { // eslint-disable-line no-unused-vars
 }
 
 const updateActive = function (allPlayers) {
   const {state} = this
   const {entityKit} = state
   allPlayers.forEach(player => {
-    const {id: playerId, input, character} = player
+    const {id: playerId, input, characterId} = player
     if (!playerId) return
-    if (input.action) entityKit.active(character)
-    else entityKit.inactive(character)
-    entityKit.clone(character)
+    if (input.action) entityKit.activate(characterId)
+    else entityKit.inactivate(characterId)
+    entityKit.clone(characterId)
   })
   return state
 }
@@ -180,11 +166,12 @@ const updateActive = function (allPlayers) {
 const walkOrDrive = function (playerCharacters, allPlayers) {
   const {state} = this
   const {entityKit} = state
-  playerCharacters.forEach(character => {
-    const {player, driving, passenging, id} = character
-    const {input} = allPlayers[player]
-    if (driving) entityKit.drive(id, input)
-    else if (!passenging) entityKit.walk(id, input)
+  playerCharacters.forEach(playerCharacter => {
+    const {playerId, drivingId, passengingId, id} = playerCharacter
+    const player = allPlayers[playerId]
+    const {input} = player
+    if (drivingId) entityKit.drive(id, input)
+    else if (!passengingId) entityKit.walk(id, input)
   })
   return state
 }
