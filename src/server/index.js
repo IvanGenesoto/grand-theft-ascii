@@ -108,7 +108,7 @@ const refresh = function () {
   const playerCharacters = entityKit.cloneMultiple(playerCharacterIds)
   const {walkers, drivers, passengers} = playerCharacters.reduce(pushIfActive, activeKit)
   const walkerClones = entityKit.cloneMultiple(walkers)
-  const {characters, vehicles} = districtKit.checkVehicleKeyMatches(walkerClones)
+  const {characters, vehicles} = districtKit.checkVehicleKeylessMatches(walkerClones)
   const vehicleEntryKit = entityKit.checkForVehicleEntries(characters, vehicles)
   const {charactersToEnter, vehiclesToBeEntered, nonEntereringWalkers} = vehicleEntryKit
   const puttedKit = entityKit.putCharactersInVehicles(charactersToEnter, vehiclesToBeEntered)
@@ -116,8 +116,9 @@ const refresh = function () {
   entityKit.exitVehicles(passengers)
   entityKit.exitVehicles(drivers)
   const characters_ = entityKit.cloneMultiple(drivers, nonEntereringWalkers, strandedWalkers)
-  districtKit.addToGrid(characters_)
-  const {collisions, interactions} = districtKit.detectCollisions(characters_)
+  const characters__ = characters_.reduce(pushIfUnique.bind({}), [])
+  districtKit.addToGrid(characters__)
+  const {collisions, interactions} = districtKit.detectCollisions(characters__)
   if (collisions && collisions.length) var collidedVehicles = collideVehicles(collisions)
   if (interactions && interactions.length) var interacted = makeCharactersInteract(interactions)
   entityKit.cloneMultiple(
@@ -146,6 +147,15 @@ const pushIfActive = (activeKit, character) => {
   else if (active >= 30 && passenging) (character.active = 0) || passengers.push(characterId)
   else if (active >= 30) (character.active = 0) || walkers.push(characterId)
   return activeKit
+}
+
+const pushIfUnique = function (uniques, entity) {
+  const entityById = this
+  const {id} = entity
+  const entity_ = entityById[id]
+  if (entity_) return uniques
+  entityById[id] = entity
+  return uniques
 }
 
 function collideVehicles({vehiclesA, vehiclesB}) { // eslint-disable-line no-unused-vars

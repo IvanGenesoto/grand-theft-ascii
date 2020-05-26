@@ -152,6 +152,12 @@ export const getEntityKit = function (_entities = []) {
     return puttedKit
   }
 
+  const exitVehicleAsPassenger = (characterId, vehicle) => {
+    const {passengers} = vehicle
+    const index = passengers.indexOf(characterId)
+    index + 1 && passengers.splice(index, 1)
+  }
+
   const entityKit = {
 
     length: _entities.length,
@@ -318,14 +324,19 @@ export const getEntityKit = function (_entities = []) {
 
     exitVehicle: characterId => {
       const character = _entities[characterId]
-      const {driving} = character
-      const vehicle = _entities[driving]
+      const {driving, passenging} = character
+      const vehicle =
+          driving ? _entities[driving]
+        : passenging ? _entities[passenging]
+        : null
+      if (!vehicle) return
       character.driving = 0
       character.passenging = 0
       character.active = 0
-      vehicle.driver = 0
-      vehicle.slowing = true
-      vehicle.falling = true
+      driving && (vehicle.driver = 0)
+      passenging && exitVehicleAsPassenger(characterId, vehicle)
+      driving && (vehicle.slowing = true)
+      driving && (vehicle.falling = true)
     },
 
     slowDownVehicle: vehicle => {
