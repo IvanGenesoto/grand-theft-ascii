@@ -202,13 +202,11 @@ function preservePlayerCharacterLocation(newEntities, state) {
   const {player, entities} = state
   const index = player.character
   const playerCharacter = entities[index]
-  const {x, y} = playerCharacter
+  const {x} = playerCharacter
   const newPlayerCharacter = newEntities[index]
   state.xFromNewEntities = newPlayerCharacter.x
-  state.yFromNewEntities = newPlayerCharacter.y
   state.entities = newEntities
   newPlayerCharacter.x = x
-  newPlayerCharacter.y = y
 }
 
 const refresh = (state, isInitial) => {
@@ -243,7 +241,7 @@ const getInterpolationRatio = state => {
     2
   ]
   const {ratioIndex} = state
-  const index = ratioIndex > 6 ? 6 : ++state.ratioIndex
+  const index = ratioIndex === 6 ? 6 : ++state.ratioIndex
   return ratios[index]
 }
 
@@ -286,7 +284,7 @@ const checkPredictions = state => {
 
 const checkPredictionFromTick = state => {
   const {predictionBuffer, entities, player} = state
-  const characterId = player.character
+  const {character: characterId} = player
   const character = entities[characterId]
   const {tick} = character
   const tick_ = tick
@@ -295,24 +293,22 @@ const checkPredictionFromTick = state => {
 }
 
 const comparePrediction = (index, state) => {
-  const {predictionBuffer, xFromNewEntities, yFromNewEntities} = state
+  const {predictionBuffer, xFromNewEntities, player, entities} = state
+  const {character: characterId} = player
+  const character = entities[characterId]
+  const {maxSpeed} = character
   const prediction = predictionBuffer[index]
-  const {x, y} = prediction || {}
-  const x_ = Math.round(x)
-  const y_ = Math.round(y)
-  const xFromNewEntities_ = Math.round(xFromNewEntities)
-  const yFromNewEntities_ = Math.round(yFromNewEntities)
-  const wasWrong = x_ !== xFromNewEntities_ || y_ !== yFromNewEntities_
-  return !wasWrong || index
+  const {x} = prediction || {}
+  const didPredict = Math.abs(x - xFromNewEntities) <= maxSpeed
+  return didPredict ? null : index
 }
 
 function reconcilePlayerCharacter(index, state) {
-  const {predictionBuffer, player, entities, xFromNewEntities, yFromNewEntities} = state
+  const {predictionBuffer, player, entities, xFromNewEntities} = state
   const {character: characterId} = player
   const character = entities[characterId]
   const predictionBuffer_ = predictionBuffer.slice(index)
   character.x = xFromNewEntities
-  character.y = yFromNewEntities
   predictionBuffer.length = 0
   predictionBuffer_.forEach(({input}, index) => {
     index && updatePlayerCharacterBehavior(input)
@@ -326,8 +322,8 @@ function updatePredictionBuffer(input, state) {
   const {character: characterId} = player
   const character = entities[characterId]
   const {tick} = input || {}
-  const {x, y} = character
-  const prediction = {x, y, tick, input}
+  const {x} = character
+  const prediction = {x, tick, input}
   predictionBuffer.push(prediction)
   if (predictionBuffer.length > 60) predictionBuffer.shift()
 }
