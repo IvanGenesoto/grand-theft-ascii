@@ -311,11 +311,11 @@ function updatePlayerCharacterLocation(state) {
   const {characterId} = player
   const character = newEntities[characterId]
   const {x, speed, direction, width} = character
-  const max = district.width - width
+  const maxX = district.width - width
   if (speed <= 0) return state
-  const x_ = character.x = direction === 'left' ? x - speed : x + speed
-  x_ < 0 && (character.x = 0)
-  x_ > max && (character.x = max)
+  character.x = direction === 'left' ? x - speed : x + speed
+  character.x < 0 && (character.x = 0)
+  character.x > maxX && (character.x = maxX)
 }
 
 const render = state => {
