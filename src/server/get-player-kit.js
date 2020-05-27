@@ -15,9 +15,10 @@ export const getPlayerKit = function (_players = []) {
     }
     const prototype = {
       id: null,
-      status: 'on',
+      status: 'online',
       socketId: null,
       characterId: null,
+      previousAction: false,
       latencyBuffer: [],
       input
     }
@@ -105,13 +106,11 @@ export const getPlayerKit = function (_players = []) {
       playerKit[playerId].characterId = characterId
     },
 
-    getPlayerCharacterIds: () => {
-      return _players.map(player => player.characterId)
-    },
+    getPlayerCharacterIds: () => _players.map(player => player.characterId),
 
-    refreshLength: () => {
-      playerKit.length = _players.length
-    },
+    refreshLength: () => playerKit.length = _players.length,
+
+    setPreviousAction: (action, id) => _players[id].previousAction = action,
 
     emit: (playerId, socket) => socket.emit('player', _players[playerId]),
 
@@ -138,7 +137,7 @@ export const getPlayerKit = function (_players = []) {
       return _players.map(player => {
         const {status, characterId, id} = player
         const latency = this.getLatency(id)
-        if (status !== 'on') return
+        if (status !== 'online') return
         return {characterId, latency}
       })
     },

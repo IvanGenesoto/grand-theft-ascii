@@ -30,7 +30,7 @@ export const getEntityKit = function (_entities = []) {
       direction: null,
       speed: null,
       maxSpeed: 10,
-      active: 0,
+      isActive: false,
       tag: 'img',
       elementId: null,
       src: 'images/characters/man.png'
@@ -137,14 +137,14 @@ export const getEntityKit = function (_entities = []) {
     if (driverId) {
       character.passengingId = vehicleId
       vehicle.passengerIds.push(characterId)
-      character.active = 0
+      character.isActive = false
       characterIdsPutInVehicles.push(characterId)
       vehicleIdsCharactersWerePutIn.push(vehicleId)
-      return
+      return puttedKit
     }
     character.drivingId = vehicleId
     vehicle.driverId = characterId
-    character.active = 0
+    character.isActive = false
     return puttedKit
   }
 
@@ -308,14 +308,15 @@ export const getEntityKit = function (_entities = []) {
       return puttedKit
     },
 
-    activate: characterId => _entities[characterId].active += 1,
-    inactivate: characterId => _entities[characterId].active = 0,
+    activate: characterId => _entities[characterId].isActive = true,
+
+    inactivate: characterId => _entities[characterId].isActive = false,
 
     exitVehicles: function (characterIds) {
       characterIds.forEach(characterId => {
         const entity = _entities[characterId]
-        const {active} = entity
-        if (active >= 15) this.exitVehicle(characterId)
+        const {isActive} = entity
+        isActive && this.exitVehicle(characterId)
       })
     },
 
@@ -329,7 +330,7 @@ export const getEntityKit = function (_entities = []) {
       if (!vehicle) return
       character.drivingId = null
       character.passengingId = null
-      character.active = 0
+      character.isActive = false
       drivingId && (vehicle.driverId = null)
       passengingId && exitVehicleAsPassenger(characterId, vehicle)
       drivingId && (vehicle.isSlowing = true)
@@ -411,8 +412,8 @@ export const getEntityKit = function (_entities = []) {
       const {x, y, width, height, direction} = vehicle
       const leftDirections = ['left', 'up-left', 'down-left']
       const rightDirections = ['right', 'up-right', 'down-right']
-      character.x = x + width / 2
-      character.y = y + height / 2
+      character.x = x + width / 2 - character.width / 2
+      character.y = y + height / 2 - character.height / 2
       leftDirections.includes(direction) && (character.direction = 'left')
       rightDirections.includes(direction) && (character.direction = 'right')
     },

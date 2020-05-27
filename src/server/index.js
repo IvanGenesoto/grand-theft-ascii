@@ -90,6 +90,8 @@ const refresh = function () {
   const tick = ++state.tick
   state.refreshStartTime = now()
   runQueues.call(this)
+  const allPlayers = playerKit.cloneAll()
+  updateIsActive.call(this, allPlayers)
   const playerCharacterIds = playerKit.getPlayerCharacterIds()
   const playerCharacters = entityKit.cloneMultiple(playerCharacterIds)
   const {walkerIds, driverIds, passengerIds} = playerCharacters.reduce(pushIfActive, activeKit)
@@ -113,8 +115,6 @@ const refresh = function () {
   const playerCharacterIds_ = playerKit.getPlayerCharacterIds()
   const playerCharacters_ = entityKit.cloneMultiple(playerCharacterIds_)
   entityKit.cloneAll()
-  const allPlayers = playerKit.cloneAll()
-  updateActive.call(this, allPlayers)
   walkOrDrive.call(this, playerCharacters_, allPlayers)
   const allDistricts = districtKit.cloneAll()
   entityKit.updateLocations(allDistricts)
@@ -128,10 +128,10 @@ const refresh = function () {
 
 const pushIfActive = (activeKit, character) => {
   const {walkerIds, driverIds, passengerIds} = activeKit
-  const {active, drivingId, passengingId, id: characterId} = character
-  if (active >= 30 && drivingId) (character.active = 0) || driverIds.push(characterId)
-  else if (active >= 30 && passengingId) (character.active = 0) || passengerIds.push(characterId)
-  else if (active >= 30) (character.active = 0) || walkerIds.push(characterId)
+  const {isActive, drivingId, passengingId, id: characterId} = character
+  if (isActive && drivingId) (character.isActive = false) || driverIds.push(characterId)
+  else if (isActive && passengingId) (character.isActive = false) || passengerIds.push(characterId)
+  else if (isActive) (character.isActive = false) || walkerIds.push(characterId)
   return activeKit
 }
 
@@ -150,14 +150,15 @@ function collideVehicles({vehicleIdsA, vehicleIdsB}) { // eslint-disable-line no
 function makeCharactersInteract({characterIdsA, characterIdsB}) { // eslint-disable-line no-unused-vars
 }
 
-const updateActive = function (allPlayers) {
+const updateIsActive = function (allPlayers) {
   const {state} = this
-  const {entityKit} = state
+  const {entityKit, playerKit} = state
   allPlayers.forEach(player => {
-    const {id: playerId, input, characterId} = player
-    if (!playerId) return
-    if (input.action) entityKit.activate(characterId)
+    const {id: playerId, input, characterId, previousAction} = player
+    const {action} = input
+    if (action && !previousAction) entityKit.activate(characterId)
     else entityKit.inactivate(characterId)
+    playerKit.setPreviousAction(action, playerId)
     entityKit.clone(characterId)
   })
   return state
