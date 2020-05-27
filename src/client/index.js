@@ -5,8 +5,8 @@ const callFunction = (argument, function_) => function_(argument)
 const pipe = (...functions) => functions.reduce(callFunction)
 
 const camera = {
-  following: 0,
-  room: 0,
+  followingId: null,
+  roomId: null,
   x: 0,
   y: 0,
   tag: 'canvas',
@@ -104,7 +104,7 @@ const handlePlayer = function (player) {
   const {camera} = state
   const {characterId} = player
   state.player = player
-  camera.following = characterId
+  camera.followingId = characterId
 }
 
 const handleEntity = function (entity) {
@@ -199,7 +199,7 @@ const shiftEntitiesBuffer = (state, isInitial) => {
   state.newEntities = newEntities
   pipe(state, getPredictionIndex, comparePrediction, reconcilePlayerCharacter)
   state.ratioIndex = 0
-  isInitial && refresh(state, true)
+  isInitial && refresh(state)
 }
 
 const getPredictionIndex = state => {
@@ -220,7 +220,6 @@ const comparePrediction = ({index, state}) => {
   const {x} = character || {}
   const {x: x_} = prediction || {}
   const didPredict = Math.abs(x - x_) <= maxSpeed
-  console.log(Math.abs(x - x_))
   return {didPredict, index, state}
 }
 
@@ -245,7 +244,7 @@ function reconcilePlayerCharacter({didPredict, index, state}) {
   return state
 }
 
-const refresh = (state, isInitial) => {
+const refresh = state => {
   const {performance, player, newEntities} = state
   const {characterId} = player
   const character = newEntities[characterId]
@@ -259,8 +258,8 @@ const refresh = (state, isInitial) => {
   drivingId || updatePlayerCharacterBehavior(input, state)
   drivingId || updatePlayerCharacterLocation(state)
   drivingId || updatePredictionBuffer(input, state)
-  updateCamera()
-  render(isInitial)
+  updateCamera(state)
+  render(state)
   callRefresh(state)
 }
 
@@ -291,154 +290,138 @@ function updatePredictionBuffer(input, state) {
   const {x} = character
   const prediction = {x, tick, input}
   predictionBuffer.push(prediction)
-  if (predictionBuffer.length > 60) predictionBuffer.shift()
+  predictionBuffer.length > 60 && predictionBuffer.shift()
 }
 
 function updatePlayerCharacterBehavior(input, state) {
   const {player, newEntities} = state
   const {characterId} = player
   const character = newEntities[characterId]
-  if (input.right === true) {
-    character.direction = 'right'
-    character.speed = character.maxSpeed
-  }
-  else if (input.left === true) {
-    character.direction = 'left'
-    character.speed = character.maxSpeed
-  }
-  else character.speed = 0
+  const {direction, maxSpeed} = character
+  const {left, right} = input
+  character.speed = left || right ? maxSpeed : 0
+  character.direction =
+      left ? 'left'
+    : right ? 'right'
+    : direction
 }
 
 function updatePlayerCharacterLocation(state) {
-  var {characterId} = state.player
-  var character = state.newEntities[characterId]
-  if (character.speed > 0) {
-    if (character.direction === 'left') {
-      character.x -= character.speed
-      var nextX = character.x - character.speed
-    }
-    else if (character.direction === 'right') {
-      character.x += character.speed
-      nextX = character.x + character.speed
-    }
-    var min = 0
-    var max = state.district.width - character.width
-    if (nextX < min) {
-      character.x = min
-    }
-    if (nextX > max) {
-      character.x = max
-    }
-  }
+  const {player, district, newEntities} = state
+  const {characterId} = player
+  const character = newEntities[characterId]
+  const {x, speed, direction, width} = character
+  const max = district.width - width
+  if (speed <= 0) return state
+  const x_ = character.x = direction === 'left' ? x - speed : x + speed
+  x_ < 0 && (character.x = 0)
+  x_ > max && (character.x = max)
 }
 
-function render(isInitial) {
+const render = state => {
   const {district} = state
-  const {backgroundLayers, foregroundLayers} = district
-  if (isInitial) {
-    var $camera = document.getElementById(state.camera.elementId)
-    $camera.classList.add('hidden')
-  }
-  renderLayers(backgroundLayers)
-  renderEntities('characterIds')
-  renderEntities('vehicleIds')
-  renderLayers(foregroundLayers)
-  if (isInitial) setTimeout(() => $camera.classList.remove('hidden'), 1250)
+  const {backgroundLayers, foregroundLayers, characterIds, vehicleIds} = district
+  backgroundLayers.forEach(renderLayer, {state})
+  characterIds.forEach(renderEntity, {state})
+  vehicleIds.forEach(renderEntity, {state})
+  foregroundLayers.forEach(renderLayer, {state})
 }
 
-function updateCamera() {
-  if (state.camera.following) {
-    var entityId = state.camera.following
-    if (
-         state.district.characterIds.find(item => item === entityId)
-      || state.district.vehicleIds.find(item => item === entityId)
-      || state.district.roomIds.find(item => item === entityId)
-    ) {
-      var entity = state.newEntities[entityId]
-      if (entity.drivingId) entity = state.newEntities[entity.drivingId]
-      if (entity.passengingId) entity = state.newEntities[entity.passengingId]
-      const {id} = entity
-      const entityX = interpolateProperty('x', id, state)
-      const entityY = interpolateProperty('y', id, state)
-      state.camera.x = Math.round(entityX - state.camera.width / 2)
-      state.camera.y = Math.round(entityY - state.camera.height / 2)
-      var cameraMaxX = state.district.width - state.camera.width
-      var cameraMaxY = state.district.height - state.camera.height
-      if (state.camera.x < 0) state.camera.x = 0
-      if (state.camera.x > cameraMaxX) state.camera.x = state.cameraMaxX
-      if (state.camera.y < 0) state.camera.y = 0
-      if (state.camera.y > cameraMaxY) state.camera.y = cameraMaxY
-    }
-  }
+const updateCamera = state => {
+  const {district, camera, newEntities} = state
+  const {followingId} = camera
+  if (!followingId) return state
+  const entity = newEntities[followingId]
+  const {type, drivingId, passengingId} = entity
+  const key = type + 'Ids'
+  const entityIds = district[key]
+  if (!entityIds.some(id => id === followingId)) return state
+  const entityId = drivingId || passengingId || followingId
+  const entity_ = entityId === followingId ? entity : newEntities[entityId]
+  const entityX = interpolateProperty('x', entityId, state)
+  const entityY = interpolateProperty('y', entityId, state)
+  const cameraX = camera.x = Math.round(entityX + entity_.width / 2 - camera.width / 2)
+  const cameraY = camera.y = Math.round(entityY + entity_.height / 2 - camera.height / 2)
+  const maxX = district.width - camera.width
+  const maxY = district.height - camera.height
+  cameraX < 0 && (camera.x = 0)
+  cameraX > maxX && (camera.x = maxX)
+  cameraY < 0 && (camera.y = 0)
+  cameraY > maxY && (camera.y = maxY)
+  return state
 }
 
-function renderLayers(layers) {
-  layers.forEach(layer => {
-    var entityId = state.camera.following
-    var entity = state.newEntities[entityId]
-    if (entity.drivingId) entity = state.newEntities[entity.drivingId]
-    if (entity.passengingId) entity = state.newEntities[entity.passengingId]
-    const {id} = entity
-    const entityX = interpolateProperty('x', id, state)
-    var $layer = document.getElementById(layer.elementId)
-    var $camera = document.getElementById(state.camera.elementId)
-    var context = $camera.getContext('2d')
-    if (layer.x) var layerX = layer.x
-    else layerX = 0
-    var cameraX = Math.round(entityX / layer.depth - state.camera.width / 2 / layer.depth - layerX)
-    var cameraMaxX = Math.round(state.district.width / layer.depth - state.camera.width / layer.depth - layerX)
-    if (cameraX > cameraMaxX) cameraX = cameraMaxX
-    if (!layer.x && cameraX < 0) cameraX = 0
-    context.drawImage($layer, cameraX, state.camera.y, state.camera.width,
-      state.camera.height, 0, 0, state.camera.width, state.camera.height)
-  })
+const renderLayer = function (layer) {
+  const {state} = this
+  const {camera, newEntities, district} = state
+  const {followingId} = camera
+  const entity = newEntities[followingId]
+  const {drivingId, passengingId} = entity
+  const entityId = drivingId || passengingId || followingId
+  const entity_ = entityId === followingId ? entity : newEntities[entityId]
+  const entityX = interpolateProperty('x', entityId, state)
+  const $layer = document.getElementById(layer.elementId)
+  const $camera = document.getElementById(camera.elementId)
+  const context = $camera.getContext('2d')
+  const layerX = layer.x || 0
+  const cameraX = Math.round((entityX + entity_.width / 2) / layer.depth - camera.width / 2 / layer.depth - layerX)
+  const maxX = Math.round(district.width / layer.depth - camera.width / layer.depth - layerX)
+  const cameraX_ =
+      cameraX > maxX ? maxX
+    : !layer.x && cameraX < 0 ? 0
+    : cameraX
+  context.drawImage(
+    $layer,
+    cameraX_,
+    camera.y,
+    camera.width,
+    camera.height,
+    0,
+    0,
+    camera.width,
+    camera.height
+  )
 }
 
-function renderEntities(entityType) {
-  const {camera} = state
-  state.district[entityType].forEach(entityId => {
-    const entity = state.newEntities[entityId]
-    if (!entity) return
-    const {drivingId, passengingId} = entity
-    if (!(drivingId || passengingId)) {
-      const entityX = interpolateProperty('x', entityId, state)
-      const entityY = interpolateProperty('y', entityId, state)
-      let xInCamera = entityX - camera.x
-      let yInCamera = entityY - camera.y
-      if (!(
-           xInCamera > camera.width
-        || xInCamera < 0 - entity.width
-        || yInCamera > camera.height
-        || yInCamera < 0 - entity.height
-      )) {
-        const $entity = document.getElementById(entity.elementId)
-        const $camera = document.getElementById(camera.elementId)
-        const context = $camera.getContext('2d')
-        if (entity.direction) {
-          const {direction, previousDirection} = entity
-          if (
-               direction === 'left'
-            || direction === 'up-left'
-            || direction === 'down-left'
-            || (direction === 'up' && previousDirection === 'left')
-            || (direction === 'up' && previousDirection === 'up-left')
-            || (direction === 'up' && previousDirection === 'down-left')
-            || (direction === 'down' && previousDirection === 'left')
-            || (direction === 'down' && previousDirection === 'up-left')
-            || (direction === 'down' && previousDirection === 'down-left')
-          ) {
-            context.scale(-1, 1)
-            xInCamera = -entityX + camera.x - entity.width / 2
-          }
-        }
-        xInCamera = Math.round(xInCamera)
-        yInCamera = Math.round(yInCamera)
-        context.drawImage($entity, xInCamera, yInCamera)
-        context.setTransform(1, 0, 0, 1, 0, 0)
-      }
-    }
-  })
+function renderEntity(entityId) {
+  const {state} = this
+  const {newEntities, camera} = state
+  const entity = newEntities[entityId]
+  const {drivingId, passengingId, direction, previousDirection} = entity || {}
+  if (!entity || drivingId || passengingId) return
+  const entityX = interpolateProperty('x', entityId, state)
+  const entityY = interpolateProperty('y', entityId, state)
+  let xInCamera = entityX - camera.x
+  const yInCamera = Math.round(entityY - camera.y)
+  const isOffScreen = isEntityOffScreen({xInCamera, yInCamera, entity, camera})
+  if (isOffScreen) return
+  const $entity = document.getElementById(entity.elementId)
+  const $camera = document.getElementById(camera.elementId)
+  const context = $camera.getContext('2d')
+  const shouldFlip = shouldEntityBeFlipped(direction, previousDirection)
+  shouldFlip && context.scale(-1, 1)
+  shouldFlip && (xInCamera = -entityX + camera.x - entity.width)
+  xInCamera = Math.round(xInCamera)
+  context.drawImage($entity, xInCamera, yInCamera)
+  context.setTransform(1, 0, 0, 1, 0, 0)
 }
+
+const isEntityOffScreen = ({xInCamera, yInCamera, entity, camera}) =>
+     xInCamera > camera.width
+  || xInCamera < 0 - entity.width
+  || yInCamera > camera.height
+  || yInCamera < 0 - entity.height
+
+const shouldEntityBeFlipped = (direction, previousDirection) =>
+     direction === 'left'
+  || direction === 'up-left'
+  || direction === 'down-left'
+  || (direction === 'up' && previousDirection === 'left')
+  || (direction === 'up' && previousDirection === 'up-left')
+  || (direction === 'up' && previousDirection === 'down-left')
+  || (direction === 'down' && previousDirection === 'left')
+  || (direction === 'down' && previousDirection === 'up-left')
+  || (direction === 'down' && previousDirection === 'down-left')
 
 const interpolateProperty = function (propertyName, entityId, state) {
   const {entitiesBuffer, ratio, player} = state
