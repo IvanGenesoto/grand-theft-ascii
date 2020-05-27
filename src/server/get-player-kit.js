@@ -9,8 +9,6 @@ export const getPlayerKit = function (_players = []) {
       down: false,
       left: false,
       right: false,
-      accelerate: false,
-      decelerate: false,
       action: false
     }
     const prototype = {

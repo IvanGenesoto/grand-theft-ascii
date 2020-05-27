@@ -54,11 +54,11 @@ export const getEntityKit = function (_entities = []) {
       direction: 'right',
       previousDirection: null,
       speed: null,
-      maxSpeed: 70,
+      maxSpeed: 75,
       isSlowing: false,
       isDescending: false,
-      acceleration: 0.4,
-      deceleration: 0.8,
+      acceleration: 0.6,
+      deceleration: 1.2,
       armorLevel: 0,
       weight: 2712,
       tag: 'img',
@@ -153,6 +153,79 @@ export const getEntityKit = function (_entities = []) {
     const index = passengerIds.indexOf(characterId)
     index + 1 && passengerIds.splice(index, 1)
   }
+
+  const getNewDirection = ({up, down, left, right}) =>
+      up && left ? 'up-left'
+    : up && right ? 'up-right'
+    : down && left ? 'down-left'
+    : down && right ? 'down-right'
+    : up ? 'up'
+    : down ? 'down'
+    : left ? 'left'
+    : right ? 'right'
+    : null
+
+  const isVehicleDecelerating = (direction, newDirection) =>
+       (direction === 'up' && newDirection === 'down')
+    || (direction === 'up' && newDirection === 'down-left')
+    || (direction === 'up' && newDirection === 'down-right')
+    || (direction === 'up-right' && newDirection === 'down-left')
+    || (direction === 'up-right' && newDirection === 'left')
+    || (direction === 'up-right' && newDirection === 'down')
+    || (direction === 'right' && newDirection === 'left')
+    || (direction === 'right' && newDirection === 'up-left')
+    || (direction === 'right' && newDirection === 'down-left')
+    || (direction === 'down-right' && newDirection === 'up-left')
+    || (direction === 'down-right' && newDirection === 'up')
+    || (direction === 'down-right' && newDirection === 'left')
+    || (direction === 'down' && newDirection === 'up')
+    || (direction === 'down' && newDirection === 'up-right')
+    || (direction === 'down' && newDirection === 'up-left')
+    || (direction === 'down-left' && newDirection === 'up-right')
+    || (direction === 'down-left' && newDirection === 'right')
+    || (direction === 'down-left' && newDirection === 'up')
+    || (direction === 'left' && newDirection === 'right')
+    || (direction === 'left' && newDirection === 'down-right')
+    || (direction === 'left' && newDirection === 'up-right')
+    || (direction === 'up-left' && newDirection === 'down-right')
+    || (direction === 'up-left' && newDirection === 'down')
+    || (direction === 'up-left' && newDirection === 'right')
+
+  const isVehicleTurning = (direction, newDirection) =>
+       (direction === 'up' && newDirection === 'left')
+    || (direction === 'up' && newDirection === 'right')
+    || (direction === 'up' && newDirection === 'up-left')
+    || (direction === 'up' && newDirection === 'up-right')
+    || (direction === 'up-right' && newDirection === 'up-left')
+    || (direction === 'up-right' && newDirection === 'down-right')
+    || (direction === 'right' && newDirection === 'up')
+    || (direction === 'right' && newDirection === 'down')
+    || (direction === 'down-right' && newDirection === 'up-right')
+    || (direction === 'down-right' && newDirection === 'down-left')
+    || (direction === 'down' && newDirection === 'right')
+    || (direction === 'down' && newDirection === 'left')
+    || (direction === 'down' && newDirection === 'down-right')
+    || (direction === 'down' && newDirection === 'down-left')
+    || (direction === 'down-left' && newDirection === 'down-right')
+    || (direction === 'down-left' && newDirection === 'up-left')
+    || (direction === 'left' && newDirection === 'down')
+    || (direction === 'left' && newDirection === 'up')
+    || (direction === 'up-left' && newDirection === 'down-left')
+    || (direction === 'up-left' && newDirection === 'up-right')
+
+  const isVehicleStrafing = (direction, newDirection) =>
+       (direction === 'up-right' && newDirection === 'up')
+    || (direction === 'up-right' && newDirection === 'right')
+    || (direction === 'right' && newDirection === 'up-right')
+    || (direction === 'right' && newDirection === 'down-right')
+    || (direction === 'down-right' && newDirection === 'right')
+    || (direction === 'down-right' && newDirection === 'down')
+    || (direction === 'down-left' && newDirection === 'down')
+    || (direction === 'down-left' && newDirection === 'left')
+    || (direction === 'left' && newDirection === 'down-left')
+    || (direction === 'left' && newDirection === 'up-left')
+    || (direction === 'up-left' && newDirection === 'left')
+    || (direction === 'up-left' && newDirection === 'up')
 
   const entityKit = {
 
@@ -389,23 +462,21 @@ export const getEntityKit = function (_entities = []) {
       const character = _entities[characterId]
       const vehicleId = character.drivingId
       const vehicle = _entities[vehicleId]
-      const {up, down, left, right, accelerate, decelerate} = input
-      const {direction} = vehicle
+      const {direction, speed, maxSpeed, acceleration, deceleration} = vehicle
+      const newDirection = getNewDirection(input)
+      const isAccelerating = newDirection === direction
+      const isDecelerating = speed && isVehicleDecelerating(direction, newDirection)
+      const isTurning = isVehicleTurning(direction, newDirection)
+      const isStrafing = isVehicleStrafing(direction, newDirection)
       direction !== 'up' && direction !== 'down' && (vehicle.previousDirection = direction)
-      vehicle.direction =
-          up && left ? 'up-left'
-        : up && right ? 'up-right'
-        : down && left ? 'down-left'
-        : down && right ? 'down-right'
-        : up ? 'up'
-        : down ? 'down'
-        : left ? 'left'
-        : right ? 'right'
-        : direction
-      accelerate && (vehicle.speed += vehicle.acceleration)
-      decelerate && (vehicle.speed -= vehicle.deceleration)
-      vehicle.speed > vehicle.maxSpeed && (vehicle.speed = vehicle.maxSpeed)
+      vehicle.direction = !isDecelerating && newDirection ? newDirection : direction
+      isTurning && (vehicle.speed /= 4)
+      isStrafing && (vehicle.speed *= 0.9)
+      isAccelerating && (vehicle.speed += acceleration)
+      isDecelerating && (vehicle.speed -= deceleration)
+      vehicle.speed > maxSpeed && (vehicle.speed = maxSpeed)
       vehicle.speed < 0 && (vehicle.speed = 0)
+      vehicle.speed < 2 && !isAccelerating && (vehicle.speed = 0)
     },
 
     updateLocations: function (districts) {
@@ -457,14 +528,14 @@ export const getEntityKit = function (_entities = []) {
       character.x > maxX && (character.direction = 'left')
     },
 
-    updateVehicleLocation: (vehicle, districts) => {
+    updateVehicleLocation(vehicle, districts) {
+      const {stopVehicle} = this
       const {speed, direction, districtId, width, height, driverId, x, y} = vehicle
       const character = driverId && _entities[driverId]
       const {playerId} = character || {}
       const district = districts[districtId]
       const {height: districtHeight, width: districtWidth} = district
       const distance = Math.sqrt(speed ** 2 * 2)
-      const min = 0
       const maxX = districtWidth - width
       const maxY = districtHeight - height - 77
       const x_ = vehicle.x =
@@ -495,22 +566,24 @@ export const getEntityKit = function (_entities = []) {
         : direction === 'down-left' ? ['right', 'up-left', 'up-right', 'down-right']
         : direction
       if (playerId) {
-        x_ < min && (vehicle.x = min)
-        x_ > maxX && (vehicle.x = maxX)
-        y_ < min && (vehicle.y = min)
+        x_ <= 0 && stopVehicle(vehicle) && (vehicle.x = 0)
+        x_ >= maxX && stopVehicle(vehicle) && (vehicle.x = maxX)
+        y_ < 0 && (vehicle.y = 0)
         y_ > maxY && (vehicle.y = maxY)
         return
       }
-      x_ < min && (vehicle.x = min)
+      x_ < 0 && (vehicle.x = 0)
       x_ > maxX && (vehicle.x = maxX)
-      y_ < min && (vehicle.y = min)
+      y_ < 0 && (vehicle.y = 0)
       y_ > maxY && (vehicle.y = maxY)
-      if (x_ >= min && x_ <= maxX && y_ >= min && y_ <= maxY) return
+      if (x_ >= 0 && x_ <= maxX && y_ >= 0 && y_ <= maxY) return
       const {length: directionCount} = directions
       const float = Math.random() * directionCount
       const index = Math.floor(float)
       vehicle.direction = directions[index]
     },
+
+    stopVehicle: vehicle => (vehicle.speed = 0) || vehicle,
 
     updateLatencies: latencyKits => {
       latencyKits.forEach(latencyKit => {

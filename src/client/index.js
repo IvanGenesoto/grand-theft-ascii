@@ -194,18 +194,18 @@ const shiftEntitiesBuffer = (state, isInitial) => {
     shiftEntitiesBufferWithThese, delay
   ))
   while (entitiesBuffer.length > 2) entitiesBuffer.shift()
-  const [entities, newEntities] = entitiesBuffer
+  const [oldEntities, entities] = entitiesBuffer
+  state.oldEntities = oldEntities
   state.entities = entities
-  state.newEntities = newEntities
   pipe(state, getPredictionIndex, comparePrediction, reconcilePlayerCharacter)
   state.ratioIndex = 0
   isInitial && refresh(state)
 }
 
 const getPredictionIndex = state => {
-  const {predictionBuffer, newEntities, player} = state
+  const {predictionBuffer, entities, player} = state
   const {characterId} = player
-  const character = newEntities[characterId]
+  const character = entities[characterId]
   const {tick: tick_} = character
   const index = predictionBuffer.findIndex(({tick}) => tick === tick_)
   return {index, state}
@@ -213,9 +213,9 @@ const getPredictionIndex = state => {
 
 const comparePrediction = ({index, state}) => {
   if (index === -1) return {index: 0, state}
-  const {predictionBuffer, player, newEntities} = state
+  const {predictionBuffer, player, entities} = state
   const {characterId, maxSpeed} = player
-  const character = newEntities[characterId]
+  const character = entities[characterId]
   const prediction = predictionBuffer[index]
   const {x} = character || {}
   const {x: x_} = prediction || {}
@@ -224,12 +224,12 @@ const comparePrediction = ({index, state}) => {
 }
 
 function reconcilePlayerCharacter({didPredict, index, state}) {
-  const {player, predictionBuffer, entities, newEntities} = state
+  const {player, predictionBuffer, oldEntities, entities} = state
   const {characterId} = player
-  const character = entities[characterId]
-  const newCharacter = newEntities[characterId]
+  const character = oldEntities[characterId]
+  const newCharacter = entities[characterId]
   const {x, direction} = character || {}
-  const {drivingId} = newEntities
+  const {drivingId} = entities
   didPredict && !drivingId && (newCharacter.x = x)
   didPredict && !drivingId && (newCharacter.direction = direction)
   if (didPredict) return state
@@ -245,9 +245,9 @@ function reconcilePlayerCharacter({didPredict, index, state}) {
 }
 
 const refresh = state => {
-  const {performance, player, newEntities} = state
+  const {performance, player, entities} = state
   const {characterId} = player
-  const character = newEntities[characterId]
+  const character = entities[characterId]
   const {drivingId} = character
   const tick = ++state.tick
   const input = {...player.input, tick}
@@ -283,9 +283,9 @@ const setInterpolationRatio = state => {
 }
 
 function updatePredictionBuffer(input, state) {
-  const {player, newEntities, predictionBuffer} = state
+  const {player, entities, predictionBuffer} = state
   const {characterId} = player
-  const character = newEntities[characterId]
+  const character = entities[characterId]
   const {tick} = input || {}
   const {x} = character
   const prediction = {x, tick, input}
@@ -294,9 +294,9 @@ function updatePredictionBuffer(input, state) {
 }
 
 function updatePlayerCharacterBehavior(input, state) {
-  const {player, newEntities} = state
+  const {player, entities} = state
   const {characterId} = player
-  const character = newEntities[characterId]
+  const character = entities[characterId]
   const {direction, maxSpeed} = character
   const {left, right} = input
   character.speed = left || right ? maxSpeed : 0
@@ -307,9 +307,9 @@ function updatePlayerCharacterBehavior(input, state) {
 }
 
 function updatePlayerCharacterLocation(state) {
-  const {player, district, newEntities} = state
+  const {player, district, entities} = state
   const {characterId} = player
-  const character = newEntities[characterId]
+  const character = entities[characterId]
   const {x, speed, direction, width} = character
   const maxX = district.width - width
   if (speed <= 0) return state
@@ -328,16 +328,16 @@ const render = state => {
 }
 
 const updateCamera = state => {
-  const {district, camera, newEntities} = state
+  const {district, camera, entities} = state
   const {followingId} = camera
   if (!followingId) return state
-  const entity = newEntities[followingId]
+  const entity = entities[followingId]
   const {type, drivingId, passengingId} = entity
   const key = type + 'Ids'
   const entityIds = district[key]
   if (!entityIds.some(id => id === followingId)) return state
   const entityId = drivingId || passengingId || followingId
-  const entity_ = entityId === followingId ? entity : newEntities[entityId]
+  const entity_ = entityId === followingId ? entity : entities[entityId]
   const entityX = interpolateProperty('x', entityId, state)
   const entityY = interpolateProperty('y', entityId, state)
   const cameraX = camera.x = Math.round(entityX + entity_.width / 2 - camera.width / 2)
@@ -353,12 +353,12 @@ const updateCamera = state => {
 
 const renderLayer = function (layer) {
   const {state} = this
-  const {camera, newEntities, district} = state
+  const {camera, entities, district} = state
   const {followingId} = camera
-  const entity = newEntities[followingId]
+  const entity = entities[followingId]
   const {drivingId, passengingId} = entity
   const entityId = drivingId || passengingId || followingId
-  const entity_ = entityId === followingId ? entity : newEntities[entityId]
+  const entity_ = entityId === followingId ? entity : entities[entityId]
   const entityX = interpolateProperty('x', entityId, state)
   const $layer = document.getElementById(layer.elementId)
   const $camera = document.getElementById(camera.elementId)
@@ -385,8 +385,8 @@ const renderLayer = function (layer) {
 
 function renderEntity(entityId) {
   const {state} = this
-  const {newEntities, camera} = state
-  const entity = newEntities[entityId]
+  const {entities, camera} = state
+  const entity = entities[entityId]
   const {drivingId, passengingId, direction, previousDirection} = entity || {}
   if (!entity || drivingId || passengingId) return
   const entityX = interpolateProperty('x', entityId, state)
@@ -423,7 +423,7 @@ const shouldEntityBeFlipped = (direction, previousDirection) =>
   || (direction === 'down' && previousDirection === 'up-left')
   || (direction === 'down' && previousDirection === 'down-left')
 
-const interpolateProperty = function (propertyName, entityId, state) {
+const interpolateProperty = (propertyName, entityId, state) => {
   const {entitiesBuffer, ratio, player} = state
   const {characterId} = player
   const [entitiesA, entitiesB] = entitiesBuffer
@@ -489,40 +489,30 @@ const callRefresh = state => {
   }
 }
 
-function control(key, action) {
-  if (key === 'a' || key === 'A' || key === 'ArrowLeft') {
-    if (action === 'down') state.player.input.left = true
-    if (action === 'up') state.player.input.left = false
-  }
-  if (key === 'd' || key === 'D' || key === 'ArrowRight') {
-    if (action === 'down') state.player.input.right = true
-    if (action === 'up') state.player.input.right = false
-  }
-  if (key === 'w' || key === 'W' || key === 'ArrowUp') {
-    if (action === 'down') state.player.input.up = true
-    if (action === 'up') state.player.input.up = false
-  }
-  if (key === 's' || key === 'S' || key === 'ArrowDown') {
-    if (action === 'down') state.player.input.down = true
-    if (action === 'up') state.player.input.down = false
-  }
-  if (key === ' ') {
-    if (action === 'down') state.player.input.action = true
-    if (action === 'up') state.player.input.action = false
-  }
-  if (key === 'n' || key === 'N') {
-    if (action === 'down') state.player.input.accelerate = true
-    if (action === 'up') state.player.input.accelerate = false
-  }
-  if (key === 'm' || key === 'M') {
-    if (action === 'down') state.player.input.decelerate = true
-    if (action === 'up') state.player.input.decelerate = false
-  }
+function control({key}) {
+  const {state, isDown} = this
+  const {player} = state
+  const {input} = player
+  if (key === 'a' || key === 'A' || key === 'ArrowLeft') isDown
+    ? input.left = true
+    : input.left = false
+  if (key === 'd' || key === 'D' || key === 'ArrowRight') isDown
+    ? input.right = true
+    : input.right = false
+  if (key === 'w' || key === 'W' || key === 'ArrowUp') isDown
+    ? input.up = true
+    : input.up = false
+  if (key === 's' || key === 'S' || key === 'ArrowDown') isDown
+    ? input.down = true
+    : input.down = false
+  if (key === ' ' || key === 'Enter') isDown
+    ? input.action = true
+    : input.action = false
 }
 
 window.addEventListener('resize', adjustCameraSize.bind({state}), false)
-window.addEventListener('keydown', event => control(event.key, 'down'))
-window.addEventListener('keyup', event => control(event.key, 'up'))
+window.addEventListener('keydown', control.bind({state, isDown: true}))
+window.addEventListener('keyup', control.bind({state}))
 socket.on('request_token', emitToken.bind({state, socket}))
 socket.on('district', initializeDistrict.bind({state}))
 socket.on('player', handlePlayer.bind({state}))
