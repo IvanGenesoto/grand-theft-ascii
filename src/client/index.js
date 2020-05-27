@@ -1,6 +1,8 @@
 import socketIo from 'socket.io-client'
 
 const socket = socketIo()
+const callFunction = (argument, function_) => function_(argument)
+const pipe = (...functions) => functions.reduce(callFunction)
 
 const camera = {
   following: 0,
@@ -16,6 +18,7 @@ const camera = {
 
 const state = {
   socket,
+  pipe,
   camera,
   performance,
   fps: 30,
@@ -182,55 +185,86 @@ const drawBlueprint = function (blueprint) {
 }
 
 const shiftEntitiesBuffer = (state, isInitial) => {
-  const {shiftingTimeoutId, entitiesBuffer, fps} = state
+  const {shiftingTimeoutId, entitiesBuffer, fps, ratioIndex, pipe} = state
   const {length} = entitiesBuffer
   const shiftEntitiesBufferWithThese = shiftEntitiesBuffer.bind(null, state, isInitial)
   const delay = 1000 / fps
   clearTimeout(shiftingTimeoutId)
-  if (length <= 2) return isInitial && (state.shiftingTimeoutId = setTimeout(
+  if (length <= 2 || ratioIndex % 3) return isInitial && (state.shiftingTimeoutId = setTimeout(
     shiftEntitiesBufferWithThese, delay
   ))
   while (entitiesBuffer.length > 2) entitiesBuffer.shift()
-  const [entities] = entitiesBuffer
-  isInitial && (state.entities = entities)
-  preservePlayerCharacterLocation(entities, state)
-  state.ratioIndex = -1
+  const [entities, newEntities] = entitiesBuffer
+  state.entities = entities
+  state.newEntities = newEntities
+  pipe(state, getPredictionIndex, comparePrediction, reconcilePlayerCharacter)
+  state.ratioIndex = 0
   isInitial && refresh(state, true)
 }
 
-function preservePlayerCharacterLocation(newEntities, state) {
-  const {player, entities} = state
-  const index = player.characterId
-  const playerCharacter = entities[index]
-  const {x} = playerCharacter
-  const newPlayerCharacter = newEntities[index]
-  state.xFromNewEntities = newPlayerCharacter.x
-  state.entities = newEntities
-  newPlayerCharacter.x = x
+const getPredictionIndex = state => {
+  const {predictionBuffer, newEntities, player} = state
+  const {characterId} = player
+  const character = newEntities[characterId]
+  const {tick: tick_} = character
+  const index = predictionBuffer.findIndex(({tick}) => tick === tick_)
+  return {index, state}
+}
+
+const comparePrediction = ({index, state}) => {
+  if (index === -1) return {index: 0, state}
+  const {predictionBuffer, player, newEntities} = state
+  const {characterId, maxSpeed} = player
+  const character = newEntities[characterId]
+  const prediction = predictionBuffer[index]
+  const {x} = character || {}
+  const {x: x_} = prediction || {}
+  const didPredict = Math.abs(x - x_) <= maxSpeed
+  console.log(Math.abs(x - x_))
+  return {didPredict, index, state}
+}
+
+function reconcilePlayerCharacter({didPredict, index, state}) {
+  const {player, predictionBuffer, entities, newEntities} = state
+  const {characterId} = player
+  const character = entities[characterId]
+  const newCharacter = newEntities[characterId]
+  const {x, direction} = character || {}
+  const {drivingId} = newEntities
+  didPredict && !drivingId && (newCharacter.x = x)
+  didPredict && !drivingId && (newCharacter.direction = direction)
+  if (didPredict) return state
+  const predictionBuffer_ = predictionBuffer.slice(index)
+  predictionBuffer.length = 0
+  if (drivingId) return state
+  predictionBuffer_.forEach(({input}, index) => {
+    index && updatePlayerCharacterBehavior(input, state)
+    index && updatePlayerCharacterLocation(state)
+    updatePredictionBuffer(input, state)
+  })
+  return state
 }
 
 const refresh = (state, isInitial) => {
-  const {performance, player, entities} = state
+  const {performance, player, newEntities} = state
   const {characterId} = player
-  const character = entities[characterId]
+  const character = newEntities[characterId]
   const {drivingId} = character
   const tick = ++state.tick
   const input = {...player.input, tick}
-  const ratio = getInterpolationRatio(state)
   state.refreshStartTime = performance.now()
   socket.emit('input', input)
   shiftEntitiesBuffer(state)
-  drivingId || updatePlayerCharacterBehavior(input)
-  drivingId || updatePlayerCharacterLocation()
-  drivingId || checkPredictions(state)
+  setInterpolationRatio(state)
+  drivingId || updatePlayerCharacterBehavior(input, state)
+  drivingId || updatePlayerCharacterLocation(state)
   drivingId || updatePredictionBuffer(input, state)
-  interpolateDistrict(ratio, state)
   updateCamera()
   render(isInitial)
   callRefresh(state)
 }
 
-const getInterpolationRatio = state => {
+const setInterpolationRatio = state => {
   const ratios = [
     0,
     1 / 3,
@@ -238,94 +272,21 @@ const getInterpolationRatio = state => {
     1,
     4 / 3,
     5 / 3,
-    2
+    2,
+    7 / 3,
+    8 / 3,
+    3
   ]
   const {ratioIndex} = state
-  const index = ratioIndex === 6 ? 6 : ++state.ratioIndex
-  return ratios[index]
-}
-
-const interpolateDistrict = (ratio, state) => {
-  const {entities} = state
-  entities.forEach(interpolateEntityIfShould, {state, ratio})
-}
-
-const interpolateEntityIfShould = function (entity) {
-  const {state} = this
-  const {player, district} = state
-  const shouldInterpolate = getShouldInterpolate(entity, district, player)
-  shouldInterpolate && interpolateEntity.call({...this, entity})
-}
-
-const getShouldInterpolate = (entity, district, player) => (
-     entity.districtId === district.id
-  && entity.type !== 'room'
-  && entity.id !== player.characterId
-)
-
-const interpolateEntity = function () {
-  const propertyNames = ['x', 'y']
-  propertyNames.forEach(interpolateProperty, this)
-}
-
-const interpolateProperty = function (propertyName) {
-  const {state, entity, ratio} = this
-  const {entitiesBuffer} = state
-  const [entitiesA, entitiesB] = entitiesBuffer
-  const {id: index} = entity
-  const entityA = entitiesA[index]
-  const entityB = entitiesB[index]
-  if (!entityA || !entityB) return
-  const propertyA = entityA[propertyName]
-  const propertyB = entityB[propertyName]
-  const difference = propertyB - propertyA
-  entity[propertyName] = propertyA + difference * ratio
-}
-
-const checkPredictions = state => {
-  const index = checkPredictionFromTick(state)
-  if (index || index === 0) reconcilePlayerCharacter(index, state)
-}
-
-const checkPredictionFromTick = state => {
-  const {predictionBuffer, entities, player} = state
-  const {characterId} = player
-  const character = entities[characterId]
-  const {tick} = character
-  const tick_ = tick
-  const index = predictionBuffer.findIndex(({tick}) => tick === tick_)
-  return index === -1 ? 0 : comparePrediction(index, state)
-}
-
-const comparePrediction = (index, state) => {
-  const {predictionBuffer, xFromNewEntities, player, entities} = state
-  const {characterId} = player
-  const character = entities[characterId]
-  const {maxSpeed} = character
-  const prediction = predictionBuffer[index]
-  const {x} = prediction || {}
-  const didPredict = Math.abs(x - xFromNewEntities) <= maxSpeed
-  return didPredict ? null : index
-}
-
-function reconcilePlayerCharacter(index, state) {
-  const {predictionBuffer, player, entities, xFromNewEntities} = state
-  const {characterId} = player
-  const character = entities[characterId]
-  const predictionBuffer_ = predictionBuffer.slice(index)
-  character.x = xFromNewEntities
-  predictionBuffer.length = 0
-  predictionBuffer_.forEach(({input}, index) => {
-    index && updatePlayerCharacterBehavior(input)
-    index && updatePlayerCharacterLocation()
-    updatePredictionBuffer(input, state)
-  })
+  const index = ratioIndex === 9 ? 9 : state.ratioIndex++
+  state.ratio = ratios[index]
+  return state
 }
 
 function updatePredictionBuffer(input, state) {
-  const {player, entities, predictionBuffer} = state
+  const {player, newEntities, predictionBuffer} = state
   const {characterId} = player
-  const character = entities[characterId]
+  const character = newEntities[characterId]
   const {tick} = input || {}
   const {x} = character
   const prediction = {x, tick, input}
@@ -333,9 +294,10 @@ function updatePredictionBuffer(input, state) {
   if (predictionBuffer.length > 60) predictionBuffer.shift()
 }
 
-function updatePlayerCharacterBehavior(input) {
-  const index = state.player.characterId
-  const character = state.entities[index]
+function updatePlayerCharacterBehavior(input, state) {
+  const {player, newEntities} = state
+  const {characterId} = player
+  const character = newEntities[characterId]
   if (input.right === true) {
     character.direction = 'right'
     character.speed = character.maxSpeed
@@ -347,9 +309,9 @@ function updatePlayerCharacterBehavior(input) {
   else character.speed = 0
 }
 
-function updatePlayerCharacterLocation() {
-  var index = state.player.characterId
-  var character = state.entities[index]
+function updatePlayerCharacterLocation(state) {
+  var {characterId} = state.player
+  var character = state.newEntities[characterId]
   if (character.speed > 0) {
     if (character.direction === 'left') {
       character.x -= character.speed
@@ -392,11 +354,14 @@ function updateCamera() {
       || state.district.vehicleIds.find(item => item === entityId)
       || state.district.roomIds.find(item => item === entityId)
     ) {
-      var entity = state.entities[entityId]
-      if (entity.drivingId) entity = state.entities[entity.drivingId]
-      if (entity.passengingId) entity = state.entities[entity.passengingId]
-      state.camera.x = Math.round(entity.x - state.camera.width / 2)
-      state.camera.y = Math.round(entity.y - state.camera.height / 2)
+      var entity = state.newEntities[entityId]
+      if (entity.drivingId) entity = state.newEntities[entity.drivingId]
+      if (entity.passengingId) entity = state.newEntities[entity.passengingId]
+      const {id} = entity
+      const entityX = interpolateProperty('x', id, state)
+      const entityY = interpolateProperty('y', id, state)
+      state.camera.x = Math.round(entityX - state.camera.width / 2)
+      state.camera.y = Math.round(entityY - state.camera.height / 2)
       var cameraMaxX = state.district.width - state.camera.width
       var cameraMaxY = state.district.height - state.camera.height
       if (state.camera.x < 0) state.camera.x = 0
@@ -410,15 +375,17 @@ function updateCamera() {
 function renderLayers(layers) {
   layers.forEach(layer => {
     var entityId = state.camera.following
-    var entity = state.entities[entityId]
-    if (entity.drivingId) entity = state.entities[entity.drivingId]
-    if (entity.passengingId) entity = state.entities[entity.passengingId]
+    var entity = state.newEntities[entityId]
+    if (entity.drivingId) entity = state.newEntities[entity.drivingId]
+    if (entity.passengingId) entity = state.newEntities[entity.passengingId]
+    const {id} = entity
+    const entityX = interpolateProperty('x', id, state)
     var $layer = document.getElementById(layer.elementId)
     var $camera = document.getElementById(state.camera.elementId)
     var context = $camera.getContext('2d')
     if (layer.x) var layerX = layer.x
     else layerX = 0
-    var cameraX = Math.round(entity.x / layer.depth - state.camera.width / 2 / layer.depth - layerX)
+    var cameraX = Math.round(entityX / layer.depth - state.camera.width / 2 / layer.depth - layerX)
     var cameraMaxX = Math.round(state.district.width / layer.depth - state.camera.width / layer.depth - layerX)
     if (cameraX > cameraMaxX) cameraX = cameraMaxX
     if (!layer.x && cameraX < 0) cameraX = 0
@@ -430,12 +397,14 @@ function renderLayers(layers) {
 function renderEntities(entityType) {
   const {camera} = state
   state.district[entityType].forEach(entityId => {
-    const entity = state.entities[entityId]
+    const entity = state.newEntities[entityId]
     if (!entity) return
     const {drivingId, passengingId} = entity
     if (!(drivingId || passengingId)) {
-      let xInCamera = entity.x - camera.x
-      let yInCamera = entity.y - camera.y
+      const entityX = interpolateProperty('x', entityId, state)
+      const entityY = interpolateProperty('y', entityId, state)
+      let xInCamera = entityX - camera.x
+      let yInCamera = entityY - camera.y
       if (!(
            xInCamera > camera.width
         || xInCamera < 0 - entity.width
@@ -459,7 +428,7 @@ function renderEntities(entityType) {
             || (direction === 'down' && previousDirection === 'down-left')
           ) {
             context.scale(-1, 1)
-            xInCamera = -entity.x + camera.x - entity.width / 2
+            xInCamera = -entityX + camera.x - entity.width / 2
           }
         }
         xInCamera = Math.round(xInCamera)
@@ -469,6 +438,21 @@ function renderEntities(entityType) {
       }
     }
   })
+}
+
+const interpolateProperty = function (propertyName, entityId, state) {
+  const {entitiesBuffer, ratio, player} = state
+  const {characterId} = player
+  const [entitiesA, entitiesB] = entitiesBuffer
+  const entityA = entitiesA[entityId]
+  const entityB = entitiesB[entityId]
+  if (!entityA || !entityB) return
+  const valueA = entityA[propertyName]
+  const valueB = entityB[propertyName]
+  if (entityId === characterId && propertyName === 'x') return valueB
+  const difference = valueB - valueA
+  const value = valueA + difference * ratio
+  return value
 }
 
 const callRefresh = state => {
