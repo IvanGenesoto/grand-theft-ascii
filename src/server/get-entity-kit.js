@@ -439,21 +439,22 @@ export const getEntityKit = function (_entities = []) {
     },
 
     updateWalkingCharacterLocation: (character, districts) => {
-      const {speed, direction, districtId, width, player, x, y} = character
+      const {speed, direction, districtId, width, playerId, x} = character
       const district = districts[districtId]
       const {width: districtWidth} = district
-      y < 7832 && (character.y += 20)
-      y > 7832 && (character.y = 7832)
+      const maxX = districtWidth - width
+      character.y < 0 && (character.y = 0)
+      character.y < 7832 && (character.y += 20)
+      character.y > 7832 && (character.y = 7832)
       if (speed <= 0) return
-      const x_ = character.x = direction === 'left' ? x - speed : x + speed
-      const max = districtWidth - width
-      if (player) {
-        x_ < 0 && (character.x = 0)
-        x_ > max && (character.x = max)
+      character.x = direction === 'left' ? x - speed : x + speed
+      if (playerId) {
+        character.x < 0 && (character.x = 0)
+        character.x > maxX && (character.x = maxX)
         return
       }
-      x_ < 0 && (character.direction = 'right')
-      x_ > max && (character.direction = 'left')
+      character.x < 0 && (character.direction = 'right')
+      character.x > maxX && (character.direction = 'left')
     },
 
     updateVehicleLocation: (vehicle, districts) => {
