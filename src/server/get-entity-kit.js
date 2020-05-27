@@ -24,10 +24,10 @@ export const getEntityKit = function (_entities = []) {
       roomKeys: [],
       x: null,
       y: null,
-      width: 105,
-      height: 155,
+      width: 70,
+      height: 103,
       depth: 1,
-      direction: null,
+      direction: 'right',
       speed: null,
       maxSpeed: 10,
       isActive: false,
@@ -51,7 +51,7 @@ export const getEntityKit = function (_entities = []) {
       y: null,
       width: 268,
       height: 80,
-      direction: null,
+      direction: 'right',
       previousDirection: null,
       speed: null,
       maxSpeed: 70,
@@ -168,8 +168,31 @@ export const getEntityKit = function (_entities = []) {
       }
       const directions = directionsByType[type]
       const percentages = [
-        0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 0.1, 0.2, 0.3,
-        0.4, 0.5, 0.6, 0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.3, 0.4
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.1,
+        0.2,
+        0.3,
+        0.3,
+        0.4
       ]
       const entity = createEntity(type)
       const entityClone = createEntity(type)
@@ -313,21 +336,15 @@ export const getEntityKit = function (_entities = []) {
     inactivate: characterId => _entities[characterId].isActive = false,
 
     exitVehicles: function (characterIds) {
-      characterIds.forEach(characterId => {
-        const entity = _entities[characterId]
-        const {isActive} = entity
-        isActive && this.exitVehicle(characterId)
-      })
+      characterIds.forEach(characterId => this.exitVehicle(characterId))
     },
 
     exitVehicle: characterId => {
       const character = _entities[characterId]
-      const {drivingId, passengingId} = character
-      const vehicle =
-          drivingId ? _entities[drivingId]
-        : passengingId ? _entities[passengingId]
-        : null
-      if (!vehicle) return
+      const {isActive, drivingId, passengingId} = character
+      const vehicleId = drivingId || passengingId
+      const vehicle = _entities[vehicleId]
+      if (!isActive || !vehicle) return
       character.drivingId = null
       character.passengingId = null
       character.isActive = false
@@ -413,7 +430,7 @@ export const getEntityKit = function (_entities = []) {
       const leftDirections = ['left', 'up-left', 'down-left']
       const rightDirections = ['right', 'up-right', 'down-right']
       character.x = x + width / 2 - character.width / 2
-      character.y = y + height / 2 - character.height / 2
+      character.y = y + height / 2 - character.height / 2 - 5
       leftDirections.includes(direction) && (character.direction = 'left')
       rightDirections.includes(direction) && (character.direction = 'right')
     },
