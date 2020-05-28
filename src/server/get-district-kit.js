@@ -822,9 +822,9 @@ export const getDistrictKit = function () {
         district.grid = createGrid()
       }
       district.establishedAt = Date.now()
-      const id = district.id = _districts.length
+      district.id = _districts.length
       _districts.push(district)
-      return id
+      return district
     },
 
     choose: _districts => {

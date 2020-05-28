@@ -32,19 +32,23 @@ const state = {
 
 const createMayor = state => {
   const {_players, _entities, playerKit, entityKit, districtKit} = state
-  const playerId = playerKit.create(_players)
-  const characterId = entityKit.create('character', _entities)
-  const districtId = districtKit.create(state, true)
-  playerKit.assignCharacter(playerId, characterId, _players)
-  entityKit.assignPlayer(characterId, playerId, _entities)
-  entityKit.assignDistrict(characterId, districtId, _entities)
+  const player = playerKit.create(_players)
+  const {id: playerId} = player
+  const character = entityKit.create('character', _entities)
+  const {id: characterId} = character
+  const district = districtKit.create(state, true)
+  const {id: districtId} = district
+  player.characterId = characterId
+  character.playerId = playerId
+  character.districtId = districtId
   return state
 }
 
 const initiateDistrict = function (characterCount, vehicleCount) {
   const {state} = this
   const {districtKit} = state
-  const districtId = districtKit.create(state)
+  const district = districtKit.create(state)
+  const {id: districtId} = district
   populate.call(this, 'character', characterCount, districtId)
   populate.call(this, 'vehicle', vehicleCount, districtId)
   return state
@@ -54,8 +58,7 @@ const populate = function (entityType, count, districtId) {
   const {state} = this
   const {_districts, _entities, entityKit, districtKit} = state
   while (count) {
-    const entityId = entityKit.create(entityType, _entities, districtId)
-    const entity = _entities[entityId]
+    const entity = entityKit.create(entityType, _entities, districtId)
     districtKit.addToDistrict(entity, _districts)
     --count
   }
@@ -65,26 +68,26 @@ const populate = function (entityType, count, districtId) {
 const handleConnection = function (socket) {
   const {state} = this
   const {connectionQueue} = state
-  const wrappedPlayerId = {}
-  connectionQueue.push({socket, wrappedPlayerId})
-  socket.on('timestamp', handleTimestamp.bind({state, wrappedPlayerId}))
-  socket.on('input', handleInput.bind({state, wrappedPlayerId}))
+  const wrappedPlayer = {}
+  connectionQueue.push({socket, wrappedPlayer})
+  socket.on('timestamp', handleTimestamp.bind({state, wrappedPlayer}))
+  socket.on('input', handleInput.bind({state, wrappedPlayer}))
   return state
 }
 
 const handleTimestamp = function (timestamp) {
-  const {state, wrappedPlayerId} = this
+  const {state, wrappedPlayer} = this
   const {latencyQueue} = state
   const newTimestamp = now()
   const latency = newTimestamp - timestamp
-  latencyQueue.push({latency, wrappedPlayerId})
+  latencyQueue.push({latency, wrappedPlayer})
   return state
 }
 
 const handleInput = function (input) {
-  const {state, wrappedPlayerId} = this
+  const {state, wrappedPlayer} = this
   const {inputQueue} = state
-  inputQueue.push({input, wrappedPlayerId})
+  inputQueue.push({input, wrappedPlayer})
   return state
 }
 
@@ -216,7 +219,7 @@ const runQueues = function () {
   const {playerKit, connectionQueue, latencyQueue, inputQueue} = state
   const {updateLatencyBuffer, updateInput} = playerKit
   connectionQueue.forEach(initiatePlayer, this)
-  latencyQueue.forEach(updateLatencyBuffer, this)
+  latencyQueue.forEach(updateLatencyBuffer)
   inputQueue.forEach(updateInput, this)
   connectionQueue.length = 0
   latencyQueue.length = 0
@@ -224,27 +227,27 @@ const runQueues = function () {
   return state
 }
 
-const initiatePlayer = function ({socket, wrappedPlayerId}) {
+const initiatePlayer = function ({socket, wrappedPlayer}) {
   const {state} = this
   const {_districts, _entities, _players, playerKit, districtKit, entityKit} = state
   const {id: socketId} = socket
-  const playerId = wrappedPlayerId.playerId = playerKit.create(_players, socketId)
+  const player = wrappedPlayer.player = playerKit.create(_players, socketId)
+  const {id: playerId} = player
   const districtId = districtKit.choose(_districts) || initiateDistrict.call({state})
   const districtIdString = districtId.toString()
-  const characterId = entityKit.create('character', _entities, districtId)
-  playerKit.assignCharacter(playerId, characterId, _players)
+  const character = entityKit.create('character', _entities, districtId)
+  const {id: characterId} = character
+  player.characterId = characterId
+  character.playerId = playerId
   socket.join(districtIdString)
-  entityKit.assignPlayer(characterId, playerId, _entities)
-  const character = _entities[characterId]
   const {x: characterX} = character
   const vehicleX = getVehicleX(characterX)
   const configuration = {x: vehicleX, y: 7843, speed: 0}
-  const vehicleId = entityKit.create('vehicle', _entities, districtId, configuration)
-  entityKit.giveKey(characterId, vehicleId, _entities, true)
-  const vehicle = _entities[vehicleId]
+  const vehicle = entityKit.create('vehicle', _entities, districtId, configuration)
+  entityKit.giveKey(character, vehicle, true)
   districtKit.addToDistrict(character, _districts)
   districtKit.addToDistrict(vehicle, _districts)
-  playerKit.emit(playerId, socket, _players)
+  socket.emit('player', player)
   districtKit.emit(districtId, socket, _districts)
   io.to(districtIdString).emit('entity', character)
   io.to(districtIdString).emit('entity', vehicle)
