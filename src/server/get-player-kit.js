@@ -1,7 +1,4 @@
-export const getPlayerKit = function (_players = []) {
-
-  const all = []
-  const multiple = []
+export const getPlayerKit = function () {
 
   const createPlayer = () => {
     const input = {
@@ -35,95 +32,40 @@ export const getPlayerKit = function (_players = []) {
 
   const playerKit = {
 
-    create: socketId => {
+    create: (_players, socketId) => {
       const player = createPlayer()
-      const playerClone = createPlayer()
       player.socketId = socketId
-      player.id = _players.length
+      const id = player.id = _players.length
       _players.push(player)
-      const {id} = player
-      playerKit[id] = playerClone
-      playerKit.clone(id)
-      playerKit.refreshLength()
       return id
     },
 
-    clone: id => {
-      const playerClone = playerKit[id]
-      const player = _players[id]
-      for (var property in player) {
-        var value = player[property]
-        if (typeof value !== 'object' || value === null) {
-          playerClone[property] = value
-        }
-        else if (Array.isArray(value)) {
-          playerClone[property].length = 0
-          value.forEach(item => playerClone[property].push(item))
-        }
-        else if (typeof value === 'object' && value !== null) {
-          for (var nestedProperty in value) {
-            var nestedValue = value[nestedProperty]
-            if (typeof nestedValue !== 'object' || nestedValue === null) {
-              playerClone[property][nestedProperty] = nestedValue
-            }
-          }
-        }
-      }
-      playerKit[id] = playerClone
-      return playerClone
+    assignCharacter: (playerId, characterId, _players) => {
+      const player = _players[playerId]
+      player.characterId = characterId
+      return _players
     },
 
-    cloneMultiple: (...idArrays) => {
-      multiple.length = 0
-      if (idArrays.length) {
-        idArrays.forEach(idArray => {
-          if (idArray) {
-            idArray.forEach(id => {
-              if (id) {
-                var playerClone = playerKit.clone(id)
-                multiple.push(playerClone)
-              }
-            })
-          }
-        })
-      }
-      return multiple
-    },
+    getPlayerCharacterIds: _players => _players.map(player => player.characterId),
 
-    cloneAll: () => {
-      all.length = 0
-      _players.forEach((unusedItem, id) => {
-        var player = playerKit.clone(id)
-        all.push(player)
-      })
-      return all
-    },
+    setPreviousAction: (action, id, _players) => _players[id].previousAction = action,
 
-    assignCharacter: (playerId, characterId) => {
-      _players[playerId].characterId = characterId
-      playerKit[playerId].characterId = characterId
-    },
-
-    getPlayerCharacterIds: () => _players.map(player => player.characterId),
-
-    refreshLength: () => playerKit.length = _players.length,
-
-    setPreviousAction: (action, id) => _players[id].previousAction = action,
-
-    emit: (playerId, socket) => socket.emit('player', _players[playerId]),
+    emit: (playerId, socket, _players) => socket.emit('player', _players[playerId]),
 
     updateInput: function ({input, wrappedPlayerId}) {
       const {state} = this
-      const {entityKit} = state
+      const {entityKit, _players, _entities} = state
       const {playerId: id} = wrappedPlayerId
       const player = _players[id]
       const {characterId} = player
       const {tick} = input
-      entityKit.handleTick(tick, characterId)
+      entityKit.handleTick(tick, characterId, _entities)
       player && (player.input = input)
     },
 
-    updateLatencyBuffer: ({latency, wrappedPlayerId}) => {
+    updateLatencyBuffer({latency, wrappedPlayerId}) {
+      const {state} = this
+      const {_players} = state
       const {playerId: id} = wrappedPlayerId
       const player = _players[id]
       const {latencyBuffer} = player
@@ -131,16 +73,16 @@ export const getPlayerKit = function (_players = []) {
       latencyBuffer.length > 20 && latencyBuffer.shift()
     },
 
-    getLatencyKits: function () {
+    getLatencyKits: _players => {
       return _players.map(player => {
         const {status, characterId, id} = player
-        const latency = this.getLatency(id)
+        const latency = playerKit.getLatency(id, _players)
         if (status !== 'online') return
         return {characterId, latency}
       })
     },
 
-    getLatency: id => {
+    getLatency: (id, _players) => {
       const player = _players[id]
       const {latencyBuffer} = player
       const {length} = latencyBuffer
