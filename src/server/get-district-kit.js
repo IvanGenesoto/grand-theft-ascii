@@ -665,16 +665,20 @@ export const getDistrictKit = function (_districts = []) {
     return coordinate.slice(0, 2)
   }
 
-  const assignElementId = component => Object.entries(component).forEach(pair => {
-    const [key, value] = pair
-    if (key === 'tag') component.elementId = 's' + ++elementId
-    else if (Array.isArray(value)) value.forEach(assignElementId)
-  })
+  const assignElementIds = function (layer) {
+    Object.entries(layer).forEach(assignElementId, {...this, layer})
+  }
+
+  const assignElementId = function ([key, value]) {
+    const {state, layer} = this
+    if (key === 'tag') layer.elementId = 's' + ++state.elementCount
+    else if (Array.isArray(value)) value.forEach(assignElementIds, this)
+    return state
+  }
 
   const handleLayer = function (layer) {
-    const {isForeground} = this || {}
     const {sections} = layer
-    sections.forEach(handleSection, {isForeground, layer})
+    sections.forEach(handleSection, {...this, layer})
   }
 
   const handleSection = function (section, sectionIndex) {
@@ -690,7 +694,7 @@ export const getDistrictKit = function (_districts = []) {
     while (prevalence) variationOptions.push({variation, index}) && --prevalence
   }
 
-  function pushBlueprints(argumentation) {
+  const pushBlueprints = argumentation => {
     argumentation.rowsDrawn = 0
     startRow(argumentation)
   }
@@ -704,14 +708,14 @@ export const getDistrictKit = function (_districts = []) {
   }
 
   const pushBlueprint = argumentation => {
-    const {x, layer, variationOptions, sectionIndex, isForeground} = argumentation
+    const {state, x, layer, variationOptions, sectionIndex, isForeground} = argumentation
     if (x >= layer.width) return callStartRow(argumentation)
     const float = Math.random() * variationOptions.length
     const index = Math.floor(float)
     const variationChoice = argumentation.variationChoice = variationOptions[index]
     const {variation, index: variationIndex} = variationChoice
-    layer.y && (layerY = layer.y)
-    const blueprint = {sectionIndex, variationIndex, x, y: layerY}
+    layer.y && (state.layerY = layer.y)
+    const blueprint = {sectionIndex, variationIndex, x, y: state.layerY}
     layer.blueprints.push(blueprint)
     isForeground && handleIsForeground(argumentation)
     argumentation.x += variation.width
@@ -720,9 +724,9 @@ export const getDistrictKit = function (_districts = []) {
   }
 
   const callStartRow = argumentation => {
-    const {rowY} = argumentation
+    const {state, rowY} = argumentation
     ++argumentation.rowsDrawn
-    layerY += rowY
+    state.layerY += rowY
     startRow(argumentation)
   }
 
@@ -811,15 +815,15 @@ export const getDistrictKit = function (_districts = []) {
 
     length: _districts.length,
 
-    create: isMayoral => {
+    create: (state, isMayoral) => {
       const district = createDistrict()
       const districtClone = createDistrict()
       const {backgroundLayers, foregroundLayers} = district
       if (!isMayoral) {
-        backgroundLayers.forEach(assignElementId)
-        foregroundLayers.forEach(assignElementId)
-        backgroundLayers.forEach(handleLayer)
-        foregroundLayers.forEach(handleLayer.bind({isForeground: true}))
+        backgroundLayers.forEach(assignElementIds, {state})
+        foregroundLayers.forEach(assignElementIds, {state})
+        backgroundLayers.forEach(handleLayer, {state})
+        foregroundLayers.forEach(handleLayer, {state, isForeground: true})
         district.grid = createGrid()
       }
       district.establishedAt = Date.now()
@@ -951,9 +955,6 @@ export const getDistrictKit = function (_districts = []) {
       return collisionKit
     }
   }
-
-  let elementId = 0
-  let layerY = 0
 
   return districtKit
 }

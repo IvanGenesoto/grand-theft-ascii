@@ -14,6 +14,8 @@ const port = process.env.PORT || 3000
 
 const state = {
   tick: 0,
+  elementCount: 0,
+  layerY: 0,
   fps: 30,
   connectionQueue: [],
   latencyQueue: [],
@@ -30,7 +32,7 @@ const createMayor = function () {
   const {playerKit, entityKit, districtKit} = state
   const playerId = playerKit.create()
   const characterId = entityKit.create('character')
-  const districtId = districtKit.create(true)
+  const districtId = districtKit.create(state, true)
   playerKit.assignCharacter(playerId, characterId)
   entityKit.assignPlayer(characterId, playerId)
   entityKit.assignDistrict(characterId, districtId)
@@ -40,7 +42,7 @@ const createMayor = function () {
 const initiateDistrict = function (characterCount, vehicleCount) {
   const {state} = this
   const {districtKit} = state
-  const districtId = districtKit.create()
+  const districtId = districtKit.create(state)
   populate.call(this, 'character', characterCount, districtId)
   populate.call(this, 'vehicle', vehicleCount, districtId)
   return state
