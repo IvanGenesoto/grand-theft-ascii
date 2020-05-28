@@ -1,7 +1,4 @@
-export const getDistrictKit = function (_districts = []) {
-
-  const all = []
-  const multiple = []
+export const getDistrictKit = function () {
 
   const createDistrict = () => {
     const backgroundLayers = [
@@ -740,7 +737,7 @@ export const getDistrictKit = function (_districts = []) {
   }
 
   const callPushEntityPairIfKey = function (keyMatchKit, character) {
-    const {characterIds, vehicleIds} = keyMatchKit
+    const {characterIds, vehicleIds, _districts} = keyMatchKit
     const {districtId, vehicleKeys, id: characterId} = character
     const district = _districts[districtId]
     const {vehicleIds: vehicleIdsInCharacterDistrict} = district
@@ -757,7 +754,7 @@ export const getDistrictKit = function (_districts = []) {
   }
 
   const pushEntityPair = function (keyMatchKit, character) {
-    const {characterIds, vehicleIds} = keyMatchKit
+    const {characterIds, vehicleIds, _districts} = keyMatchKit
     const {districtId, id: characterId} = character
     const district = _districts[districtId]
     const {vehicleIds: vehicleIdsInCharacterDistrict} = district
@@ -813,11 +810,9 @@ export const getDistrictKit = function (_districts = []) {
 
   var districtKit = {
 
-    length: _districts.length,
-
     create: (state, isMayoral) => {
+      const {_districts} = state
       const district = createDistrict()
-      const districtClone = createDistrict()
       const {backgroundLayers, foregroundLayers} = district
       if (!isMayoral) {
         backgroundLayers.forEach(assignElementIds, {state})
@@ -827,69 +822,12 @@ export const getDistrictKit = function (_districts = []) {
         district.grid = createGrid()
       }
       district.establishedAt = Date.now()
-      district.id = _districts.length
+      const id = district.id = _districts.length
       _districts.push(district)
-      const {id} = district
-      districtKit[id] = districtClone
-      districtKit.clone(id)
-      districtKit.refreshLength()
       return id
     },
 
-    clone: id => {
-      const districtClone = districtKit[id]
-      const district = _districts[id]
-      for (var property in district) {
-        var value = district[property]
-        if (typeof value !== 'object' || value === null) {
-          districtClone[property] = value
-        }
-        else if (Array.isArray(value)) {
-          districtClone[property].length = 0
-          value.forEach(item => districtClone[property].push(item))
-        }
-        else if (typeof value === 'object' && value !== null) {
-          for (var nestedProperty in value) {
-            var nestedValue = value[nestedProperty]
-            if (typeof nestedValue !== 'object' || nestedValue === null) {
-              districtClone[property][nestedProperty] = nestedValue
-            }
-          }
-        }
-      }
-      districtKit[id] = districtClone
-      return districtClone
-    },
-
-    cloneMultiple: (...idArrays) => {
-      multiple.length = 0
-      if (idArrays.length) {
-        idArrays.forEach(idArray => {
-          if (idArray) {
-            idArray.forEach(id => {
-              if (id) {
-                var districtClone = districtKit.clone(id)
-                multiple.push(districtClone)
-              }
-            })
-          }
-        })
-      }
-      return multiple
-    },
-
-    cloneAll: () => {
-      all.length = 0
-      _districts.forEach((unusedItem, id) => {
-        var district = districtKit.clone(id)
-        all.push(district)
-      })
-      return all
-    },
-
-    refreshLength: () => districtKit.length = _districts.length,
-
-    choose: () => {
+    choose: _districts => {
       const district = _districts.find(district => {
         const {id, characterIds} = district
         const {length} = characterIds
@@ -898,24 +836,25 @@ export const getDistrictKit = function (_districts = []) {
       return district && district.id
     },
 
-    emit: (districtId, socket) => socket.emit('district', _districts[districtId]),
+    emit: (districtId, socket, _districts) => socket.emit('district', _districts[districtId]),
 
-    addToDistrict: (...entities) => entities.forEach(entity => {
+    addToDistrict: (entity, _districts) => {
       const {districtId, type, id: entityId} = entity
       const type_ = type + 'Ids'
-      _districts[districtId][type_].push(entityId)
-      districtKit[districtId][type_].push(entityId)
+      const district = _districts[districtId]
+      const entities = district[type_]
+      entities.push(entityId)
+    },
+
+    checkVehicleKeyMatches: (walkerIds, _districts) => walkerIds.reduce(callPushEntityPairIfKey, {
+      characterIds: [], vehicleIds: [], _districts
     }),
 
-    checkVehicleKeyMatches: walkerIds => walkerIds.reduce(callPushEntityPairIfKey, {
-      characterIds: [], vehicleIds: []
+    checkVehicleKeylessMatches: (walkerIds, _districts) => walkerIds.reduce(pushEntityPair, {
+      characterIds: [], vehicleIds: [], _districts
     }),
 
-    checkVehicleKeylessMatches: walkerIds => walkerIds.reduce(pushEntityPair, {
-      characterIds: [], vehicleIds: []
-    }),
-
-    addToGrid: (entities) => entities.forEach(entity => {
+    addToGrid: (entities, _districts) => entities.forEach(entity => {
       const {x, y, width, height, district, id} = entity
       const grid = _districts[district].grid
       const xRight = x + width
@@ -941,7 +880,7 @@ export const getDistrictKit = function (_districts = []) {
       }
     }),
 
-    detectCollisions: entities => {
+    detectCollisions: (entities, _districts) => {
       const collisionKit = {
         collisions: {vehicleIdsA: [], vehicleIdsB: []},
         interactions: {characterIdsA: [], characterIdsB: []}
