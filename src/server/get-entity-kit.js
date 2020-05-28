@@ -292,19 +292,12 @@ export const getEntityKit = function () {
         entity.y = districtHeight - 168
         entity.speed = speed || speed === 0 ? speed : Math.random() * entity.maxSpeed
       }
-      return id
+      return entity
     },
 
-    assignPlayer: (characterId, playerId, _entities) => _entities[characterId].playerId = playerId,
-
-    assignDistrict: function (entityId, districtId, _entities) {
-      const entity = _entities[entityId]
-      entity.districtId = districtId
-    },
-
-    giveKey: (characterId, entityId, _entities, isMasterKey) => {
-      const character = _entities[characterId]
-      const entity = _entities[entityId]
+    giveKey: (character, entity, isMasterKey) => {
+      const {id: characterId} = character
+      const {id: entityId} = entity
       const type = entity.type
       const keysType =
           type === 'vehicle' && isMasterKey ? 'vehicleMasterKeys'
@@ -318,7 +311,7 @@ export const getEntityKit = function () {
       const keyHolderIds = entity[keyHoldersType]
       const duplicateKeyHolderId = keyHolderIds.find(keyHolder => keyHolder === characterId)
       duplicateKeyHolderId || keyHolderIds.push(characterId)
-      isMasterKey && entityKit.giveKey(characterId, entityId, _entities)
+      isMasterKey && entityKit.giveKey(character, entity)
     },
 
     checkForVehicleEntries: (

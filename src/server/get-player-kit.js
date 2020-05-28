@@ -35,39 +35,27 @@ export const getPlayerKit = function () {
     create: (_players, socketId) => {
       const player = createPlayer()
       player.socketId = socketId
-      const id = player.id = _players.length
+      player.id = _players.length
       _players.push(player)
-      return id
-    },
-
-    assignCharacter: (playerId, characterId, _players) => {
-      const player = _players[playerId]
-      player.characterId = characterId
-      return _players
+      return player
     },
 
     getPlayerCharacterIds: _players => _players.map(player => player.characterId),
 
     setPreviousAction: (action, id, _players) => _players[id].previousAction = action,
 
-    emit: (playerId, socket, _players) => socket.emit('player', _players[playerId]),
-
-    updateInput: function ({input, wrappedPlayerId}) {
+    updateInput: function ({input, wrappedPlayer}) {
       const {state} = this
-      const {entityKit, _players, _entities} = state
-      const {playerId: id} = wrappedPlayerId
-      const player = _players[id]
+      const {entityKit, _entities} = state
+      const {player} = wrappedPlayer
       const {characterId} = player
       const {tick} = input
       entityKit.handleTick(tick, characterId, _entities)
       player && (player.input = input)
     },
 
-    updateLatencyBuffer({latency, wrappedPlayerId}) {
-      const {state} = this
-      const {_players} = state
-      const {playerId: id} = wrappedPlayerId
-      const player = _players[id]
+    updateLatencyBuffer({latency, wrappedPlayer}) {
+      const {player} = wrappedPlayer
       const {latencyBuffer} = player
       latencyBuffer.push(latency)
       latencyBuffer.length > 20 && latencyBuffer.shift()
