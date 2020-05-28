@@ -3,7 +3,7 @@ import {Server} from 'http'
 import socketIo from 'socket.io'
 import {join} from 'path'
 import now from 'performance-now'
-import {getDistrictKit} from './get-district-kit'
+import {getCityKit} from './get-city-kit'
 import {getEntityKit} from './get-entity-kit'
 import {getPlayerKit} from './get-player-kit'
 
@@ -21,47 +21,69 @@ const state = {
   latencyQueue: [],
   inputQueue: [],
   delayKit: {},
-  districtKit: getDistrictKit(),
+  cityKit: getCityKit(),
   entityKit: getEntityKit(),
   playerKit: getPlayerKit(),
   _players: [],
-  _districts: [],
   _entities: [],
   now
 }
 
 const createMayor = state => {
-  const {_players, _entities, playerKit, entityKit, districtKit} = state
+  const {_players, playerKit, entityKit} = state
   const player = playerKit.create(_players)
   const {id: playerId} = player
-  const character = entityKit.create('character', _entities)
+  const character = entityKit.create('character', state)
   const {id: characterId} = character
-  const district = districtKit.create(state, true)
-  const {id: districtId} = district
   player.characterId = characterId
   character.playerId = playerId
-  character.districtId = districtId
   return state
 }
 
-const initiateDistrict = function (characterCount, vehicleCount) {
+const initiate = function (characterCount, vehicleCount) {
   const {state} = this
-  const {districtKit} = state
-  const district = districtKit.create(state)
-  const {id: districtId} = district
-  populate.call(this, 'character', characterCount, districtId)
-  populate.call(this, 'vehicle', vehicleCount, districtId)
+  const {cityKit} = state
+  state.city = cityKit.createCity(state)
+  state.grid = createGrid()
+  populate.call(this, 'character', characterCount)
+  populate.call(this, 'vehicle', vehicleCount)
   return state
 }
 
-const populate = function (entityType, count, districtId) {
-  const {state} = this
-  const {_districts, _entities, entityKit, districtKit} = state
-  while (count) {
-    const entity = entityKit.create(entityType, _entities, districtId)
-    districtKit.addToDistrict(entity, _districts)
-    --count
+const createGrid = () => {
+  const grid = {}
+  let rowCount = -1
+  while (rowCount < 8) {
+    ++rowCount
+    const rowId = getGridIndex(rowCount * 1000)
+    const row = grid[rowId] = {}
+    let sectionCount = -1
+    while (sectionCount < 32) {
+      ++sectionCount
+      const sectionId = getGridIndex(sectionCount * 1000)
+      const section = row[sectionId] = {}
+      section.a = []
+      section.b = []
+    }
   }
+  return grid
+}
+
+const getGridIndex = coordinate => {
+  coordinate = Math.round(coordinate)
+  coordinate = coordinate.toString()
+  const {length} = coordinate
+  let zerosToAdd = 5 - length
+  let zeros = ''
+  while (zerosToAdd > 0) zeros += '0' && --zerosToAdd
+  coordinate = zeros + coordinate
+  return coordinate.slice(0, 2)
+}
+
+const populate = function (entityType, count) {
+  const {state} = this
+  const {entityKit} = state
+  while (count) entityKit.create(entityType, state) && --count
   return state
 }
 
@@ -92,8 +114,9 @@ const handleInput = function (input) {
 }
 
 const refresh = state => {
-  const {_districts, _players, _entities, playerKit, entityKit, districtKit} = state
+  const {_players, _entities, playerKit, entityKit, cityKit, grid} = state
   const activeKit = {walkerIds: [], driverIds: [], passengerIds: []}
+  const pairKit = {characterIds: [], vehicleIds: [], _entities}
   const tick = ++state.tick
   state.refreshStartTime = now()
   runQueues.call({state})
@@ -102,7 +125,7 @@ const refresh = state => {
   const playerCharacters = playerCharacterIds.map(id => _entities[id])
   const {walkerIds, driverIds, passengerIds} = playerCharacters.reduce(pushIfActive, activeKit)
   const walkers = walkerIds.map(id => _entities[id])
-  const {characterIds, vehicleIds} = districtKit.checkVehicleKeylessMatches(walkers, _districts)
+  const {characterIds, vehicleIds} = walkers.reduce(pushEntityPair, pairKit)
   const vehicleEntryKit = entityKit.checkForVehicleEntries(characterIds, vehicleIds, _entities)
   const {characterIdsToEnter, vehicleIdsToBeEntered, nonEntereringWalkerIdss} = vehicleEntryKit
   const puttedKit = entityKit.putCharactersInVehicles(characterIdsToEnter, vehicleIdsToBeEntered, _entities)
@@ -111,8 +134,8 @@ const refresh = state => {
   driverIds.forEach(entityKit.exitVehicle, {_entities})
   const characterIds_ = [driverIds, nonEntereringWalkerIdss, strandedWalkerIdss].flat()
   const characterIds__ = characterIds_.reduce(pushIfUnique.bind({}), [])
-  districtKit.addToGrid(characterIds__, _districts)
-  const {collisions, interactions} = districtKit.detectCollisions(characterIds__, _districts)
+  addToGrid(characterIds__, grid)
+  const {collisions, interactions} = cityKit.detectCollisions(characterIds__, grid)
   if (collisions.length) collideVehicles(collisions)
   if (interactions.length) makeCharactersInteract(interactions)
   walkOrDrive.call({state}, playerCharacters, _players)
@@ -134,6 +157,18 @@ const pushIfActive = (activeKit, character) => {
   return activeKit
 }
 
+const pushEntityPair = function (keyMatchKit, character) {
+  const {characterIds, vehicleIds, _entities} = keyMatchKit
+  const {id: characterId} = character
+  const vehicles = _entities.filter(({type}) => type === 'vehicle')
+  const vehicleIds_ = vehicles.map(({id}) => id)
+  vehicleIds_.forEach(vehicleId => {
+    characterIds.push(characterId)
+    vehicleIds.push(vehicleId)
+  })
+  return keyMatchKit
+}
+
 const pushIfUnique = function (uniques, entity) {
   const entityById = this
   const {id} = entity
@@ -142,6 +177,31 @@ const pushIfUnique = function (uniques, entity) {
   entityById[id] = entity
   return uniques
 }
+
+const addToGrid = (entities, grid) => entities.forEach(entity => {
+  const {x, y, width, height, id} = entity
+  const xRight = x + width
+  const yBottom = y + height
+  const rowTop = getGridIndex(y)
+  const rowBottom = getGridIndex(yBottom)
+  const sectionLeft = getGridIndex(x)
+  const sectionRight = getGridIndex(xRight)
+  const row = grid[rowTop]
+  const section = row && row[sectionLeft]
+  section && section.a.push(id)
+  if (sectionLeft !== sectionRight) {
+    const section = row && row[sectionRight]
+    section && section.a.push(id)
+  }
+  if (rowTop !== rowBottom) {
+    const row = grid[rowBottom]
+    const section = row && row[sectionLeft]
+    section && section.a.push(id)
+    if (sectionLeft === sectionRight) return
+    const section_ = row && row[sectionRight]
+    section_ && section_.a.push(id)
+  }
+})
 
 function collideVehicles({vehicleIdsA, vehicleIdsB}) { // eslint-disable-line no-unused-vars
 }
@@ -229,28 +289,23 @@ const runQueues = function () {
 
 const initiatePlayer = function ({socket, wrappedPlayer}) {
   const {state} = this
-  const {_districts, _entities, _players, playerKit, districtKit, entityKit} = state
+  const {_players, playerKit, entityKit, city} = state
   const {id: socketId} = socket
   const player = wrappedPlayer.player = playerKit.create(_players, socketId)
   const {id: playerId} = player
-  const districtId = districtKit.choose(_districts) || initiateDistrict.call({state})
-  const districtIdString = districtId.toString()
-  const character = entityKit.create('character', _entities, districtId)
+  const character = entityKit.create('character', state)
   const {id: characterId} = character
   player.characterId = characterId
   character.playerId = playerId
-  socket.join(districtIdString)
   const {x: characterX} = character
   const vehicleX = getVehicleX(characterX)
   const configuration = {x: vehicleX, y: 7843, speed: 0}
-  const vehicle = entityKit.create('vehicle', _entities, districtId, configuration)
+  const vehicle = entityKit.create('vehicle', state, configuration)
   entityKit.giveKey(character, vehicle, true)
-  districtKit.addToDistrict(character, _districts)
-  districtKit.addToDistrict(vehicle, _districts)
   socket.emit('player', player)
-  districtKit.emit(districtId, socket, _districts)
-  io.to(districtIdString).emit('entity', character)
-  io.to(districtIdString).emit('entity', vehicle)
+  socket.emit('city', city)
+  io.emit('entity', character)
+  io.emit('entity', vehicle)
   return state
 }
 
@@ -264,7 +319,7 @@ const getVehicleX = function (characterX) {
 }
 
 createMayor(state)
-initiateDistrict.call({state}, 20, 40)
+initiate.call({state}, 20, 40)
 io.on('connection', handleConnection.bind({state}))
 app.use(static_(join(__dirname, 'public')))
 server.listen(port, () => console.log('Listening on port ' + port))
