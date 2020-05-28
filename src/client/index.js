@@ -260,7 +260,7 @@ const refresh = state => {
   drivingId || updatePredictionBuffer(input, state)
   updateCamera(state)
   render(state)
-  callRefresh(state)
+  callRefreshAfterDelay(state)
 }
 
 const setInterpolationRatio = state => {
@@ -438,56 +438,43 @@ const interpolateProperty = (propertyName, entityId, state) => {
   return value
 }
 
-const callRefresh = state => {
-  const {delayKit: _, fps, performance} = state
+const callRefreshAfterDelay = state => {
+  const {delayKit, fps, performance, refreshStartTime} = state
   const millisecondsPerFrame = 1000 / fps
   const refreshWithState = refresh.bind(null, state)
-  if (!_.loopStartTime) _.loopStartTime = performance.now() - millisecondsPerFrame
-  if (!_.millisecondsAhead) _.millisecondsAhead = 0
-  var refreshDuration = performance.now() - state.refreshStartTime
-  var loopDuration = performance.now() - _.loopStartTime
-  _.loopStartTime = performance.now()
-  var delayDuration = loopDuration - refreshDuration
-  if (_.checkForSlowdown) {
-    if (delayDuration > _.delay * 1.2) {
-      _.slowdownCompensation = _.delay / delayDuration
-      _.slowdownConfirmed = true
-    }
+  delayKit.loopStartTime || (delayKit.loopStartTime = performance.now() - millisecondsPerFrame)
+  delayKit.millisecondsAhead || (delayKit.millisecondsAhead = 0)
+  const refreshDuration = performance.now() - refreshStartTime
+  const loopDuration = performance.now() - delayKit.loopStartTime
+  const delayDuration = loopDuration - refreshDuration
+  delayKit.loopStartTime = performance.now()
+  delayKit.shouldCheckForSlowdown && compensateIfShould(delayDuration, delayKit)
+  delayKit.millisecondsAhead += millisecondsPerFrame - loopDuration
+  delayKit.delay = millisecondsPerFrame + delayKit.millisecondsAhead - refreshDuration
+  clearTimeout(delayKit.timeoutId)
+  if (delayKit.delay < 5) return (delayKit.shouldCheckForSlowdown = false) || refreshWithState()
+  if (!delayKit.hasSlowdown) {
+    delayKit.shouldCheckForSlowdown = true
+    delayKit.timeoutId = setTimeout(refreshWithState, delayKit.delay - 2)
+    return
   }
-  _.millisecondsAhead += millisecondsPerFrame - loopDuration
-  _.delay = millisecondsPerFrame + _.millisecondsAhead - refreshDuration
-  clearTimeout(_.timeout)
-  if (_.delay < 5) {
-    _.checkForSlowdown = false
-    refreshWithState()
+  delayKit.delay *= delayKit.slowdownCompensation
+  if (delayKit.delay >= 14) {
+    delayKit.shouldCheckForSlowdown = true
+    delayKit.hasSlowdown = false
+    delayKit.timeoutId = setTimeout(refreshWithState, delayKit.delay - 2)
+    return
   }
-  else {
-    if (_.slowdownConfirmed) {
-      _.delay = _.delay * _.slowdownCompensation
-      if (_.delay < 14) {
-        if (_.delay < 7) {
-          refreshWithState()
-        }
-        else {
-          _.checkForSlowdown = true
-          _.slowdownConfirmed = false
-          _.timeout = setTimeout(refreshWithState, 0)
-        }
-      }
-      else {
-        _.checkForSlowdown = true
-        _.slowdownConfirmed = false
-        var delay = Math.round(_.delay)
-        _.timeout = setTimeout(refreshWithState, delay - 2)
-      }
-    }
-    else {
-      _.checkForSlowdown = true
-      delay = Math.round(_.delay - 2)
-      _.timeout = setTimeout(refreshWithState, delay)
-    }
-  }
+  if (delayKit.delay < 7) return refreshWithState()
+  delayKit.shouldCheckForSlowdown = true
+  delayKit.hasSlowdown = false
+  delayKit.timeoutId = setTimeout(refreshWithState, 0)
 }
+
+const compensateIfShould = (delayDuration, delayKit) =>
+     delayDuration > delayKit.delay * 1.2
+  && (delayKit.hasSlowdown = true)
+  && (delayKit.slowdownCompensation = delayKit.delay / delayDuration)
 
 function control({key}) {
   const {state, isDown} = this

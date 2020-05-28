@@ -21,7 +21,8 @@ const state = {
   delayKit: {},
   districtKit: getDistrictKit(),
   entityKit: getEntityKit(),
-  playerKit: getPlayerKit()
+  playerKit: getPlayerKit(),
+  now
 }
 
 const createMayor = function () {
@@ -83,15 +84,14 @@ const handleInput = function (input) {
   return state
 }
 
-const refresh = function () {
-  const {state} = this
+const refresh = state => {
   const {playerKit, entityKit, districtKit} = state
   const activeKit = {walkerIds: [], driverIds: [], passengerIds: []}
   const tick = ++state.tick
   state.refreshStartTime = now()
-  runQueues.call(this)
+  runQueues.call({state})
   const allPlayers = playerKit.cloneAll()
-  updateIsActive.call(this, allPlayers)
+  updateIsActive.call({state}, allPlayers)
   const playerCharacterIds = playerKit.getPlayerCharacterIds()
   const playerCharacters = entityKit.cloneMultiple(playerCharacterIds)
   const {walkerIds, driverIds, passengerIds} = playerCharacters.reduce(pushIfActive, activeKit)
@@ -115,14 +115,14 @@ const refresh = function () {
   const playerCharacterIds_ = playerKit.getPlayerCharacterIds()
   const playerCharacters_ = entityKit.cloneMultiple(playerCharacterIds_)
   entityKit.cloneAll()
-  walkOrDrive.call(this, playerCharacters_, allPlayers)
+  walkOrDrive.call({state}, playerCharacters_, allPlayers)
   const allDistricts = districtKit.cloneAll()
   entityKit.updateLocations(allDistricts)
-  if (tick % 3) return callRefresh.call(this) && state
+  if (tick % 3) return callRefreshAfterDelay(state)
   const latencyKits = playerKit.getLatencyKits()
   entityKit.updateLatencies(latencyKits)
   entityKit.emit(io)
-  callRefresh.call(this)
+  callRefreshAfterDelay(state)
   return state
 }
 
@@ -177,58 +177,43 @@ const walkOrDrive = function (playerCharacters, allPlayers) {
   return state
 }
 
-const callRefresh = function () { // #refactor
-  const {state} = this
-  const {delayKit: _, fps} = state
+const callRefreshAfterDelay = state => {
+  const {delayKit, fps, now, refreshStartTime} = state
   const millisecondsPerFrame = 1000 / fps
-  const refreshWithThis = refresh.bind(this)
-  if (!_.loopStartTime) _.loopStartTime = now() - millisecondsPerFrame
-  if (!_.millisecondsAhead) _.millisecondsAhead = 0
-  var refreshDuration = now() - state.refreshStartTime
-  var loopDuration = now() - _.loopStartTime
-  _.loopStartTime = now()
-  var delayDuration = loopDuration - refreshDuration
-  if (_.checkForSlowdown) {
-    if (delayDuration > _.delay * 1.2) {
-      _.slowdownCompensation = _.delay / delayDuration
-      _.slowdownConfirmed = true
-    }
+  const refreshWithState = refresh.bind(null, state)
+  delayKit.loopStartTime || (delayKit.loopStartTime = now() - millisecondsPerFrame)
+  delayKit.millisecondsAhead || (delayKit.millisecondsAhead = 0)
+  const refreshDuration = now() - refreshStartTime
+  const loopDuration = now() - delayKit.loopStartTime
+  const delayDuration = loopDuration - refreshDuration
+  delayKit.loopStartTime = now()
+  delayKit.shouldCheckForSlowdown && compensateIfShould(delayDuration, delayKit)
+  delayKit.millisecondsAhead += millisecondsPerFrame - loopDuration
+  delayKit.delay = millisecondsPerFrame + delayKit.millisecondsAhead - refreshDuration
+  clearTimeout(delayKit.timeoutId)
+  if (delayKit.delay < 5) return (delayKit.shouldCheckForSlowdown = false) || refreshWithState()
+  if (!delayKit.hasSlowdown) {
+    delayKit.shouldCheckForSlowdown = true
+    delayKit.timeoutId = setTimeout(refreshWithState, delayKit.delay - 2)
+    return
   }
-  _.millisecondsAhead += millisecondsPerFrame - loopDuration
-  _.delay = millisecondsPerFrame + _.millisecondsAhead - refreshDuration
-  clearTimeout(_.timeout)
-  if (_.delay < 5) {
-    _.checkForSlowdown = false
-    refreshWithThis()
+  delayKit.delay *= delayKit.slowdownCompensation
+  if (delayKit.delay >= 14) {
+    delayKit.shouldCheckForSlowdown = true
+    delayKit.hasSlowdown = false
+    delayKit.timeoutId = setTimeout(refreshWithState, delayKit.delay - 2)
+    return
   }
-  else {
-    if (_.slowdownConfirmed) {
-      _.delay = _.delay * _.slowdownCompensation
-      if (_.delay < 14) {
-        if (_.delay < 7) {
-          refreshWithThis()
-        }
-        else {
-          _.checkForSlowdown = true
-          _.slowdownConfirmed = false
-          _.timeout = setTimeout(refreshWithThis, 0)
-        }
-      }
-      else {
-        _.checkForSlowdown = true
-        _.slowdownConfirmed = false
-        var delay = Math.round(_.delay)
-        _.timeout = setTimeout(refreshWithThis, delay - 2)
-      }
-    }
-    else {
-      _.checkForSlowdown = true
-      delay = Math.round(_.delay - 2)
-      _.timeout = setTimeout(refreshWithThis, delay)
-    }
-  }
-  return state
+  if (delayKit.delay < 7) return refreshWithState()
+  delayKit.shouldCheckForSlowdown = true
+  delayKit.hasSlowdown = false
+  delayKit.timeoutId = setTimeout(refreshWithState, 0)
 }
+
+const compensateIfShould = (delayDuration, delayKit) =>
+     delayDuration > delayKit.delay * 1.2
+  && (delayKit.hasSlowdown = true)
+  && (delayKit.slowdownCompensation = delayKit.delay / delayDuration)
 
 const runQueues = function () {
   const {state} = this
@@ -284,4 +269,4 @@ initiateDistrict.call({state}, 20, 40)
 io.on('connection', handleConnection.bind({state}))
 app.use(static_(join(__dirname, 'public')))
 server.listen(port, () => console.log('Listening on port ' + port))
-refresh.call({state})
+refresh(state)
