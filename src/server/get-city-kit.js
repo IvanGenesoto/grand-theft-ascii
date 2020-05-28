@@ -1,6 +1,6 @@
-export const getDistrictKit = function () {
+export const getCityKit = function () {
 
-  const createDistrict = () => {
+  const createCity = () => {
     const backgroundLayers = [
       {
         id: 1,
@@ -604,18 +604,8 @@ export const getDistrictKit = function () {
       }
     ]
     const prototype = {
-      id: null,
-      establishedAt: null,
-      type: 'neon',
-      name: 'Neon District',
-      status: '',
       width: 32000,
       height: 8000,
-      grid: null,
-      roomIds: [],
-      characterIds: [],
-      vehicleIds: [],
-      unwelcomeIds: [],
       backgroundLayers,
       foregroundLayers
     }
@@ -624,42 +614,12 @@ export const getDistrictKit = function () {
       .reduce(appendAttribute, {})
   }
 
-  const appendAttribute = (district, [key, value]) => {
-    district[key] =
+  const appendAttribute = (city, [key, value]) => {
+    city[key] =
         Array.isArray(value) ? [...value]
       : value && value === 'object' ? {...value}
       : value
-    return district
-  }
-
-  const createGrid = () => {
-    const grid = {}
-    let rowCount = -1
-    while (rowCount < 8) {
-      ++rowCount
-      const rowId = getGridIndex(rowCount * 1000)
-      const row = grid[rowId] = {}
-      let sectionCount = -1
-      while (sectionCount < 32) {
-        ++sectionCount
-        const sectionId = getGridIndex(sectionCount * 1000)
-        const section = row[sectionId] = {}
-        section.a = []
-        section.b = []
-      }
-    }
-    return grid
-  }
-
-  const getGridIndex = coordinate => {
-    coordinate = Math.round(coordinate)
-    coordinate = coordinate.toString()
-    const {length} = coordinate
-    let zerosToAdd = 5 - length
-    let zeros = ''
-    while (zerosToAdd > 0) zeros += '0' && --zerosToAdd
-    coordinate = zeros + coordinate
-    return coordinate.slice(0, 2)
+    return city
   }
 
   const assignElementIds = function (layer) {
@@ -736,35 +696,6 @@ export const getDistrictKit = function () {
     argumentation.x += gap + variation.width
   }
 
-  const callPushEntityPairIfKey = function (keyMatchKit, character) {
-    const {characterIds, vehicleIds, _districts} = keyMatchKit
-    const {districtId, vehicleKeys, id: characterId} = character
-    const district = _districts[districtId]
-    const {vehicleIds: vehicleIdsInCharacterDistrict} = district
-    vehicleKeys.forEach(pushEntityPairIfKey, {
-      vehicleIdsInCharacterDistrict, characterIds, characterId, vehicleIds
-    })
-  }
-
-  const pushEntityPairIfKey = function (key) {
-    const {vehicleIdsInCharacterDistrict, characterIds, characterId, vehicleIds} = this
-    const vehicleId = vehicleIdsInCharacterDistrict.find(vehicle => vehicle === key)
-    vehicleId && characterIds.push(characterId)
-    vehicleId && vehicleIds.push(vehicleId)
-  }
-
-  const pushEntityPair = function (keyMatchKit, character) {
-    const {characterIds, vehicleIds, _districts} = keyMatchKit
-    const {districtId, id: characterId} = character
-    const district = _districts[districtId]
-    const {vehicleIds: vehicleIdsInCharacterDistrict} = district
-    vehicleIdsInCharacterDistrict.forEach(vehicleId => {
-      characterIds.push(characterId)
-      vehicleIds.push(vehicleId)
-    })
-    return keyMatchKit
-  }
-
   const detectRowCollisions = function (rowId) {
     const {grid} = this
     const row = grid[rowId]
@@ -808,92 +739,29 @@ export const getDistrictKit = function () {
     return this
   }
 
-  var districtKit = {
+  var cityKit = {
 
-    create: (state, isMayoral) => {
-      const {_districts} = state
-      const district = createDistrict()
-      const {backgroundLayers, foregroundLayers} = district
-      if (!isMayoral) {
-        backgroundLayers.forEach(assignElementIds, {state})
-        foregroundLayers.forEach(assignElementIds, {state})
-        backgroundLayers.forEach(handleLayer, {state})
-        foregroundLayers.forEach(handleLayer, {state, isForeground: true})
-        district.grid = createGrid()
-      }
-      district.establishedAt = Date.now()
-      district.id = _districts.length
-      _districts.push(district)
-      return district
+    createCity: state => {
+      const city = createCity()
+      const {backgroundLayers, foregroundLayers} = city
+      backgroundLayers.forEach(assignElementIds, {state})
+      foregroundLayers.forEach(assignElementIds, {state})
+      backgroundLayers.forEach(handleLayer, {state})
+      foregroundLayers.forEach(handleLayer, {state, isForeground: true})
+      return city
     },
 
-    choose: _districts => {
-      const district = _districts.find(district => {
-        const {id, characterIds} = district
-        const {length} = characterIds
-        return id && length < 500
-      })
-      return district && district.id
-    },
-
-    emit: (districtId, socket, _districts) => socket.emit('district', _districts[districtId]),
-
-    addToDistrict: (entity, _districts) => {
-      const {districtId, type, id: entityId} = entity
-      const type_ = type + 'Ids'
-      const district = _districts[districtId]
-      const entities = district[type_]
-      entities.push(entityId)
-    },
-
-    checkVehicleKeyMatches: (walkerIds, _districts) => walkerIds.reduce(callPushEntityPairIfKey, {
-      characterIds: [], vehicleIds: [], _districts
-    }),
-
-    checkVehicleKeylessMatches: (walkerIds, _districts) => walkerIds.reduce(pushEntityPair, {
-      characterIds: [], vehicleIds: [], _districts
-    }),
-
-    addToGrid: (entities, _districts) => entities.forEach(entity => {
-      const {x, y, width, height, district, id} = entity
-      const grid = _districts[district].grid
-      const xRight = x + width
-      const yBottom = y + height
-      const rowTop = getGridIndex(y)
-      const rowBottom = getGridIndex(yBottom)
-      const sectionLeft = getGridIndex(x)
-      const sectionRight = getGridIndex(xRight)
-      const row = grid[rowTop]
-      const section = row && row[sectionLeft]
-      section && section.a.push(id)
-      if (sectionLeft !== sectionRight) {
-        const section = row && row[sectionRight]
-        section && section.a.push(id)
-      }
-      if (rowTop !== rowBottom) {
-        const row = grid[rowBottom]
-        const section = row && row[sectionLeft]
-        section && section.a.push(id)
-        if (sectionLeft === sectionRight) return
-        const section_ = row && row[sectionRight]
-        section_ && section_.a.push(id)
-      }
-    }),
-
-    detectCollisions: (entities, _districts) => {
+    detectCollisions: (entities, grid) => {
       const collisionKit = {
         collisions: {vehicleIdsA: [], vehicleIdsB: []},
         interactions: {characterIdsA: [], characterIdsB: []}
       }
       const {length} = entities
       if (!length) return collisionKit
-      _districts.forEach(district => {
-        const {grid} = district
-        grid && Object.keys(grid).forEach(detectRowCollisions, {grid, entities, collisionKit})
-      })
+      grid && Object.keys(grid).forEach(detectRowCollisions, {grid, entities, collisionKit})
       return collisionKit
     }
   }
 
-  return districtKit
+  return cityKit
 }

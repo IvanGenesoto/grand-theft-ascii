@@ -10,7 +10,6 @@ export const getEntityKit = function () {
       status: 'alive',
       playerId: null,
       latency: null,
-      districtId: null,
       drivingId: null,
       passengingId: null,
       occupyingId: null,
@@ -37,7 +36,6 @@ export const getEntityKit = function () {
       type: 'vehicle',
       model: 'delorean',
       status: 'operational',
-      districtId: null,
       seatCount: 2,
       driverId: null,
       masterKeyHolderIds: [],
@@ -67,7 +65,6 @@ export const getEntityKit = function () {
       type: 'room',
       name: 'Pad',
       status: 'locked',
-      districtId: null,
       capacity: 50,
       occupantIds: [],
       masterKeyHolderIds: [],
@@ -93,12 +90,12 @@ export const getEntityKit = function () {
       .reduce(appendAttribute, {})
   }
 
-  const appendAttribute = (district, [key, value]) => {
-    district[key] =
+  const appendAttribute = (entity, [key, value]) => {
+    entity[key] =
         Array.isArray(value) ? [...value]
       : value && value === 'object' ? {...value}
       : value
-    return district
+    return entity
   }
 
   const pushIfVehicleEntry = (entryKit, vehicleId, index) => {
@@ -234,10 +231,9 @@ export const getEntityKit = function () {
 
   const entityKit = {
 
-    create: function (type, _entities, districtId, configuration) {
+    create: function (type, state, configuration) {
+      const {_entities, city = {}} = state
       const {x, y, speed} = configuration || {}
-      const districtWidth = 3200
-      const districtHeight = 8000
       const directionsByType = {
         character: ['left', 'right'],
         vehicle: ['left', 'right', 'up', 'down', 'up-left', 'up-right', 'down-left', 'down-right']
@@ -272,24 +268,23 @@ export const getEntityKit = function () {
       ]
       const entity = createEntity(type)
       const id = entity.id = _entities.length
-      entity.districtId = districtId
       entity.elementId = 'o' + id
       _entities.push(entity)
       if (type !== 'room') {
         const float = Math.random() * directions.length
         const index = Math.floor(float)
         entity.direction = directions[index]
-        entity.x = x || x === 0 ? x : Math.random() * (districtWidth - entity.width)
+        entity.x = x || x === 0 ? x : Math.random() * (city.width - entity.width)
       }
       if (type === 'vehicle') {
         const float = Math.random() * percentages.length
         const index = Math.floor(float)
         const percentage = percentages[index]
         entity.speed = speed || speed === 0 ? speed : Math.random() * entity.maxSpeed * percentage
-        entity.y = y || y === 0 ? y : Math.random() * (districtHeight - entity.height - 77)
+        entity.y = y || y === 0 ? y : Math.random() * (city.height - entity.height - 77)
       }
       if (type === 'character') {
-        entity.y = districtHeight - 168
+        entity.y = city.height - 168
         entity.speed = speed || speed === 0 ? speed : Math.random() * entity.maxSpeed
       }
       return entity
@@ -402,16 +397,16 @@ export const getEntityKit = function () {
 
     updateLocation: function (entity) {
       const {state} = this
-      const {_districts, _entities} = state
+      const {_entities} = state
       const {id, drivingId, passengingId, occupyingId, type, isSlowing, isDescending} = entity
       if (!id) return
       if (drivingId || passengingId) return entityKit.updateTravelingCharacterLocation(entity, _entities)
-      if (occupyingId) return entityKit.updateOccupyingCharacterLocation(entity, _districts)
-      if (type === 'character') return entityKit.updateWalkingCharacterLocation(entity, _districts)
+      if (occupyingId) return entityKit.updateOccupyingCharacterLocation(entity)
+      if (type === 'character') return entityKit.updateWalkingCharacterLocation(entity, state)
       if (type !== 'vehicle') return
       if (isDescending) entityKit.descendVehicle(entity)
       if (isSlowing) entityKit.slowDownVehicle(entity)
-      entityKit.updateVehicleLocation(entity, _districts, _entities)
+      entityKit.updateVehicleLocation(entity, state)
     },
 
     updateTravelingCharacterLocation: (character, _entities) => {
@@ -426,14 +421,13 @@ export const getEntityKit = function () {
       rightDirections.includes(direction) && (character.direction = 'right')
     },
 
-    updateOccupyingCharacterLocation: (character, districts) => { // eslint-disable-line no-unused-vars
+    updateOccupyingCharacterLocation: character => { // eslint-disable-line no-unused-vars
     },
 
-    updateWalkingCharacterLocation: (character, _districts) => {
-      const {speed, direction, districtId, width, playerId, x} = character
-      const district = _districts[districtId]
-      const {width: districtWidth} = district
-      const maxX = districtWidth - width
+    updateWalkingCharacterLocation: (character, state) => {
+      const {city} = state
+      const {speed, direction, width, playerId, x} = character
+      const maxX = city.width - width
       character.y < 0 && (character.y = 0)
       character.y < 7832 && (character.y += 20)
       character.y > 7832 && (character.y = 7832)
@@ -448,16 +442,14 @@ export const getEntityKit = function () {
       character.x > maxX && (character.direction = 'left')
     },
 
-    updateVehicleLocation(vehicle, _districts, _entities) {
-      const {stopVehicle} = this
-      const {speed, direction, districtId, width, height, driverId, x, y} = vehicle
+    updateVehicleLocation: (vehicle, state) => {
+      const {city, _entities} = state
+      const {speed, direction, width, height, driverId, x, y} = vehicle
       const character = driverId && _entities[driverId]
       const {playerId} = character || {}
-      const district = _districts[districtId]
-      const {height: districtHeight, width: districtWidth} = district
       const distance = Math.sqrt(speed ** 2 * 2)
-      const maxX = districtWidth - width
-      const maxY = districtHeight - height - 77
+      const maxX = city.width - width
+      const maxY = city.height - height - 77
       const x_ = vehicle.x =
           direction === 'left' ? x - speed
         : direction === 'right' ? x + speed
@@ -486,8 +478,8 @@ export const getEntityKit = function () {
         : direction === 'down-left' ? ['right', 'up-left', 'up-right', 'down-right']
         : direction
       if (playerId) {
-        x_ <= 0 && stopVehicle(vehicle) && (vehicle.x = 0)
-        x_ >= maxX && stopVehicle(vehicle) && (vehicle.x = maxX)
+        x_ <= 0 && entityKit.stopVehicle(vehicle) && (vehicle.x = 0)
+        x_ >= maxX && entityKit.stopVehicle(vehicle) && (vehicle.x = maxX)
         y_ < 0 && (vehicle.y = 0)
         y_ > maxY && (vehicle.y = maxY)
         return

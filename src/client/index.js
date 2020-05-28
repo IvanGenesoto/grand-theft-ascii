@@ -107,18 +107,6 @@ const handlePlayer = function (player) {
   camera.followingId = characterId
 }
 
-const handleEntity = function (entity) {
-  const {state} = this
-  const {district} = state
-  const {type, id: entityId} = entity
-  const key = type + 'Ids'
-  const entityIds = district[key]
-  const match = entityIds.find(id => id === entityId)
-  if (!district || match) return state
-  entityIds.push(entityId)
-  createElement.call({state}, entity)
-}
-
 const handleEntities = function (entities) {
   const {state} = this
   const {socket, entitiesBuffer, entities: entities_} = state
@@ -129,18 +117,18 @@ const handleEntities = function (entities) {
   entitiesBuffer.push(entities)
 }
 
-function initializeDistrict(district) {
+function initializeCity(city) {
   const {state} = this
-  const {backgroundLayers, foregroundLayers} = district
-  state.district = district
+  const {backgroundLayers, foregroundLayers} = city
+  state.city = city
   backgroundLayers.forEach(createElements.bind({state}))
   foregroundLayers.forEach(createElements.bind({state}))
   checkImagesLoaded.call(this)
 }
 
-const initiateDistrict = state => {
-  const {district} = state
-  const {backgroundLayers, foregroundLayers} = district
+const initiateCity = state => {
+  const {city} = state
+  const {backgroundLayers, foregroundLayers} = city
   backgroundLayers.forEach(drawBlueprints)
   foregroundLayers.forEach(drawBlueprints)
   shiftEntitiesBuffer(state, true)
@@ -157,7 +145,7 @@ function checkImagesLoaded() {
   const {state} = this
   const {timeoutId, imagesLoaded, imagesTotal} = state
   clearTimeout(timeoutId)
-  if (imagesLoaded === imagesTotal) return initiateDistrict(state)
+  if (imagesLoaded === imagesTotal) return initiateCity(state)
   state.timeoutId = setTimeout(checkImagesLoaded.bind(this), 50)
 }
 
@@ -301,17 +289,17 @@ function updatePlayerCharacterBehavior(input, state) {
   const {left, right} = input
   character.speed = left || right ? maxSpeed : 0
   character.direction =
-      left ? 'left'
-    : right ? 'right'
+      right ? 'right'
+    : left ? 'left'
     : direction
 }
 
 function updatePlayerCharacterLocation(state) {
-  const {player, district, entities} = state
+  const {player, city, entities} = state
   const {characterId} = player
   const character = entities[characterId]
   const {x, speed, direction, width} = character
-  const maxX = district.width - width
+  const maxX = city.width - width
   if (speed <= 0) return state
   character.x = direction === 'left' ? x - speed : x + speed
   character.x < 0 && (character.x = 0)
@@ -319,31 +307,27 @@ function updatePlayerCharacterLocation(state) {
 }
 
 const render = state => {
-  const {district} = state
-  const {backgroundLayers, foregroundLayers, characterIds, vehicleIds} = district
+  const {city, entities} = state
+  const {backgroundLayers, foregroundLayers} = city
   backgroundLayers.forEach(renderLayer, {state})
-  characterIds.forEach(renderEntity, {state})
-  vehicleIds.forEach(renderEntity, {state})
+  entities.forEach(renderEntity, {state})
   foregroundLayers.forEach(renderLayer, {state})
 }
 
 const updateCamera = state => {
-  const {district, camera, entities} = state
+  const {city, camera, entities} = state
   const {followingId} = camera
   if (!followingId) return state
   const entity = entities[followingId]
-  const {type, drivingId, passengingId} = entity
-  const key = type + 'Ids'
-  const entityIds = district[key]
-  if (!entityIds.some(id => id === followingId)) return state
+  const {drivingId, passengingId} = entity
   const entityId = drivingId || passengingId || followingId
   const entity_ = entityId === followingId ? entity : entities[entityId]
   const entityX = interpolateProperty('x', entityId, state)
   const entityY = interpolateProperty('y', entityId, state)
   const cameraX = camera.x = Math.round(entityX + entity_.width / 2 - camera.width / 2)
   const cameraY = camera.y = Math.round(entityY + entity_.height / 2 - camera.height / 2)
-  const maxX = district.width - camera.width
-  const maxY = district.height - camera.height
+  const maxX = city.width - camera.width
+  const maxY = city.height - camera.height
   cameraX < 0 && (camera.x = 0)
   cameraX > maxX && (camera.x = maxX)
   cameraY < 0 && (camera.y = 0)
@@ -353,7 +337,7 @@ const updateCamera = state => {
 
 const renderLayer = function (layer) {
   const {state} = this
-  const {camera, entities, district} = state
+  const {camera, entities, city} = state
   const {followingId} = camera
   const entity = entities[followingId]
   const {drivingId, passengingId} = entity
@@ -365,7 +349,7 @@ const renderLayer = function (layer) {
   const context = $camera.getContext('2d')
   const layerX = layer.x || 0
   const cameraX = Math.round((entityX + entity_.width / 2) / layer.depth - camera.width / 2 / layer.depth - layerX)
-  const maxX = Math.round(district.width / layer.depth - camera.width / layer.depth - layerX)
+  const maxX = Math.round(city.width / layer.depth - camera.width / layer.depth - layerX)
   const cameraX_ =
       cameraX > maxX ? maxX
     : !layer.x && cameraX < 0 ? 0
@@ -383,11 +367,10 @@ const renderLayer = function (layer) {
   )
 }
 
-function renderEntity(entityId) {
+function renderEntity(entity) {
   const {state} = this
-  const {entities, camera} = state
-  const entity = entities[entityId]
-  const {drivingId, passengingId, direction, previousDirection} = entity || {}
+  const {camera} = state
+  const {id: entityId, drivingId, passengingId, direction, previousDirection} = entity || {}
   if (!entity || drivingId || passengingId) return
   const entityX = interpolateProperty('x', entityId, state)
   const entityY = interpolateProperty('y', entityId, state)
@@ -501,9 +484,9 @@ window.addEventListener('resize', adjustCameraSize.bind({state}), false)
 window.addEventListener('keydown', control.bind({state, isDown: true}))
 window.addEventListener('keyup', control.bind({state}))
 socket.on('request_token', emitToken.bind({state, socket}))
-socket.on('district', initializeDistrict.bind({state}))
+socket.on('city', initializeCity.bind({state}))
 socket.on('player', handlePlayer.bind({state}))
-socket.on('entity', handleEntity.bind({state}))
+socket.on('entity', createElement.bind({state}))
 socket.on('entities', handleEntities.bind({state}))
 createElement.call({state}, camera)
 adjustCameraSize.call({state})
