@@ -15,25 +15,15 @@ const state = {
   layerY: 0,
   fps: 30,
   characterCount: 50,
-  vehicleCount: 50,
+  vehicleCount: 51,
   connectionQueue: [],
   latencyQueue: [],
   inputQueue: [],
   delayKit: {},
   _players: [],
-  _entities: [],
+  _characters: [],
+  _vehicles: [],
   now
-}
-
-const createMayor = state => {
-  const {_players} = state
-  const player = makePlayer(_players)
-  const character = makeCharacter(state)
-  const {id: playerId} = player
-  const {id: characterId} = character
-  player.characterId = characterId
-  character.playerId = playerId
-  return state
 }
 
 const makePlayer = (_players, socketId) => {
@@ -46,11 +36,11 @@ const makePlayer = (_players, socketId) => {
 
 const updateInput = function ({input, wrappedPlayer}) {
   const {state} = this
-  const {_entities} = state
+  const {_characters} = state
   const {player} = wrappedPlayer
   const {characterId} = player
   const {tick} = input
-  handleTick(tick, characterId, _entities)
+  handleTick(tick, characterId, _characters)
   player && (player.input = input)
 }
 
@@ -109,7 +99,7 @@ const appendAttribute = (item, [key, value]) => {
 const initiate = state => {
   let {characterCount, vehicleCount} = state
   state.city = makeCity(state)
-  state.grid = createGrid()
+  createMayor(state)
   while (characterCount) makeCharacter(state) && --characterCount
   while (vehicleCount) makeVehicle(state) && --vehicleCount
   return state
@@ -125,34 +115,18 @@ const makeCity = state => {
   return city
 }
 
-const createGrid = () => {
-  const grid = {}
-  let rowCount = -1
-  while (rowCount < 8) {
-    ++rowCount
-    const rowId = getGridIndex(rowCount * 1000)
-    const row = grid[rowId] = {}
-    let sectionCount = -1
-    while (sectionCount < 32) {
-      ++sectionCount
-      const sectionId = getGridIndex(sectionCount * 1000)
-      const section = row[sectionId] = {}
-      section.a = []
-      section.b = []
-    }
-  }
-  return grid
-}
-
-const getGridIndex = coordinate => {
-  coordinate = Math.round(coordinate)
-  coordinate = coordinate.toString()
-  const {length} = coordinate
-  let zerosToAdd = 5 - length
-  let zeros = ''
-  while (zerosToAdd > 0) zeros += '0' && --zerosToAdd
-  coordinate = zeros + coordinate
-  return coordinate.slice(0, 2)
+const createMayor = state => {
+  const {_players} = state
+  const player = makePlayer(_players)
+  const character = makeCharacter(state)
+  const vehicle = makeVehicle(state)
+  const {id: playerId} = player
+  const {id: characterId} = character
+  player.characterId = characterId
+  character.playerId = playerId
+  character.elementId = null
+  vehicle.elementId = null
+  return state
 }
 
 const handleConnection = function (socket) {
@@ -182,28 +156,28 @@ const handleInput = function (input) {
 }
 
 const refresh = state => {
-  const {_players, _entities} = state
+  const {_players, _characters, _vehicles} = state
   const tick = ++state.tick
   state.refreshingStartTime = now()
   runQueues.call({state})
-  const playerCharacters = _players.map(({characterId}) => _entities[characterId])
+  const playerCharacters = _players.map(({characterId}) => _characters[characterId])
   const {actives} = playerCharacters.reduce(pushIfActive, {_players, actives: []})
   const activesByCategory = {walkers: [], drivers: [], passengers: []}
   const {walkers, drivers, passengers} = actives.reduce(categorize, activesByCategory)
-  const vehicles = _entities.filter(({type}) => type === 'vehicle')
-  walkers.reduce(enterIfCan, vehicles)
-  passengers.reduce(exitVehicle, _entities)
-  drivers.reduce(exitVehicle, _entities)
+  walkers.reduce(enterIfCan, _vehicles)
+  passengers.reduce(exitVehicle, state)
+  drivers.reduce(exitVehicle, state)
   const charactersByCategory = {walkers: [], drivers: [], passengers: []}
   const args = [categorize, charactersByCategory]
   const {walkers: walkers_, drivers: drivers_} = playerCharacters.reduce(...args)
   walkers_.forEach(walk, {_players})
   drivers_.forEach(drive, {state})
-  _entities.forEach(updateLocation, {state})
+  _characters.forEach(updateCharacterLocation, {state})
+  _vehicles.forEach(updateVehicleLocation, {state})
   if (tick % 3) return deferRefresh(state)
   const latencyKits = _players.map(getLatencyKits, {_players})
-  latencyKits.reduce(updateLatencies, _entities)
-  emitEntities(io, _entities)
+  latencyKits.reduce(updateLatencies, _characters)
+  emitEntities(io, _characters, _vehicles)
   deferRefresh(state)
   return state
 }
@@ -230,19 +204,19 @@ const categorize = (activesByCategory, character) => {
   return activesByCategory
 }
 
-const enterIfCan = (vehicles, walker) => {
-  const vehicle = vehicles.find(canVehicleBeEntered, {walker})
-  if (!vehicle) return vehicles
+const enterIfCan = (_vehicles, walker) => {
+  const vehicle = _vehicles.find(canVehicleBeEntered, {walker})
+  if (!vehicle) return _vehicles
   enter(vehicle, walker)
-  return vehicles
+  return _vehicles
 }
 
 const canVehicleBeEntered = function (vehicle) {
   const {walker} = this
-  const {driverId, passengerIds, seatCount} = vehicle
+  const {id: vehicleId, driverId, passengerIds, seatCount} = vehicle
   const {length: passengerCount} = passengerIds
   const driverCount = driverId ? 1 : 0
-  if (driverCount + passengerCount >= seatCount) return false
+  if (!vehicleId || driverCount + passengerCount >= seatCount) return false
   return isVehicleTouchingCharacter(vehicle, walker)
 }
 
@@ -278,11 +252,11 @@ const walk = function (character) {
 
 const drive = function (character) {
   const {state} = this
-  const {_players, _entities} = state
+  const {_players, _vehicles} = state
   const {playerId, drivingId: vehicleId} = character
   const player = _players[playerId]
   const {input} = player
-  const vehicle = _entities[vehicleId]
+  const vehicle = _vehicles[vehicleId]
   const {direction, speed, maxSpeed, acceleration, deceleration} = vehicle
   const newDirection = getNewDirection(input)
   const isAccelerating = newDirection === direction
@@ -436,8 +410,7 @@ const initiatePlayer = function ({socket, wrappedPlayer}) {
   character.playerId = playerId
   const {x: characterX} = character
   const vehicleX = getVehicleX(characterX)
-  const configuration = {x: vehicleX, y: 7843, speed: 0}
-  const vehicle = makeVehicle(state, configuration)
+  const vehicle = makeVehicle(state, vehicleX, 7843, 0)
   socket.emit('player', player)
   socket.emit('city', city)
   io.emit('entity', character)
@@ -1074,7 +1047,7 @@ const assignElementIds = function (layer) {
 
 const assignElementId = function ([key, value]) {
   const {state, layer} = this
-  if (key === 'tag') layer.elementId = 's' + ++state.elementCount
+  if (key === 'tag') layer.elementId = 'scenery-' + ++state.elementCount
   else if (Array.isArray(value)) value.forEach(assignElementIds, this)
   return state
 }
@@ -1143,13 +1116,13 @@ const handleIsForeground = argumentation => {
 }
 
 const makeCharacter = (state, configuration) => {
-  const {_entities, city = {}} = state
+  const {_characters, city} = state
   const {x, speed} = configuration || {}
   const directions = ['left', 'right']
   const character = createCharacter()
-  const id = character.id = _entities.length
-  character.elementId = 'c' + id
-  _entities.push(character)
+  const id = character.id = _characters.length
+  character.elementId = 'character-' + id
+  _characters.push(character)
   const float = Math.random() * directions.length
   const index = Math.floor(float)
   character.direction = directions[index]
@@ -1193,9 +1166,8 @@ const createCharacter = () => {
     .reduce(appendAttribute, {})
 }
 
-const makeVehicle = (state, configuration) => {
-  const {_entities, city = {}} = state
-  const {x, y, speed} = configuration || {}
+const makeVehicle = (state, x, y, speed) => {
+  const {_vehicles, city} = state
   const directions = [
     'left', 'right', 'up', 'down', 'up-left', 'up-right', 'down-left', 'down-right'
   ]
@@ -1227,9 +1199,9 @@ const makeVehicle = (state, configuration) => {
     0.4
   ]
   const vehicle = createVehicle()
-  const id = vehicle.id = _entities.length
-  vehicle.elementId = 'v' + id
-  _entities.push(vehicle)
+  const id = vehicle.id = _vehicles.length
+  vehicle.elementId = 'vehicle-' + id
+  _vehicles.push(vehicle)
   const float = Math.random() * directions.length
   const index = Math.floor(float)
   vehicle.direction = directions[index]
@@ -1284,17 +1256,18 @@ const exitVehicleAsPassenger = (characterId, vehicle) => {
   return vehicle
 }
 
-const exitVehicle = (_entities, character) => {
+const exitVehicle = (state, character) => {
+  const {_vehicles} = state
   const {id: characterId, drivingId, passengingId} = character
   const vehicleId = drivingId || passengingId
-  const vehicle = _entities[vehicleId]
+  const vehicle = _vehicles[vehicleId]
   character.drivingId = null
   character.passengingId = null
-  if (passengingId) return exitVehicleAsPassenger(characterId, vehicle) && _entities
+  if (passengingId) return exitVehicleAsPassenger(characterId, vehicle) && state
   vehicle.driverId = null
   vehicle.isSlowing = true
   vehicle.isDescending = true
-  return _entities
+  return state
 }
 
 const slowDownVehicle = vehicle => {
@@ -1317,21 +1290,18 @@ const descendVehicle = vehicle => {
   vehicle.y = 7843
 }
 
-const updateLocation = function (entity) {
+const updateCharacterLocation = function (character) {
   const {state} = this
-  const {_entities} = state
-  const {drivingId, passengingId, type, isSlowing, isDescending} = entity
-  if (drivingId || passengingId) return updateTravelingCharacterLocation(entity, _entities)
-  if (type === 'character') return updateWalkingCharacterLocation(entity, state)
-  if (type !== 'vehicle') return
-  if (isDescending) descendVehicle(entity)
-  if (isSlowing) slowDownVehicle(entity)
-  updateVehicleLocation(entity, state)
+  const {drivingId, passengingId} = character
+  if (drivingId || passengingId) updateTravelingCharacterLocation(character, state)
+  else updateWalkingCharacterLocation(character, state)
+  return character
 }
 
-const updateTravelingCharacterLocation = (character, _entities) => {
+const updateTravelingCharacterLocation = (character, state) => {
+  const {_vehicles} = state
   const {drivingId, passengingId} = character
-  const vehicle = drivingId ? _entities[drivingId] : _entities[passengingId]
+  const vehicle = drivingId ? _vehicles[drivingId] : _vehicles[passengingId]
   const {x, y, width, height, direction} = vehicle
   const leftDirections = ['left', 'up-left', 'down-left']
   const rightDirections = ['right', 'up-right', 'down-right']
@@ -1339,6 +1309,7 @@ const updateTravelingCharacterLocation = (character, _entities) => {
   character.y = y + height / 2 - character.height / 2 - 5
   leftDirections.includes(direction) && (character.direction = 'left')
   rightDirections.includes(direction) && (character.direction = 'right')
+  return character
 }
 
 const updateWalkingCharacterLocation = (character, state) => {
@@ -1348,21 +1319,31 @@ const updateWalkingCharacterLocation = (character, state) => {
   character.y < 0 && (character.y = 0)
   character.y < 7832 && (character.y += 20)
   character.y > 7832 && (character.y = 7832)
-  if (speed <= 0) return
+  if (speed <= 0) return state
   character.x = direction === 'left' ? x - speed : x + speed
   if (playerId) {
     character.x < 0 && (character.x = 0)
     character.x > maxX && (character.x = maxX)
-    return
+    return state
   }
   character.x < 0 && (character.direction = 'right')
   character.x > maxX && (character.direction = 'left')
+  return character
 }
 
-const updateVehicleLocation = (vehicle, state) => {
-  const {city, _entities} = state
+const updateVehicleLocation = function (vehicle) {
+  const {state} = this
+  const {isSlowing, isDescending} = vehicle
+  if (isDescending) descendVehicle(vehicle)
+  if (isSlowing) slowDownVehicle(vehicle)
+  updateVehicleLocation_(vehicle, state)
+  return vehicle
+}
+
+const updateVehicleLocation_ = (vehicle, state) => {
+  const {city, _characters} = state
   const {speed, direction, width, height, driverId, x, y} = vehicle
-  const character = driverId && _entities[driverId]
+  const character = driverId && _characters[driverId]
   const {playerId} = character || {}
   const distance = Math.sqrt(speed ** 2 * 2)
   const maxX = city.width - width
@@ -1399,41 +1380,42 @@ const updateVehicleLocation = (vehicle, state) => {
     x_ >= maxX && stopVehicle(vehicle) && (vehicle.x = maxX)
     y_ < 0 && (vehicle.y = 0)
     y_ > maxY && (vehicle.y = maxY)
-    return
+    return vehicle
   }
   x_ < 0 && (vehicle.x = 0)
   x_ > maxX && (vehicle.x = maxX)
   y_ < 0 && (vehicle.y = 0)
   y_ > maxY && (vehicle.y = maxY)
-  if (x_ >= 0 && x_ <= maxX && y_ >= 0 && y_ <= maxY) return
+  if (x_ >= 0 && x_ <= maxX && y_ >= 0 && y_ <= maxY) return vehicle
   const {length: directionCount} = directions
   const float = Math.random() * directionCount
   const index = Math.floor(float)
   vehicle.direction = directions[index]
+  return vehicle
 }
 
 const stopVehicle = vehicle => (vehicle.speed = 0) || vehicle
 
-const updateLatencies = (_entities, latencyKit) => {
+const updateLatencies = (_characters, latencyKit) => {
   if (!latencyKit) return
   const {characterId, latency} = latencyKit
-  const character = _entities[characterId]
+  const character = _characters[characterId]
   character.latency = latency
-  return _entities
+  return _characters
 }
 
-const handleTick = (tick, characterId, _entities) => {
-  const character = _entities[characterId]
+const handleTick = (tick, characterId, _characters) => {
+  const character = _characters[characterId]
   character.tick = tick
 }
 
-const emitEntities = (io, _entities) => {
-  const [mayor] = _entities
+const emitEntities = (io, _characters, _vehicles) => {
+  const entitiesByType = {characters: _characters, vehicles: _vehicles}
+  const [mayor] = _characters
   mayor.timestamp = now()
-  io.volatile.emit('entities', _entities)
+  io.volatile.emit('entities', entitiesByType)
 }
 
-createMayor(state)
 initiate(state)
 io.on('connection', handleConnection.bind({state}))
 app.use(static_(join(__dirname, 'public')))
