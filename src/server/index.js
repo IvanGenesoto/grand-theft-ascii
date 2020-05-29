@@ -3,9 +3,6 @@ import {Server} from 'http'
 import socketIo from 'socket.io'
 import {join} from 'path'
 import now from 'performance-now'
-import {getCityKit} from './get-city-kit'
-import {getEntityKit} from './get-entity-kit'
-import {getPlayerKit} from './get-player-kit'
 
 const app = express()
 const server = Server(app)
@@ -17,37 +14,117 @@ const state = {
   elementCount: 0,
   layerY: 0,
   fps: 30,
+  characterCount: 50,
+  vehicleCount: 50,
   connectionQueue: [],
   latencyQueue: [],
   inputQueue: [],
   delayKit: {},
-  cityKit: getCityKit(),
-  entityKit: getEntityKit(),
-  playerKit: getPlayerKit(),
   _players: [],
   _entities: [],
   now
 }
 
 const createMayor = state => {
-  const {_players, playerKit, entityKit} = state
-  const player = playerKit.create(_players)
+  const {_players} = state
+  const player = makePlayer(_players)
   const {id: playerId} = player
-  const character = entityKit.create('character', state)
+  const character = makeEntity('character', state)
   const {id: characterId} = character
   player.characterId = characterId
   character.playerId = playerId
   return state
 }
 
-const initiate = function (characterCount, vehicleCount) {
+const makePlayer = (_players, socketId) => {
+  const player = createPlayer()
+  player.socketId = socketId
+  player.id = _players.length
+  _players.push(player)
+  return player
+}
+
+const updateInput = function ({input, wrappedPlayer}) {
   const {state} = this
-  const {cityKit} = state
-  state.city = cityKit.createCity(state)
+  const {_entities} = state
+  const {player} = wrappedPlayer
+  const {characterId} = player
+  const {tick} = input
+  handleTick(tick, characterId, _entities)
+  player && (player.input = input)
+}
+
+const updateLatencyBuffer = ({latency, wrappedPlayer}) => {
+  const {player} = wrappedPlayer
+  const {latencyBuffer} = player
+  latencyBuffer.push(latency)
+  latencyBuffer.length > 20 && latencyBuffer.shift()
+}
+
+const getLatencyKits = _players => {
+  return _players.map(player => {
+    const {status, characterId, id} = player
+    const latency = getLatency(id, _players)
+    if (status !== 'online') return
+    return {characterId, latency}
+  })
+}
+
+const getLatency = (id, _players) => {
+  const player = _players[id]
+  const {latencyBuffer} = player
+  const {length} = latencyBuffer
+  const total = latencyBuffer.reduce((total, latency) => total + latency, 0)
+  return total / length
+}
+
+const createPlayer = () => {
+  const input = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    action: false
+  }
+  const prototype = {
+    id: null,
+    status: 'online',
+    socketId: null,
+    characterId: null,
+    previousAction: false,
+    latencyBuffer: [],
+    input
+  }
+  return Object
+    .entries(prototype)
+    .reduce(appendAttribute, {})
+}
+
+const appendAttribute = (item, [key, value]) => {
+  item[key] =
+      Array.isArray(value) ? [...value]
+    : value && value === 'object' ? {...value}
+    : value
+  return item
+}
+
+const initiate = state => {
+  let {characterCount, vehicleCount} = state
+  state.city = makeCity(state)
   state.grid = createGrid()
-  populate.call(this, 'character', characterCount)
-  populate.call(this, 'vehicle', vehicleCount)
+  while (characterCount) makeEntity('character', state) && --characterCount
+  while (vehicleCount) makeEntity('vehicle', state) && --vehicleCount
   return state
+}
+
+const makeCity = state => {
+  const city = createCity()
+  const {backgroundLayers, foregroundLayers} = city
+  backgroundLayers.forEach(assignElementIds, {state})
+  foregroundLayers.forEach(assignElementIds, {state})
+  backgroundLayers.forEach(handleLayer, {state})
+  foregroundLayers.forEach(handleLayer, {state, isForeground: true})
+  return city
 }
 
 const createGrid = () => {
@@ -80,13 +157,6 @@ const getGridIndex = coordinate => {
   return coordinate.slice(0, 2)
 }
 
-const populate = function (entityType, count) {
-  const {state} = this
-  const {entityKit} = state
-  while (count) entityKit.create(entityType, state) && --count
-  return state
-}
-
 const handleConnection = function (socket) {
   const {state} = this
   const {connectionQueue} = state
@@ -114,7 +184,7 @@ const handleInput = function (input) {
 }
 
 const refresh = state => {
-  const {_players, _entities, playerKit, entityKit} = state
+  const {_players, _entities} = state
   const tick = ++state.tick
   state.refreshingStartTime = now()
   runQueues.call({state})
@@ -124,18 +194,18 @@ const refresh = state => {
   const {walkers, drivers, passengers} = actives.reduce(categorize, activesByCategory)
   const vehicles = _entities.filter(({type}) => type === 'vehicle')
   walkers.reduce(enterIfCan, vehicles)
-  passengers.reduce(entityKit.exitVehicle, _entities)
-  drivers.reduce(entityKit.exitVehicle, _entities)
+  passengers.reduce(exitVehicle, _entities)
+  drivers.reduce(exitVehicle, _entities)
   const charactersByCategory = {walkers: [], drivers: [], passengers: []}
   const args = [categorize, charactersByCategory]
   const {walkers: walkers_, drivers: drivers_} = playerCharacters.reduce(...args)
   walkers_.forEach(walk, {_players})
   drivers_.forEach(drive, {state})
-  _entities.forEach(entityKit.updateLocation, {state})
+  _entities.forEach(updateLocation, {state})
   if (tick % 3) return deferRefresh(state)
-  const latencyKits = playerKit.getLatencyKits(_players)
-  latencyKits.forEach(entityKit.updateLatencies, {_entities})
-  entityKit.emit(io, _entities)
+  const latencyKits = getLatencyKits(_players)
+  latencyKits.forEach(updateLatencies, {_entities})
+  emitEntities(io, _entities)
   deferRefresh(state)
   return state
 }
@@ -346,8 +416,7 @@ const compensateIfShould = (delayDuration, delayKit) =>
 
 const runQueues = function () {
   const {state} = this
-  const {playerKit, connectionQueue, latencyQueue, inputQueue} = state
-  const {updateLatencyBuffer, updateInput} = playerKit
+  const {connectionQueue, latencyQueue, inputQueue} = state
   connectionQueue.forEach(initiatePlayer, this)
   latencyQueue.forEach(updateLatencyBuffer)
   inputQueue.forEach(updateInput, this)
@@ -359,18 +428,18 @@ const runQueues = function () {
 
 const initiatePlayer = function ({socket, wrappedPlayer}) {
   const {state} = this
-  const {_players, playerKit, entityKit, city} = state
+  const {_players, city} = state
   const {id: socketId} = socket
-  const player = wrappedPlayer.player = playerKit.create(_players, socketId)
+  const player = wrappedPlayer.player = makePlayer(_players, socketId)
   const {id: playerId} = player
-  const character = entityKit.create('character', state)
+  const character = makeEntity('character', state)
   const {id: characterId} = character
   player.characterId = characterId
   character.playerId = playerId
   const {x: characterX} = character
   const vehicleX = getVehicleX(characterX)
   const configuration = {x: vehicleX, y: 7843, speed: 0}
-  const vehicle = entityKit.create('vehicle', state, configuration)
+  const vehicle = makeEntity('vehicle', state, configuration)
   socket.emit('player', player)
   socket.emit('city', city)
   io.emit('entity', character)
@@ -387,8 +456,976 @@ const getVehicleX = function (characterX) {
   return side === 'left' ? characterX - distance : characterX + distance
 }
 
+const createCity = () => {
+  const backgroundLayers = [
+    {
+      id: 1,
+      blueprints: [],
+      tag: 'canvas',
+      width: 16000,
+      height: 8000,
+      depth: 4,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/background/far/above-top.png',
+              width: 1024,
+              height: 367
+            }
+          ]
+        },
+        {
+          id: 2,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 4,
+              tag: 'img',
+              src: 'images/background/far/top/top.png',
+              width: 1024,
+              height: 260
+            },
+            {
+              id: 2,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/background/far/top/top-pink-jumbotron-left.png',
+              width: 1024,
+              height: 260
+            },
+            {
+              id: 3,
+              prevalence: 2,
+              tag: 'img',
+              src: 'images/background/far/top/top-pink-jumbotron-right.png',
+              width: 1024,
+              height: 260
+            }
+          ]
+        },
+        {
+          id: 3,
+          rowCount: 48,
+          variations: [
+            {
+              id: 1,
+              prevalence: 3,
+              tag: 'img',
+              src: 'images/background/far/middle/middle.png',
+              width: 1024,
+              height: 134
+            },
+            {
+              id: 2,
+              prevalence: 2,
+              tag: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-far-left.png',
+              width: 1024,
+              height: 134
+            },
+            {
+              id: 3,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-left.png',
+              width: 1024,
+              height: 134
+            },
+            {
+              id: 4,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-mid-left.png',
+              width: 1024,
+              height: 134
+            },
+            {
+              id: 5,
+              prevalence: 2,
+              tag: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-middle.png',
+              width: 1024,
+              height: 134
+            },
+            {
+              id: 6,
+              prevalence: 2,
+              tag: 'img',
+              src: 'images/background/far/middle/middle-pink-jumbotron-right.png',
+              width: 1024,
+              height: 134
+            },
+            {
+              id: 7,
+              prevalence: 3,
+              tag: 'img',
+              src: 'images/background/far/middle/middle-blue-jumbotron-left.png',
+              width: 1024,
+              height: 134
+            },
+            {
+              id: 8,
+              prevalence: 2,
+              tag: 'img',
+              src: 'images/background/far/middle/middle-blue-jumbotron-middle.png',
+              width: 1024,
+              height: 134
+            },
+            {
+              id: 9,
+              prevalence: 3,
+              tag: 'img',
+              src: 'images/background/far/middle/middle-blue-jumbotron-right.png',
+              width: 1024,
+              height: 134
+            }
+          ]
+        },
+        {
+          id: 4,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/background/far/bottom.png',
+              width: 1024,
+              height: 673
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 2,
+      blueprints: [],
+      y: 7050,
+      tag: 'canvas',
+      width: 24000,
+      height: 8000,
+      depth: 2,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              width: 1024,
+              height: 768,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/background/middle.png'
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 3,
+      blueprints: [],
+      y: 7232,
+      tag: 'canvas',
+      width: 32000,
+      height: 8000,
+      depth: 1,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              width: 1408,
+              height: 768,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/background/near.png'
+            }
+          ]
+        }
+      ]
+    }
+  ]
+  const foregroundLayers = [
+    {
+      id: 1,
+      blueprints: [],
+      x: 0,
+      y: 7456,
+      width: 32000,
+      height: 8000,
+      depth: 0.5,
+      tag: 'canvas',
+      scale: 16,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/lamp/left.png',
+              width: 144,
+              height: 544
+            },
+            {
+              id: 2,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/lamp/right.png',
+              width: 144,
+              height: 544
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 2,
+      blueprints: [],
+      x: 32000,
+      y: 7456,
+      width: 32000,
+      height: 8000,
+      depth: 0.5,
+      tag: 'canvas',
+      scale: 16,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/lamp/left.png',
+              width: 144,
+              height: 544
+            },
+            {
+              id: 2,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/lamp/right.png',
+              width: 144,
+              height: 544
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 3,
+      blueprints: [],
+      x: 0,
+      y: 6800,
+      width: 32000,
+      height: 8000,
+      depth: 0.25,
+      tag: 'canvas',
+      scale: 64,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/up-left.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 2,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/up-right.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 3,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/down-left.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 4,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/down-right.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 5,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/left-up.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 6,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/left-down.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 7,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/right-up.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 8,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/right-down.png',
+              width: 1248,
+              height: 448
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 4,
+      blueprints: [],
+      x: 32000,
+      y: 6800,
+      width: 32000,
+      height: 8000,
+      depth: 0.25,
+      tag: 'canvas',
+      scale: 64,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/up-left.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 2,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/up-right.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 3,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/down-left.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 4,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/down-right.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 5,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/left-up.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 6,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/left-down.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 7,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/right-up.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 8,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/right-down.png',
+              width: 1248,
+              height: 448
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 5,
+      blueprints: [],
+      x: 64000,
+      y: 6800,
+      width: 32000,
+      height: 8000,
+      depth: 0.25,
+      tag: 'canvas',
+      scale: 64,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/up-left.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 2,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/up-right.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 3,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/down-left.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 4,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/down-right.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 5,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/left-up.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 6,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/left-down.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 7,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/right-up.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 8,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/right-down.png',
+              width: 1248,
+              height: 448
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: 6,
+      blueprints: [],
+      x: 96000,
+      y: 6800,
+      width: 32000,
+      height: 8000,
+      depth: 0.25,
+      tag: 'canvas',
+      scale: 64,
+      sections: [
+        {
+          id: 1,
+          rowCount: 1,
+          variations: [
+            {
+              id: 1,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/up-left.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 2,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/up-right.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 3,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/down-left.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 4,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/down-right.png',
+              width: 448,
+              height: 1248
+            },
+            {
+              id: 5,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/left-up.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 6,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/left-down.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 7,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/right-up.png',
+              width: 1248,
+              height: 448
+            },
+            {
+              id: 8,
+              prevalence: 1,
+              tag: 'img',
+              src: 'images/foreground/arrow/right-down.png',
+              width: 1248,
+              height: 448
+            }
+          ]
+        }
+      ]
+    }
+  ]
+  const prototype = {
+    width: 32000,
+    height: 8000,
+    backgroundLayers,
+    foregroundLayers
+  }
+  return Object
+    .entries(prototype)
+    .reduce(appendAttribute, {})
+}
+
+const assignElementIds = function (layer) {
+  Object.entries(layer).forEach(assignElementId, {...this, layer})
+}
+
+const assignElementId = function ([key, value]) {
+  const {state, layer} = this
+  if (key === 'tag') layer.elementId = 's' + ++state.elementCount
+  else if (Array.isArray(value)) value.forEach(assignElementIds, this)
+  return state
+}
+
+const handleLayer = function (layer) {
+  const {sections} = layer
+  sections.forEach(handleSection, {...this, layer})
+}
+
+const handleSection = function (section, sectionIndex) {
+  const {variations} = section
+  const variationOptions = []
+  variations.forEach(pushVariation, {variationOptions})
+  pushBlueprints({...this, section, sectionIndex, variationOptions})
+}
+
+const pushVariation = function (variation, index) {
+  const {variationOptions} = this
+  let {prevalence} = variation
+  while (prevalence) variationOptions.push({variation, index}) && --prevalence
+}
+
+const pushBlueprints = argumentation => {
+  argumentation.rowsDrawn = 0
+  startRow(argumentation)
+}
+
+const startRow = argumentation => {
+  const {rowsDrawn, section} = argumentation
+  const {rowCount} = section
+  argumentation.x = 0
+  argumentation.rowY = 0
+  if (rowsDrawn < rowCount) pushBlueprint(argumentation)
+}
+
+const pushBlueprint = argumentation => {
+  const {state, x, layer, variationOptions, sectionIndex, isForeground} = argumentation
+  if (x >= layer.width) return callStartRow(argumentation)
+  const float = Math.random() * variationOptions.length
+  const index = Math.floor(float)
+  const variationChoice = argumentation.variationChoice = variationOptions[index]
+  const {variation, index: variationIndex} = variationChoice
+  layer.y && (state.layerY = layer.y)
+  const blueprint = {sectionIndex, variationIndex, x, y: state.layerY}
+  layer.blueprints.push(blueprint)
+  isForeground && handleIsForeground(argumentation)
+  argumentation.x += variation.width
+  argumentation.rowY = variation.height
+  pushBlueprint(argumentation)
+}
+
+const callStartRow = argumentation => {
+  const {state, rowY} = argumentation
+  ++argumentation.rowsDrawn
+  state.layerY += rowY
+  startRow(argumentation)
+}
+
+const handleIsForeground = argumentation => {
+  const {layer, variationChoice} = argumentation
+  const {variation} = variationChoice
+  if (layer.id < 3) return argumentation.x += 2000
+  const float = Math.random() * (3000 - 1000) + 1000
+  const gap = Math.floor(float)
+  argumentation.x += gap + variation.width
+}
+
+function createEntity(type) {
+  const characterPrototype = {
+    id: null,
+    type: 'character',
+    name: 'Fred',
+    status: 'alive',
+    playerId: null,
+    latency: null,
+    drivingId: null,
+    passengingId: null,
+    occupyingId: null,
+    vehicleMasterKeys: [],
+    vehicleKeys: [],
+    vehicleWelcomeIds: [],
+    roomMasterKeys: [],
+    roomKeys: [],
+    x: null,
+    y: null,
+    width: 70,
+    height: 103,
+    depth: 1,
+    direction: 'right',
+    speed: null,
+    maxSpeed: 10,
+    isActive: false,
+    tag: 'img',
+    elementId: null,
+    src: 'images/characters/man.png'
+  }
+  const vehiclePrototype = {
+    id: null,
+    type: 'vehicle',
+    model: 'delorean',
+    status: 'operational',
+    seatCount: 2,
+    driverId: null,
+    masterKeyHolderIds: [],
+    keyHolderIds: [],
+    welcomIds: [],
+    passengerIds: [],
+    x: null,
+    y: null,
+    width: 268,
+    height: 80,
+    direction: 'right',
+    previousDirection: null,
+    speed: null,
+    maxSpeed: 75,
+    isSlowing: false,
+    isDescending: false,
+    acceleration: 0.6,
+    deceleration: 1.2,
+    armorLevel: 0,
+    weight: 2712,
+    tag: 'img',
+    elementId: null,
+    src: 'images/vehicles/delorean.png'
+  }
+  const prototype = type === 'character' ? characterPrototype : vehiclePrototype
+  return Object
+    .entries(prototype)
+    .reduce(appendAttribute, {})
+}
+
+const exitVehicleAsPassenger = (characterId, vehicle) => {
+  const {passengerIds} = vehicle
+  const index = passengerIds.indexOf(characterId)
+  index + 1 && passengerIds.splice(index, 1)
+  return vehicle
+}
+
+const makeEntity = (type, state, configuration) => {
+  const {_entities, city = {}} = state
+  const {x, y, speed} = configuration || {}
+  const directionsByType = {
+    character: ['left', 'right'],
+    vehicle: ['left', 'right', 'up', 'down', 'up-left', 'up-right', 'down-left', 'down-right']
+  }
+  const directions = directionsByType[type]
+  const percentages = [
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    1,
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.1,
+    0.2,
+    0.3,
+    0.3,
+    0.4
+  ]
+  const entity = createEntity(type)
+  const id = entity.id = _entities.length
+  entity.elementId = 'o' + id
+  _entities.push(entity)
+  if (type !== 'room') {
+    const float = Math.random() * directions.length
+    const index = Math.floor(float)
+    entity.direction = directions[index]
+    entity.x = x || x === 0 ? x : Math.random() * (city.width - entity.width)
+  }
+  if (type === 'vehicle') {
+    const float = Math.random() * percentages.length
+    const index = Math.floor(float)
+    const percentage = percentages[index]
+    entity.speed = speed || speed === 0 ? speed : Math.random() * entity.maxSpeed * percentage
+    entity.y = y || y === 0 ? y : Math.random() * (city.height - entity.height - 77)
+  }
+  if (type === 'character') {
+    entity.y = city.height - 168
+    entity.speed = speed || speed === 0 ? speed : Math.random() * entity.maxSpeed
+  }
+  return entity
+}
+
+const exitVehicle = (_entities, character) => {
+  const {id: characterId, drivingId, passengingId} = character
+  const vehicleId = drivingId || passengingId
+  const vehicle = _entities[vehicleId]
+  character.drivingId = null
+  character.passengingId = null
+  if (passengingId) return exitVehicleAsPassenger(characterId, vehicle) && _entities
+  vehicle.driverId = null
+  vehicle.isSlowing = true
+  vehicle.isDescending = true
+  return _entities
+}
+
+const slowDownVehicle = vehicle => {
+  const {speed, maxSpeed} = vehicle
+  const percentage = speed / maxSpeed
+  const multiplier =
+      percentage > 0.5 ? percentage * 2
+    : percentage > 0.25 ? 1
+    : 0.5
+  vehicle.speed -= vehicle.deceleration * multiplier
+  if (vehicle.speed > 0) return
+  vehicle.speed = 0
+  vehicle.isSlowing = false
+}
+
+const descendVehicle = vehicle => {
+  vehicle.y += 5
+  if (vehicle.y < 7843) return
+  vehicle.isDescending = false
+  vehicle.y = 7843
+}
+
+const updateLocation = function (entity) {
+  const {state} = this
+  const {_entities} = state
+  const {id, drivingId, passengingId, type, isSlowing, isDescending} = entity
+  if (!id) return
+  if (drivingId || passengingId) return updateTravelingCharacterLocation(entity, _entities)
+  if (type === 'character') return updateWalkingCharacterLocation(entity, state)
+  if (type !== 'vehicle') return
+  if (isDescending) descendVehicle(entity)
+  if (isSlowing) slowDownVehicle(entity)
+  updateVehicleLocation(entity, state)
+}
+
+const updateTravelingCharacterLocation = (character, _entities) => {
+  const {drivingId, passengingId} = character
+  const vehicle = drivingId ? _entities[drivingId] : _entities[passengingId]
+  const {x, y, width, height, direction} = vehicle
+  const leftDirections = ['left', 'up-left', 'down-left']
+  const rightDirections = ['right', 'up-right', 'down-right']
+  character.x = x + width / 2 - character.width / 2
+  character.y = y + height / 2 - character.height / 2 - 5
+  leftDirections.includes(direction) && (character.direction = 'left')
+  rightDirections.includes(direction) && (character.direction = 'right')
+}
+
+const updateWalkingCharacterLocation = (character, state) => {
+  const {city} = state
+  const {speed, direction, width, playerId, x} = character
+  const maxX = city.width - width
+  character.y < 0 && (character.y = 0)
+  character.y < 7832 && (character.y += 20)
+  character.y > 7832 && (character.y = 7832)
+  if (speed <= 0) return
+  character.x = direction === 'left' ? x - speed : x + speed
+  if (playerId) {
+    character.x < 0 && (character.x = 0)
+    character.x > maxX && (character.x = maxX)
+    return
+  }
+  character.x < 0 && (character.direction = 'right')
+  character.x > maxX && (character.direction = 'left')
+}
+
+const updateVehicleLocation = (vehicle, state) => {
+  const {city, _entities} = state
+  const {speed, direction, width, height, driverId, x, y} = vehicle
+  const character = driverId && _entities[driverId]
+  const {playerId} = character || {}
+  const distance = Math.sqrt(speed ** 2 * 2)
+  const maxX = city.width - width
+  const maxY = city.height - height - 77
+  const x_ = vehicle.x =
+      direction === 'left' ? x - speed
+    : direction === 'right' ? x + speed
+    : direction === 'up-right' ? x + distance
+    : direction === 'down-right' ? x + distance
+    : direction === 'up-left' ? x - distance
+    : direction === 'down-left' ? x - distance
+    : x
+  const y_ = vehicle.y =
+      y > maxY ? maxY
+    : direction === 'up' ? y - speed
+    : direction === 'down' ? y + speed
+    : direction === 'up-right' ? y - distance
+    : direction === 'down-right' ? y + distance
+    : direction === 'up-left' ? y - distance
+    : direction === 'down-left' ? y + distance
+    : y
+  const directions =
+      direction === 'up' ? ['left', 'right', 'down', 'down-left', 'down-right', 'down-left', 'down-right']
+    : direction === 'down' ? ['left', 'right', 'up', 'up-left', 'up-right', 'up-left', 'up-right']
+    : direction === 'left' ? ['up', 'down', 'right', 'up-right', 'down-right', 'right', 'up-right', 'down-right']
+    : direction === 'right' ? ['up', 'down', 'up-left', 'down-left', 'left', 'up-left', 'down-left', 'left']
+    : direction === 'up-right' ? ['left', 'up-left', 'down-left', 'down-right']
+    : direction === 'down-right' ? ['left', 'up-left', 'up-right', 'down-left']
+    : direction === 'up-left' ? ['right', 'up-right', 'down-left', 'down-right']
+    : direction === 'down-left' ? ['right', 'up-left', 'up-right', 'down-right']
+    : direction
+  if (playerId) {
+    x_ <= 0 && stopVehicle(vehicle) && (vehicle.x = 0)
+    x_ >= maxX && stopVehicle(vehicle) && (vehicle.x = maxX)
+    y_ < 0 && (vehicle.y = 0)
+    y_ > maxY && (vehicle.y = maxY)
+    return
+  }
+  x_ < 0 && (vehicle.x = 0)
+  x_ > maxX && (vehicle.x = maxX)
+  y_ < 0 && (vehicle.y = 0)
+  y_ > maxY && (vehicle.y = maxY)
+  if (x_ >= 0 && x_ <= maxX && y_ >= 0 && y_ <= maxY) return
+  const {length: directionCount} = directions
+  const float = Math.random() * directionCount
+  const index = Math.floor(float)
+  vehicle.direction = directions[index]
+}
+
+const stopVehicle = vehicle => (vehicle.speed = 0) || vehicle
+
+const updateLatencies = function (latencyKit) {
+  const {_entities} = this
+  if (!latencyKit) return
+  const {characterId, latency} = latencyKit
+  const character = _entities[characterId]
+  character.latency = latency
+}
+
+const handleTick = (tick, characterId, _entities) => {
+  const character = _entities[characterId]
+  character.tick = tick
+}
+
+const emitEntities = (io, _entities) => {
+  const [mayor] = _entities
+  mayor.timestamp = now()
+  io.volatile.emit('entities', _entities)
+}
+
 createMayor(state)
-initiate.call({state}, 20, 40)
+initiate(state)
 io.on('connection', handleConnection.bind({state}))
 app.use(static_(join(__dirname, 'public')))
 server.listen(port, () => console.log('Listening on port ' + port))
