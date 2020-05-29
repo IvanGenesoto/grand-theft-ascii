@@ -60,31 +60,7 @@ export const getEntityKit = function () {
       elementId: null,
       src: 'images/vehicles/delorean.png'
     }
-    const roomPrototype = {
-      id: null,
-      type: 'room',
-      name: 'Pad',
-      status: 'locked',
-      capacity: 50,
-      occupantIds: [],
-      masterKeyHolderIds: [],
-      keyHolderIds: [],
-      unwelcomeIds: [],
-      x: 0,
-      y: 0,
-      width: 0,
-      height: 0,
-      tag: 'canvas',
-      background: null,
-      foreground: null,
-      inventory: [],
-      backgroundLayers: [],
-      foregroundLayers: []
-    }
-    const prototype =
-        type === 'character' ? characterPrototype
-      : type === 'vehicle' ? vehiclePrototype
-      : roomPrototype
+    const prototype = type === 'character' ? characterPrototype : vehiclePrototype
     return Object
       .entries(prototype)
       .reduce(appendAttribute, {})
@@ -98,136 +74,12 @@ export const getEntityKit = function () {
     return entity
   }
 
-  const pushIfVehicleEntry = (entryKit, vehicleId, index) => {
-    const {
-      characterIdsToEnter,
-      vehicleIdsToBeEntered,
-      nonEntereringWalkerIdss,
-      characterIds,
-      _entities
-    } = entryKit
-    const characterId = characterIds[index]
-    const character = _entities[characterId]
-    const vehicle = _entities[vehicleId]
-    const {driverId, passengerIds, seatCount} = vehicle
-    const {length: passengerCount} = passengerIds
-    const driverCount = driverId ? 1 : 0
-    const isEntry =
-         driverCount + passengerCount < seatCount
-      && character.x < vehicle.x + vehicle.width
-      && character.x + character.width > vehicle.x
-      && character.y < vehicle.y + vehicle.height
-      && character.y + character.height > vehicle.y
-    if (!isEntry) return nonEntereringWalkerIdss.push(character.id) && entryKit
-    characterIdsToEnter.push(characterId)
-    vehicleIdsToBeEntered.push(vehicleId)
-    return entryKit
-  }
-
-  const pushIfCanBePut = (puttedKit, characterId, index) => {
-    const {
-      characterIdsPutInVehicles,
-      vehicleIdsCharactersWerePutIn,
-      strandedWalkerIdss,
-      vehicleIds,
-      _entities
-    } = puttedKit
-    const vehicleId = vehicleIds[index]
-    const vehicle = _entities[vehicleId]
-    const character = _entities[characterId]
-    const {driverId, passengerIds, seatCount} = vehicle
-    const {length: passengerCount} = passengerIds
-    if (driverId && passengerCount + 1 >= seatCount) return strandedWalkerIdss.push(characterId)
-    if (driverId) {
-      character.passengingId = vehicleId
-      vehicle.passengerIds.push(characterId)
-      characterIdsPutInVehicles.push(characterId)
-      vehicleIdsCharactersWerePutIn.push(vehicleId)
-      return puttedKit
-    }
-    character.drivingId = vehicleId
-    vehicle.driverId = characterId
-    return puttedKit
-  }
-
   const exitVehicleAsPassenger = (characterId, vehicle) => {
     const {passengerIds} = vehicle
     const index = passengerIds.indexOf(characterId)
     index + 1 && passengerIds.splice(index, 1)
+    return vehicle
   }
-
-  const getNewDirection = ({up, down, left, right}) =>
-      up && left ? 'up-left'
-    : up && right ? 'up-right'
-    : down && left ? 'down-left'
-    : down && right ? 'down-right'
-    : up ? 'up'
-    : down ? 'down'
-    : left ? 'left'
-    : right ? 'right'
-    : null
-
-  const isVehicleDecelerating = (direction, newDirection) =>
-       (direction === 'up' && newDirection === 'down')
-    || (direction === 'up' && newDirection === 'down-left')
-    || (direction === 'up' && newDirection === 'down-right')
-    || (direction === 'up-right' && newDirection === 'down-left')
-    || (direction === 'up-right' && newDirection === 'left')
-    || (direction === 'up-right' && newDirection === 'down')
-    || (direction === 'right' && newDirection === 'left')
-    || (direction === 'right' && newDirection === 'up-left')
-    || (direction === 'right' && newDirection === 'down-left')
-    || (direction === 'down-right' && newDirection === 'up-left')
-    || (direction === 'down-right' && newDirection === 'up')
-    || (direction === 'down-right' && newDirection === 'left')
-    || (direction === 'down' && newDirection === 'up')
-    || (direction === 'down' && newDirection === 'up-right')
-    || (direction === 'down' && newDirection === 'up-left')
-    || (direction === 'down-left' && newDirection === 'up-right')
-    || (direction === 'down-left' && newDirection === 'right')
-    || (direction === 'down-left' && newDirection === 'up')
-    || (direction === 'left' && newDirection === 'right')
-    || (direction === 'left' && newDirection === 'down-right')
-    || (direction === 'left' && newDirection === 'up-right')
-    || (direction === 'up-left' && newDirection === 'down-right')
-    || (direction === 'up-left' && newDirection === 'down')
-    || (direction === 'up-left' && newDirection === 'right')
-
-  const isVehicleTurning = (direction, newDirection) =>
-       (direction === 'up' && newDirection === 'left')
-    || (direction === 'up' && newDirection === 'right')
-    || (direction === 'up' && newDirection === 'up-left')
-    || (direction === 'up' && newDirection === 'up-right')
-    || (direction === 'up-right' && newDirection === 'up-left')
-    || (direction === 'up-right' && newDirection === 'down-right')
-    || (direction === 'right' && newDirection === 'up')
-    || (direction === 'right' && newDirection === 'down')
-    || (direction === 'down-right' && newDirection === 'up-right')
-    || (direction === 'down-right' && newDirection === 'down-left')
-    || (direction === 'down' && newDirection === 'right')
-    || (direction === 'down' && newDirection === 'left')
-    || (direction === 'down' && newDirection === 'down-right')
-    || (direction === 'down' && newDirection === 'down-left')
-    || (direction === 'down-left' && newDirection === 'down-right')
-    || (direction === 'down-left' && newDirection === 'up-left')
-    || (direction === 'left' && newDirection === 'down')
-    || (direction === 'left' && newDirection === 'up')
-    || (direction === 'up-left' && newDirection === 'down-left')
-    || (direction === 'up-left' && newDirection === 'up-right')
-
-  const isVehicleStrafing = (direction, newDirection) =>
-       (direction === 'up-right' && newDirection === 'up')
-    || (direction === 'up-right' && newDirection === 'right')
-    || (direction === 'right' && newDirection === 'up-right')
-    || (direction === 'right' && newDirection === 'down-right')
-    || (direction === 'down-right' && newDirection === 'right')
-    || (direction === 'down-right' && newDirection === 'down')
-    || (direction === 'down-left' && newDirection === 'down')
-    || (direction === 'down-left' && newDirection === 'left')
-    || (direction === 'left' && newDirection === 'down-left')
-    || (direction === 'left' && newDirection === 'up-left')
-    || (direction === 'up-left' && newDirection === 'left')
-    || (direction === 'up-left' && newDirection === 'up')
 
   const entityKit = {
 
@@ -290,57 +142,17 @@ export const getEntityKit = function () {
       return entity
     },
 
-    giveKey: (character, entity, isMasterKey) => {
-      const {id: characterId} = character
-      const {id: entityId} = entity
-      const type = entity.type
-      const keysType =
-          type === 'vehicle' && isMasterKey ? 'vehicleMasterKeys'
-        : type === 'vehicle' ? 'vehicleKeys'
-        : type === 'room' && isMasterKey ? 'roomMasterKeys'
-        : 'roomKeys'
-      const keys = character[keysType]
-      const duplicateKey = keys.find(key => key === entityId)
-      duplicateKey || keys.push(entityId)
-      const keyHoldersType = isMasterKey ? 'masterKeyHolderIds' : 'keyHolderIds'
-      const keyHolderIds = entity[keyHoldersType]
-      const duplicateKeyHolderId = keyHolderIds.find(keyHolder => keyHolder === characterId)
-      duplicateKeyHolderId || keyHolderIds.push(characterId)
-      isMasterKey && entityKit.giveKey(character, entity)
-    },
-
-    checkForVehicleEntries: (
-      characterIds, vehicleIds, _entities
-    ) => vehicleIds.reduce(pushIfVehicleEntry, {
-      characterIdsToEnter: [],
-      vehicleIdsToBeEntered: [],
-      nonEntereringWalkerIdss: [],
-      characterIds,
-      _entities
-    }),
-
-    putCharactersInVehicles: (
-      characterIds, vehicleIds, _entities
-    ) => characterIds.reduce(pushIfCanBePut, {
-      characterIdsPutInVehicles: [],
-      vehicleIdsCharactersWerePutIn: [],
-      strandedWalkerIdss: [],
-      vehicleIds,
-      _entities
-    }),
-
-    exitVehicle: function (characterId) {
-      const {_entities} = this
-      const character = _entities[characterId]
-      const {drivingId, passengingId} = character
+    exitVehicle: (_entities, character) => {
+      const {id: characterId, drivingId, passengingId} = character
       const vehicleId = drivingId || passengingId
       const vehicle = _entities[vehicleId]
       character.drivingId = null
       character.passengingId = null
-      drivingId && (vehicle.driverId = null)
-      passengingId && exitVehicleAsPassenger(characterId, vehicle)
-      drivingId && (vehicle.isSlowing = true)
-      drivingId && (vehicle.isDescending = true)
+      if (passengingId) return exitVehicleAsPassenger(characterId, vehicle) && _entities
+      vehicle.driverId = null
+      vehicle.isSlowing = true
+      vehicle.isDescending = true
+      return _entities
     },
 
     slowDownVehicle: vehicle => {
@@ -361,38 +173,6 @@ export const getEntityKit = function () {
       if (vehicle.y < 7843) return
       vehicle.isDescending = false
       vehicle.y = 7843
-    },
-
-    walk: (characterId, input, _entities) => {
-      const character = _entities[characterId]
-      const {direction, maxSpeed} = character
-      const {right, left} = input
-      character.speed = right || left ? maxSpeed : 0
-      character.direction =
-          right ? 'right'
-        : left ? 'left'
-        : direction
-    },
-
-    drive: (characterId, input, _entities) => {
-      const character = _entities[characterId]
-      const vehicleId = character.drivingId
-      const vehicle = _entities[vehicleId]
-      const {direction, speed, maxSpeed, acceleration, deceleration} = vehicle
-      const newDirection = getNewDirection(input)
-      const isAccelerating = newDirection === direction
-      const isDecelerating = speed && isVehicleDecelerating(direction, newDirection)
-      const isTurning = isVehicleTurning(direction, newDirection)
-      const isStrafing = isVehicleStrafing(direction, newDirection)
-      direction !== 'up' && direction !== 'down' && (vehicle.previousDirection = direction)
-      vehicle.direction = !isDecelerating && newDirection ? newDirection : direction
-      isTurning && (vehicle.speed /= 4)
-      isStrafing && (vehicle.speed *= 0.9)
-      isAccelerating && (vehicle.speed += acceleration)
-      isDecelerating && (vehicle.speed -= deceleration)
-      vehicle.speed > maxSpeed && (vehicle.speed = maxSpeed)
-      vehicle.speed < 0 && (vehicle.speed = 0)
-      vehicle.speed < 2 && !isAccelerating && (vehicle.speed = 0)
     },
 
     updateLocation: function (entity) {
@@ -419,9 +199,6 @@ export const getEntityKit = function () {
       character.y = y + height / 2 - character.height / 2 - 5
       leftDirections.includes(direction) && (character.direction = 'left')
       rightDirections.includes(direction) && (character.direction = 'right')
-    },
-
-    updateOccupyingCharacterLocation: character => { // eslint-disable-line no-unused-vars
     },
 
     updateWalkingCharacterLocation: (character, state) => {
