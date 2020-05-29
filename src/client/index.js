@@ -118,7 +118,7 @@ const handleEntities = function (entitiesByType) {
   vehicles.forEach(createElement.bind({state}))
 }
 
-function initializeCity(city) {
+const initializeCity = function (city) {
   const {state} = this
   const {backgroundLayers, foregroundLayers} = city
   state.city = city
@@ -135,14 +135,14 @@ const initiateCity = state => {
   shiftEntitiesBuffer(state, true)
 }
 
-function createElements(component) {
+const createElements = function (component) {
   const {tag, sections, variations} = component
   tag && createElement.call(this, component)
   sections && sections.map(createElements.bind(this))
   variations && variations.map(createElements.bind(this))
 }
 
-function checkImagesLoaded() {
+const checkImagesLoaded = function () {
   const {state} = this
   const {timeoutId, imagesLoaded, imagesTotal} = state
   clearTimeout(timeoutId)
@@ -280,7 +280,7 @@ const setInterpolationRatio = state => {
   return state
 }
 
-function updatePredictionBuffer(input, state) {
+const updatePredictionBuffer = (input, state) => {
   const {player, entitiesByType, predictionBuffer} = state
   const {characters} = entitiesByType
   const {characterId} = player
@@ -292,7 +292,7 @@ function updatePredictionBuffer(input, state) {
   predictionBuffer.length > 60 && predictionBuffer.shift()
 }
 
-function updatePlayerCharacterBehavior(input, state) {
+const updatePlayerCharacterBehavior = (input, state) => {
   const {player, entitiesByType} = state
   const {characters} = entitiesByType
   const {characterId} = player
@@ -306,7 +306,7 @@ function updatePlayerCharacterBehavior(input, state) {
     : direction
 }
 
-function updatePlayerCharacterLocation(state) {
+const updatePlayerCharacterLocation = (state) => {
   const {player, city, entitiesByType} = state
   const {characters} = entitiesByType
   const {characterId} = player
@@ -385,7 +385,7 @@ const renderLayer = function (layer) {
   )
 }
 
-function renderEntity(entity) {
+const renderEntity = function (entity) {
   const {state, isVehicle} = this
   const {camera} = state
   const {id: entityId, drivingId, passengingId, direction, previousDirection} = entity || {}
@@ -479,7 +479,7 @@ const compensateIfShould = (delayDuration, delayKit) =>
   && (delayKit.hasSlowdown = true)
   && (delayKit.slowdownCompensation = delayKit.delay / delayDuration)
 
-function control({key}) {
+const control = function ({key}) {
   const {state, isDown} = this
   const {player} = state
   const {input} = player
