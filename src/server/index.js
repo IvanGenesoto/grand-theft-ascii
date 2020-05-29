@@ -114,135 +114,205 @@ const handleInput = function (input) {
 }
 
 const refresh = state => {
-  const {_players, _entities, playerKit, entityKit, cityKit, grid} = state
-  const activeKit = {walkerIds: [], driverIds: [], passengerIds: []}
-  const pairKit = {characterIds: [], vehicleIds: [], _entities}
+  const {_players, _entities, playerKit, entityKit} = state
   const tick = ++state.tick
-  state.refreshStartTime = now()
+  state.refreshingStartTime = now()
   runQueues.call({state})
-  updateIsActive.call({state}, _players)
-  const playerCharacterIds = playerKit.getPlayerCharacterIds(_players)
-  const playerCharacters = playerCharacterIds.map(id => _entities[id])
-  const {walkerIds, driverIds, passengerIds} = playerCharacters.reduce(pushIfActive, activeKit)
-  const walkers = walkerIds.map(id => _entities[id])
-  const {characterIds, vehicleIds} = walkers.reduce(pushEntityPair, pairKit)
-  const vehicleEntryKit = entityKit.checkForVehicleEntries(characterIds, vehicleIds, _entities)
-  const {characterIdsToEnter, vehicleIdsToBeEntered, nonEntereringWalkerIdss} = vehicleEntryKit
-  const puttedKit = entityKit.putCharactersInVehicles(characterIdsToEnter, vehicleIdsToBeEntered, _entities)
-  const {strandedWalkerIdss} = puttedKit
-  passengerIds.forEach(entityKit.exitVehicle, {_entities})
-  driverIds.forEach(entityKit.exitVehicle, {_entities})
-  const characterIds_ = [driverIds, nonEntereringWalkerIdss, strandedWalkerIdss].flat()
-  const characterIds__ = characterIds_.reduce(pushIfUnique.bind({}), [])
-  addToGrid(characterIds__, grid)
-  const {collisions, interactions} = cityKit.detectCollisions(characterIds__, grid)
-  if (collisions.length) collideVehicles(collisions)
-  if (interactions.length) makeCharactersInteract(interactions)
-  walkOrDrive.call({state}, playerCharacters, _players)
+  const playerCharacters = _players.map(({characterId}) => _entities[characterId])
+  const {actives} = playerCharacters.reduce(pushIfActive, {_players, actives: []})
+  const activesByCategory = {walkers: [], drivers: [], passengers: []}
+  const {walkers, drivers, passengers} = actives.reduce(categorize, activesByCategory)
+  const vehicles = _entities.filter(({type}) => type === 'vehicle')
+  walkers.reduce(enterIfCan, vehicles)
+  passengers.reduce(entityKit.exitVehicle, _entities)
+  drivers.reduce(entityKit.exitVehicle, _entities)
+  const charactersByCategory = {walkers: [], drivers: [], passengers: []}
+  const args = [categorize, charactersByCategory]
+  const {walkers: walkers_, drivers: drivers_} = playerCharacters.reduce(...args)
+  walkers_.forEach(walk, {_players})
+  drivers_.forEach(drive, {state})
   _entities.forEach(entityKit.updateLocation, {state})
-  if (tick % 3) return callRefreshAfterDelay(state)
+  if (tick % 3) return deferRefresh(state)
   const latencyKits = playerKit.getLatencyKits(_players)
   latencyKits.forEach(entityKit.updateLatencies, {_entities})
   entityKit.emit(io, _entities)
-  callRefreshAfterDelay(state)
+  deferRefresh(state)
   return state
 }
 
-const pushIfActive = (activeKit, character) => {
-  const {walkerIds, driverIds, passengerIds} = activeKit
-  const {isActive, drivingId, passengingId, id: characterId} = character
-  if (isActive && drivingId) (character.isActive = false) || driverIds.push(characterId)
-  else if (isActive && passengingId) (character.isActive = false) || passengerIds.push(characterId)
-  else if (isActive) (character.isActive = false) || walkerIds.push(characterId)
+const pushIfActive = (activeKit, character, index) => {
+  const {_players, actives} = activeKit
+  const player = _players[index]
+  const {input, previousAction} = player
+  const {action} = input
+  const isActive = action && !previousAction
+  player.previousAction = action
+  isActive && actives.push(character)
   return activeKit
 }
 
-const pushEntityPair = function (keyMatchKit, character) {
-  const {characterIds, vehicleIds, _entities} = keyMatchKit
+const categorize = (activesByCategory, character) => {
+  const {walkers, drivers, passengers} = activesByCategory
+  const {drivingId, passengingId} = character
+  const entities =
+      drivingId ? drivers
+    : passengingId ? passengers
+    : walkers
+  entities.push(character)
+  return activesByCategory
+}
+
+const enterIfCan = (vehicles, walker) => {
+  const vehicle = vehicles.find(canVehicleBeEntered, {walker})
+  if (!vehicle) return vehicles
+  enter(vehicle, walker)
+  return vehicles
+}
+
+const canVehicleBeEntered = function (vehicle) {
+  const {walker} = this
+  const {driverId, passengerIds, seatCount} = vehicle
+  const {length: passengerCount} = passengerIds
+  const driverCount = driverId ? 1 : 0
+  if (driverCount + passengerCount >= seatCount) return false
+  return isVehicleTouchingCharacter(vehicle, walker)
+}
+
+const isVehicleTouchingCharacter = (vehicle, character) =>
+     character.x < vehicle.x + vehicle.width
+  && character.x + character.width > vehicle.x
+  && character.y < vehicle.y + vehicle.height
+  && character.y + character.height > vehicle.y
+
+const enter = (vehicle, character) => {
   const {id: characterId} = character
-  const vehicles = _entities.filter(({type}) => type === 'vehicle')
-  const vehicleIds_ = vehicles.map(({id}) => id)
-  vehicleIds_.forEach(vehicleId => {
-    characterIds.push(characterId)
-    vehicleIds.push(vehicleId)
-  })
-  return keyMatchKit
+  const {id: vehicleId, driverId, passengerIds} = vehicle
+  driverId || (vehicle.driverId = characterId)
+  if (!driverId) return (character.drivingId = vehicleId) && {vehicle, character}
+  character.passengingId = vehicleId
+  passengerIds.push(characterId)
+  return {vehicle, character}
 }
 
-const pushIfUnique = function (uniques, entity) {
-  const entityById = this
-  const {id} = entity
-  const entity_ = entityById[id]
-  if (entity_) return uniques
-  entityById[id] = entity
-  return uniques
+const walk = function (character) {
+  const {_players} = this
+  const {playerId, direction, maxSpeed} = character
+  const player = _players[playerId]
+  const {input} = player
+  const {right, left} = input
+  character.speed = right || left ? maxSpeed : 0
+  character.direction =
+      right ? 'right'
+    : left ? 'left'
+    : direction
+  return character
 }
 
-const addToGrid = (entities, grid) => entities.forEach(entity => {
-  const {x, y, width, height, id} = entity
-  const xRight = x + width
-  const yBottom = y + height
-  const rowTop = getGridIndex(y)
-  const rowBottom = getGridIndex(yBottom)
-  const sectionLeft = getGridIndex(x)
-  const sectionRight = getGridIndex(xRight)
-  const row = grid[rowTop]
-  const section = row && row[sectionLeft]
-  section && section.a.push(id)
-  if (sectionLeft !== sectionRight) {
-    const section = row && row[sectionRight]
-    section && section.a.push(id)
-  }
-  if (rowTop !== rowBottom) {
-    const row = grid[rowBottom]
-    const section = row && row[sectionLeft]
-    section && section.a.push(id)
-    if (sectionLeft === sectionRight) return
-    const section_ = row && row[sectionRight]
-    section_ && section_.a.push(id)
-  }
-})
-
-function collideVehicles({vehicleIdsA, vehicleIdsB}) { // eslint-disable-line no-unused-vars
-}
-
-function makeCharactersInteract({characterIdsA, characterIdsB}) { // eslint-disable-line no-unused-vars
-}
-
-const updateIsActive = function (allPlayers) {
+const drive = function (character) {
   const {state} = this
-  const {_players, _entities, playerKit} = state
-  allPlayers.forEach(player => {
-    const {id: playerId, input, characterId, previousAction} = player
-    const character = _entities[characterId]
-    const {action} = input
-    if (action && !previousAction) character.isActive = true
-    else character.isActive = false
-    playerKit.setPreviousAction(action, playerId, _players)
-  })
+  const {_players, _entities} = state
+  const {playerId, drivingId: vehicleId} = character
+  const player = _players[playerId]
+  const {input} = player
+  const vehicle = _entities[vehicleId]
+  const {direction, speed, maxSpeed, acceleration, deceleration} = vehicle
+  const newDirection = getNewDirection(input)
+  const isAccelerating = newDirection === direction
+  const isDecelerating = speed && isVehicleDecelerating(direction, newDirection)
+  const isTurning = isVehicleTurning(direction, newDirection)
+  const isStrafing = isVehicleStrafing(direction, newDirection)
+  direction !== 'up' && direction !== 'down' && (vehicle.previousDirection = direction)
+  vehicle.direction = !isDecelerating && newDirection ? newDirection : direction
+  isTurning && (vehicle.speed /= 4)
+  isStrafing && (vehicle.speed *= 0.9)
+  isAccelerating && (vehicle.speed += acceleration)
+  isDecelerating && (vehicle.speed -= deceleration)
+  vehicle.speed > maxSpeed && (vehicle.speed = maxSpeed)
+  vehicle.speed < 0 && (vehicle.speed = 0)
+  vehicle.speed < 2 && !isAccelerating && (vehicle.speed = 0)
   return state
 }
 
-const walkOrDrive = function (playerCharacters, allPlayers) {
-  const {state} = this
-  const {entityKit, _entities} = state
-  playerCharacters.forEach(playerCharacter => {
-    const {playerId, drivingId, passengingId, id} = playerCharacter
-    const player = allPlayers[playerId]
-    const {input} = player
-    if (drivingId) entityKit.drive(id, input, _entities)
-    else if (!passengingId) entityKit.walk(id, input, _entities)
-  })
-  return state
-}
+const getNewDirection = ({up, down, left, right}) =>
+    up && left ? 'up-left'
+  : up && right ? 'up-right'
+  : down && left ? 'down-left'
+  : down && right ? 'down-right'
+  : up ? 'up'
+  : down ? 'down'
+  : left ? 'left'
+  : right ? 'right'
+  : null
 
-const callRefreshAfterDelay = state => {
-  const {delayKit, fps, now, refreshStartTime} = state
+const isVehicleDecelerating = (direction, newDirection) =>
+     (direction === 'up' && newDirection === 'down')
+  || (direction === 'up' && newDirection === 'down-left')
+  || (direction === 'up' && newDirection === 'down-right')
+  || (direction === 'up-right' && newDirection === 'down-left')
+  || (direction === 'up-right' && newDirection === 'left')
+  || (direction === 'up-right' && newDirection === 'down')
+  || (direction === 'right' && newDirection === 'left')
+  || (direction === 'right' && newDirection === 'up-left')
+  || (direction === 'right' && newDirection === 'down-left')
+  || (direction === 'down-right' && newDirection === 'up-left')
+  || (direction === 'down-right' && newDirection === 'up')
+  || (direction === 'down-right' && newDirection === 'left')
+  || (direction === 'down' && newDirection === 'up')
+  || (direction === 'down' && newDirection === 'up-right')
+  || (direction === 'down' && newDirection === 'up-left')
+  || (direction === 'down-left' && newDirection === 'up-right')
+  || (direction === 'down-left' && newDirection === 'right')
+  || (direction === 'down-left' && newDirection === 'up')
+  || (direction === 'left' && newDirection === 'right')
+  || (direction === 'left' && newDirection === 'down-right')
+  || (direction === 'left' && newDirection === 'up-right')
+  || (direction === 'up-left' && newDirection === 'down-right')
+  || (direction === 'up-left' && newDirection === 'down')
+  || (direction === 'up-left' && newDirection === 'right')
+
+const isVehicleTurning = (direction, newDirection) =>
+     (direction === 'up' && newDirection === 'left')
+  || (direction === 'up' && newDirection === 'right')
+  || (direction === 'up' && newDirection === 'up-left')
+  || (direction === 'up' && newDirection === 'up-right')
+  || (direction === 'up-right' && newDirection === 'up-left')
+  || (direction === 'up-right' && newDirection === 'down-right')
+  || (direction === 'right' && newDirection === 'up')
+  || (direction === 'right' && newDirection === 'down')
+  || (direction === 'down-right' && newDirection === 'up-right')
+  || (direction === 'down-right' && newDirection === 'down-left')
+  || (direction === 'down' && newDirection === 'right')
+  || (direction === 'down' && newDirection === 'left')
+  || (direction === 'down' && newDirection === 'down-right')
+  || (direction === 'down' && newDirection === 'down-left')
+  || (direction === 'down-left' && newDirection === 'down-right')
+  || (direction === 'down-left' && newDirection === 'up-left')
+  || (direction === 'left' && newDirection === 'down')
+  || (direction === 'left' && newDirection === 'up')
+  || (direction === 'up-left' && newDirection === 'down-left')
+  || (direction === 'up-left' && newDirection === 'up-right')
+
+const isVehicleStrafing = (direction, newDirection) =>
+     (direction === 'up-right' && newDirection === 'up')
+  || (direction === 'up-right' && newDirection === 'right')
+  || (direction === 'right' && newDirection === 'up-right')
+  || (direction === 'right' && newDirection === 'down-right')
+  || (direction === 'down-right' && newDirection === 'right')
+  || (direction === 'down-right' && newDirection === 'down')
+  || (direction === 'down-left' && newDirection === 'down')
+  || (direction === 'down-left' && newDirection === 'left')
+  || (direction === 'left' && newDirection === 'down-left')
+  || (direction === 'left' && newDirection === 'up-left')
+  || (direction === 'up-left' && newDirection === 'left')
+  || (direction === 'up-left' && newDirection === 'up')
+
+const deferRefresh = state => {
+  const {delayKit, fps, now, refreshingStartTime} = state
   const millisecondsPerFrame = 1000 / fps
   const refreshWithState = refresh.bind(null, state)
   delayKit.loopStartTime || (delayKit.loopStartTime = now() - millisecondsPerFrame)
   delayKit.millisecondsAhead || (delayKit.millisecondsAhead = 0)
-  const refreshDuration = now() - refreshStartTime
+  const refreshDuration = now() - refreshingStartTime
   const loopDuration = now() - delayKit.loopStartTime
   const delayDuration = loopDuration - refreshDuration
   delayKit.loopStartTime = now()
@@ -301,7 +371,6 @@ const initiatePlayer = function ({socket, wrappedPlayer}) {
   const vehicleX = getVehicleX(characterX)
   const configuration = {x: vehicleX, y: 7843, speed: 0}
   const vehicle = entityKit.create('vehicle', state, configuration)
-  entityKit.giveKey(character, vehicle, true)
   socket.emit('player', player)
   socket.emit('city', city)
   io.emit('entity', character)

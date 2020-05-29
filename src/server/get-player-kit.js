@@ -40,10 +40,6 @@ export const getPlayerKit = function () {
       return player
     },
 
-    getPlayerCharacterIds: _players => _players.map(player => player.characterId),
-
-    setPreviousAction: (action, id, _players) => _players[id].previousAction = action,
-
     updateInput: function ({input, wrappedPlayer}) {
       const {state} = this
       const {entityKit, _entities} = state

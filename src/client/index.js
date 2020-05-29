@@ -239,7 +239,7 @@ const refresh = state => {
   const {drivingId} = character
   const tick = ++state.tick
   const input = {...player.input, tick}
-  state.refreshStartTime = performance.now()
+  state.refreshingStartTime = performance.now()
   socket.emit('input', input)
   shiftEntitiesBuffer(state)
   setInterpolationRatio(state)
@@ -248,7 +248,7 @@ const refresh = state => {
   drivingId || updatePredictionBuffer(input, state)
   updateCamera(state)
   render(state)
-  callRefreshAfterDelay(state)
+  deferRefresh(state)
 }
 
 const setInterpolationRatio = state => {
@@ -421,13 +421,13 @@ const interpolateProperty = (propertyName, entityId, state) => {
   return value
 }
 
-const callRefreshAfterDelay = state => {
-  const {delayKit, fps, performance, refreshStartTime} = state
+const deferRefresh = state => {
+  const {delayKit, fps, performance, refreshingStartTime} = state
   const millisecondsPerFrame = 1000 / fps
   const refreshWithState = refresh.bind(null, state)
   delayKit.loopStartTime || (delayKit.loopStartTime = performance.now() - millisecondsPerFrame)
   delayKit.millisecondsAhead || (delayKit.millisecondsAhead = 0)
-  const refreshDuration = performance.now() - refreshStartTime
+  const refreshDuration = performance.now() - refreshingStartTime
   const loopDuration = performance.now() - delayKit.loopStartTime
   const delayDuration = loopDuration - refreshDuration
   delayKit.loopStartTime = performance.now()
