@@ -1413,7 +1413,7 @@ const emitEntities = (io, _characters, _vehicles) => {
   const entitiesByType = {characters: _characters, vehicles: _vehicles}
   const [mayor] = _characters
   mayor.timestamp = now()
-  io.volatile.emit('entities', entitiesByType)
+  io.emit('entities', entitiesByType)
 }
 
 initiate(state)
