@@ -174,7 +174,7 @@ const drawBlueprint = function (blueprint) {
 }
 
 const shiftEntitiesBuffer = (state, isInitial) => {
-  const {shiftingTimeoutId, entitiesBuffer, fps, ratioIndex, pipe} = state
+  const {shiftingTimeoutId, entitiesBuffer, fps, ratioIndex, pipe, serverTick} = state
   const {length} = entitiesBuffer
   const shiftEntitiesBufferWithThese = shiftEntitiesBuffer.bind(null, state, isInitial)
   const delay = 1000 / fps
@@ -182,13 +182,31 @@ const shiftEntitiesBuffer = (state, isInitial) => {
   if (length <= 2 || ratioIndex % 3) return isInitial && (state.shiftingTimeoutId = setTimeout(
     shiftEntitiesBufferWithThese, delay
   ))
-  while (entitiesBuffer.length > 2) entitiesBuffer.shift()
-  const [oldEntitiesByType, entitiesByType] = entitiesBuffer
+  const index = getBufferIndex(serverTick, entitiesBuffer)
+  const entitiesBuffer_ = state.entitiesBuffer = entitiesBuffer.slice(index)
+  const [oldEntitiesByType, entitiesByType] = entitiesBuffer_
+  const {characters} = entitiesByType
+  const [mayor] = characters
+  const {tick} = mayor
   state.oldEntitiesByType = oldEntitiesByType
   state.entitiesByType = entitiesByType
+  state.serverTick = tick
   pipe(state, getPredictionIndex, comparePrediction, reconcilePlayerCharacter)
   state.ratioIndex = 0
   isInitial && refresh(state)
+}
+
+const getBufferIndex = (tick, entitiesBuffer) => {
+  const {length} = entitiesBuffer
+  const index = entitiesBuffer.findIndex(doesTickMatch, {tick})
+  return index === -1 || length > 4 ? length - 2 : index
+}
+
+const doesTickMatch = function ({characters}) {
+  const {tick} = this
+  const [mayor] = characters
+  const {tick: tick_} = mayor
+  return tick_ === tick
 }
 
 const getPredictionIndex = state => {
