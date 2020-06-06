@@ -177,7 +177,7 @@ const refresh = state => {
   if (tick % 3) return deferRefresh(state)
   const latencyKits = _players.map(getLatencyKits, {_players})
   latencyKits.reduce(updateLatencies, _characters)
-  emitEntities(io, _characters, _vehicles)
+  emitEntities({tick, io, _characters, _vehicles})
   deferRefresh(state)
   return state
 }
@@ -1409,11 +1409,12 @@ const handleTick = (tick, characterId, _characters) => {
   character.tick = tick
 }
 
-const emitEntities = (io, _characters, _vehicles) => {
+const emitEntities = ({tick, io, _characters, _vehicles}) => {
   const entitiesByType = {characters: _characters, vehicles: _vehicles}
   const [mayor] = _characters
   mayor.timestamp = now()
-  io.emit('entities', entitiesByType)
+  mayor.tick = tick
+  io.volatile.emit('entities', entitiesByType)
 }
 
 initiate(state)
