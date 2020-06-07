@@ -19,6 +19,7 @@ const state = {
   connectionQueue: [],
   latencyQueue: [],
   inputQueue: [],
+  vehicleKits: [],
   delayKit: {},
   _players: [],
   _characters: [],
@@ -42,6 +43,11 @@ const updateInput = function ({input, wrappedPlayer}) {
   const {tick} = input
   handleTick(tick, characterId, _characters)
   player && (player.input = input)
+}
+
+const handleTick = (tick, characterId, _characters) => {
+  const character = _characters[characterId]
+  character.tick = tick
 }
 
 const updateLatencyBuffer = ({latency, wrappedPlayer}) => {
@@ -156,15 +162,21 @@ const handleInput = function (input) {
 }
 
 const refresh = state => {
-  const {_players, _characters, _vehicles} = state
+  const {_players, _characters, _vehicles, vehicleKits} = state
   const tick = ++state.tick
   state.refreshingStartTime = now()
   runQueues.call({state})
+  const latencyKits = _players.map(getLatencyKits, {_players})
+  latencyKits.reduce(updateLatencies, _characters)
+  const vehicleKit = _vehicles.reduce(pushAttributes, {xs: [], ys: [], timestamp: now()})
+  vehicleKits.push(vehicleKit)
+  const {length} = vehicleKits
+  length > 60 && vehicleKits.shift()
   const playerCharacters = _players.map(({characterId}) => _characters[characterId])
   const {actives} = playerCharacters.reduce(pushIfActive, {_players, actives: []})
   const activesByCategory = {walkers: [], drivers: [], passengers: []}
   const {walkers, drivers, passengers} = actives.reduce(categorize, activesByCategory)
-  walkers.reduce(enterIfCan, _vehicles)
+  walkers.reduce(enterIfCan, state)
   passengers.reduce(exitVehicle, state)
   drivers.reduce(exitVehicle, state)
   const charactersByCategory = {walkers: [], drivers: [], passengers: []}
@@ -175,11 +187,26 @@ const refresh = state => {
   _characters.forEach(updateCharacterLocation, {state})
   _vehicles.forEach(updateVehicleLocation, {state})
   if (tick % 3) return deferRefresh(state)
-  const latencyKits = _players.map(getLatencyKits, {_players})
-  latencyKits.reduce(updateLatencies, _characters)
-  emitEntities({tick, io, _characters, _vehicles})
+  const entitiesByType = getEntitiesByType(tick, _characters, _vehicles)
+  io.volatile.emit('entities', entitiesByType)
   deferRefresh(state)
   return state
+}
+
+const updateLatencies = (_characters, latencyKit) => {
+  if (!latencyKit) return
+  const {characterId, latency} = latencyKit
+  const character = _characters[characterId]
+  character.latency = latency
+  return _characters
+}
+
+const pushAttributes = (vehicleKit, vehicle) => {
+  const {xs, ys} = vehicleKit
+  const {x, y} = vehicle
+  xs.push(x)
+  ys.push(y)
+  return vehicleKit
 }
 
 const pushIfActive = (activeKit, character, index) => {
@@ -204,20 +231,39 @@ const categorize = (activesByCategory, character) => {
   return activesByCategory
 }
 
-const enterIfCan = (_vehicles, walker) => {
-  const vehicle = _vehicles.find(canVehicleBeEntered, {walker})
+const enterIfCan = (state, walker) => {
+  const {_vehicles} = state
+  const vehicle = _vehicles.find(canVehicleBeEntered, {walker, state})
   if (!vehicle) return _vehicles
   enter(vehicle, walker)
   return _vehicles
 }
 
 const canVehicleBeEntered = function (vehicle) {
-  const {walker} = this
-  const {id: vehicleId, driverId, passengerIds, seatCount} = vehicle
+  const {walker, state} = this
+  const {vehicleKits} = state
+  const {id: vehicleId, driverId, passengerIds, seatCount, width, height} = vehicle
   const {length: passengerCount} = passengerIds
   const driverCount = driverId ? 1 : 0
   if (!vehicleId || driverCount + passengerCount >= seatCount) return false
-  return isVehicleTouchingCharacter(vehicle, walker)
+  const {latency} = walker
+  const timestamp = now() - latency
+  const {vehicleKit} = vehicleKits.reduce(getNearest, {timestamp})
+  const {xs, ys} = vehicleKit || {}
+  const x = xs && xs[vehicleId]
+  const y = ys && ys[vehicleId]
+  const vehicle_ = {x, y, width, height}
+  return isVehicleTouchingCharacter(vehicle_, walker)
+}
+
+const getNearest = (reducingKit, vehicleKit) => {
+  const {timestamp, smallest = Infinity} = reducingKit
+  const {timestamp: timestamp_} = vehicleKit
+  const difference = Math.abs(timestamp - timestamp_)
+  const isSmallest = difference < smallest
+  isSmallest && (reducingKit.smallest = difference)
+  isSmallest && (reducingKit.vehicleKit = vehicleKit)
+  return reducingKit
 }
 
 const isVehicleTouchingCharacter = (vehicle, character) =>
@@ -1396,25 +1442,12 @@ const updateVehicleLocation_ = (vehicle, state) => {
 
 const stopVehicle = vehicle => (vehicle.speed = 0) || vehicle
 
-const updateLatencies = (_characters, latencyKit) => {
-  if (!latencyKit) return
-  const {characterId, latency} = latencyKit
-  const character = _characters[characterId]
-  character.latency = latency
-  return _characters
-}
-
-const handleTick = (tick, characterId, _characters) => {
-  const character = _characters[characterId]
-  character.tick = tick
-}
-
-const emitEntities = ({tick, io, _characters, _vehicles}) => {
+const getEntitiesByType = (tick, _characters, _vehicles) => {
   const entitiesByType = {characters: _characters, vehicles: _vehicles}
   const [mayor] = _characters
   mayor.timestamp = now()
   mayor.tick = tick
-  io.volatile.emit('entities', entitiesByType)
+  return entitiesByType
 }
 
 initiate(state)
