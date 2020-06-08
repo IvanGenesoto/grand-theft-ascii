@@ -1,8 +1,7 @@
 import socketIo from 'socket.io-client'
+import {pipe} from './pipe'
 
 const socket = socketIo()
-const callFunction = (argument, function_) => function_(argument)
-const pipe = (...functions) => functions.reduce(callFunction)
 
 const camera = {
   roomId: null,
@@ -17,7 +16,6 @@ const camera = {
 
 const state = {
   socket,
-  pipe,
   camera,
   performance,
   fps: 30,
@@ -174,7 +172,7 @@ const drawBlueprint = function (blueprint) {
 }
 
 const shiftEntitiesBuffer = (state, isInitial) => {
-  const {shiftingTimeoutId, entitiesBuffer, fps, ratioIndex, pipe, serverTick} = state
+  const {shiftingTimeoutId, entitiesBuffer, fps, ratioIndex, serverTick} = state
   const {length} = entitiesBuffer
   const shiftEntitiesBufferWithThese = shiftEntitiesBuffer.bind(null, state, isInitial)
   const delay = 1000 / fps
@@ -469,7 +467,7 @@ const deferRefresh = state => {
   const loopDuration = performance.now() - delayKit.loopStartTime
   const delayDuration = loopDuration - refreshDuration
   delayKit.loopStartTime = performance.now()
-  delayKit.shouldCheckForSlowdown && compensateIfShould(delayDuration, delayKit)
+  delayKit.shouldCheckForSlowdown && compensate(delayDuration, delayKit)
   delayKit.millisecondsAhead += millisecondsPerFrame - loopDuration
   delayKit.delay = millisecondsPerFrame + delayKit.millisecondsAhead - refreshDuration
   clearTimeout(delayKit.timeoutId)
@@ -492,7 +490,7 @@ const deferRefresh = state => {
   delayKit.timeoutId = setTimeout(refreshWithState, 0)
 }
 
-const compensateIfShould = (delayDuration, delayKit) =>
+const compensate = (delayDuration, delayKit) =>
      delayDuration > delayKit.delay * 1.2
   && (delayKit.hasSlowdown = true)
   && (delayKit.slowdownCompensation = delayKit.delay / delayDuration)
