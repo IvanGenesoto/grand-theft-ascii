@@ -10,7 +10,7 @@ export const interpolateProperty = (propertyName, entityId, state, isVehicle) =>
   if (!oldEntity || !entity) return 0
   const oldValue = oldEntity[propertyName]
   const value = entity[propertyName]
-  if (entityId === characterId && propertyName === 'x') return value
+  if (!isVehicle && entityId === characterId && propertyName === 'x') return value
   const difference = value - oldValue
   return oldValue + difference * ratio
 }

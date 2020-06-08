@@ -6,7 +6,7 @@ export const state = {
   layerY: 0,
   fps: 30,
   characterCount: 50,
-  vehicleCount: 51,
+  vehicleCount: 50,
   connectionQueue: [],
   latencyQueue: [],
   inputQueue: [],
