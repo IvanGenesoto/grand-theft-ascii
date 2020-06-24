@@ -1,6 +1,0 @@
-{
-  "plugins": [
-    "transform-object-rest-spread",
-    "object-entries-and-values-to-object-keys"
-  ]
-}
