@@ -1,5 +1,5 @@
 import express, {static as static_} from 'express'
-import {Server} from 'http'
+import {createServer} from 'http'
 import socketIo from 'socket.io'
 import {join} from 'path'
 import {state} from './prototypes'
@@ -8,7 +8,7 @@ import {handleConnection} from './handle'
 import {refresh} from './do'
 
 const app = express()
-const server = Server(app)
+const server = createServer(app)
 const io = socketIo(server)
 const port = process.env.PORT || 3000
 
