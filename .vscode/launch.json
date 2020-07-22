@@ -1,30 +1,33 @@
 {
-  // Use IntelliSense to learn about possible attributes.
-  // Hover to view descriptions of existing attributes.
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "watch",
       "type": "node",
       "request": "launch",
-      "name": "debug",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "preLaunchTask": "npm: prestart",
-      "program": "${workspaceFolder}/server/index.js",
-      "runtimeArgs": [
-          "-r", "esm"
-      ]
+      "preLaunchTask": "npm: watch",
+      "program": "${workspaceFolder}/server/index.js"
     },
     {
+      "name": "debug",
       "type": "node",
-      "request": "attach",
-      "name": "watch",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "preLaunchTask": "npm: watch"
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+			"runtimeExecutable": "npm",
+      "program": "${workspaceFolder}/server/index.js",
+			"runtimeArgs": ["start"]
+    },
+    {
+      "name": "stage",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {"NODE_ENV": "production"},
+			"runtimeExecutable": "npm",
+      "preLaunchTask": "npm: stage",
+      "program": "${workspaceFolder}/server/index.js",
+			"runtimeArgs": ["run", "start:prod"],
+      "postDebugTask": "npm: install"
     }
   ]
 }

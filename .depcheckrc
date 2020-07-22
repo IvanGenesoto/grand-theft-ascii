@@ -1,0 +1,8 @@
+ignores: [
+  "esm",
+  "esmify",
+  "htmlhint",
+  "stylelint",
+  "stylelint-config-standard"
+]
+

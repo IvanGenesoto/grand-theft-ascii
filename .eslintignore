@@ -1,2 +1,2 @@
-server/public/
-scratch.js
+node_modules/
+server/public/main.js
