@@ -1,4 +1,5 @@
 export const adjustCameraSize = function () {
+
   const {state} = this
   const {camera} = state
   const {style: style_, maxWidth, maxHeight, elementId} = camera
@@ -6,6 +7,7 @@ export const adjustCameraSize = function () {
   const verticalMargin = (innerHeight - maxHeight) / 2 + 'px'
   const $camera = document.getElementById(elementId)
   const {style} = $camera || {}
+
   if (innerWidth < maxWidth) {
     camera.width = innerWidth
     style_.marginLeft = 0
@@ -14,6 +16,7 @@ export const adjustCameraSize = function () {
     $camera && (style.marginLeft = 0)
     $camera && (style.marginRight = 0)
   }
+
   else {
     camera.width = maxWidth
     style_.marginLeft = horizontalMargin
@@ -22,6 +25,7 @@ export const adjustCameraSize = function () {
     $camera && (style.marginLeft = horizontalMargin)
     $camera && (style.marginRight = horizontalMargin)
   }
+
   if (innerHeight < maxHeight) {
     camera.height = innerHeight
     style_.marginTop = 0
@@ -30,6 +34,7 @@ export const adjustCameraSize = function () {
     $camera && (style.marginTop = 0)
     $camera && (style.marginBottom = 0)
   }
+
   else {
     camera.height = maxHeight
     style_.marginTop = verticalMargin
@@ -38,5 +43,6 @@ export const adjustCameraSize = function () {
     $camera && (style.marginTop = verticalMargin)
     $camera && (style.marginBottom = verticalMargin)
   }
+
   return state
 }

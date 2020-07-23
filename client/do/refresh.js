@@ -9,6 +9,7 @@ import {
 } from '../update'
 
 export const refresh = state => {
+
   const {performance, player, entitiesByType, socket} = state
   const {characters} = entitiesByType
   const {characterId} = player
@@ -16,6 +17,7 @@ export const refresh = state => {
   const {drivingId} = character
   const tick = ++state.tick
   const input = {...player.input, tick}
+
   state.refreshingStartTime = performance.now()
   socket.emit('input', input)
   shiftEntitiesBuffer(state)

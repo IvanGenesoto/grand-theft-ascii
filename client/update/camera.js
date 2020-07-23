@@ -1,6 +1,7 @@
 import {interpolateProperty} from '../do'
 
 export const updateCamera = state => {
+
   const {city, camera, entitiesByType, player} = state
   const {characters, vehicles} = entitiesByType
   const {characterId} = player
@@ -15,9 +16,11 @@ export const updateCamera = state => {
   const cameraY = camera.y = Math.round(entityY + entity.height / 2 - camera.height / 2)
   const maxX = city.width - camera.width
   const maxY = city.height - camera.height
+
   cameraX < 0 && (camera.x = 0)
   cameraX > maxX && (camera.x = maxX)
   cameraY < 0 && (camera.y = 0)
   cameraY > maxY && (camera.y = maxY)
+
   return state
 }
