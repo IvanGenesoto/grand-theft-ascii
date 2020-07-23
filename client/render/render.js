@@ -5,7 +5,7 @@ export const render = state => {
   const {characters, vehicles} = entitiesByType
   const {backgroundLayers, foregroundLayers} = city
   backgroundLayers.forEach(renderLayer, {state})
-  characters.forEach(renderEntity, {state})
   vehicles.forEach(renderEntity, {state, isVehicle: true})
+  characters.forEach(renderEntity, {state})
   foregroundLayers.forEach(renderLayer, {state})
 }

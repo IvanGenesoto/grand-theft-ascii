@@ -15,14 +15,26 @@ export const characterPrototype = {
   roomKeys: [],
   x: null,
   y: null,
-  width: 70,
-  height: 103,
+  width: 86,
+  height: 108,
   depth: 1,
+  frameOffset: 0,
   direction: 'right',
   speed: null,
   maxSpeed: 10,
   isActive: false,
   tag: 'img',
   elementId: null,
-  src: 'images/characters/man.png'
+  src: 'images/characters/a/character-a-8.png',
+  frames: [
+    'images/characters/a/character-a-0.png',
+    'images/characters/a/character-a-1.png',
+    'images/characters/a/character-a-2.png',
+    'images/characters/a/character-a-3.png',
+    'images/characters/a/character-a-4.png',
+    'images/characters/a/character-a-5.png',
+    'images/characters/a/character-a-6.png',
+    'images/characters/a/character-a-7.png',
+    'images/characters/a/character-a-9.png'
+  ]
 }
