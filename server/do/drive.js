@@ -2,6 +2,7 @@ import {getNewDirection} from '../get'
 import {isVehicleDecelerating, isVehicleTurning, isVehicleStrafing} from '../is'
 
 export const drive = function (character) {
+
   const {state} = this
   const {_players, _vehicles} = state
   const {playerId, drivingId: vehicleId} = character
@@ -14,6 +15,7 @@ export const drive = function (character) {
   const isDecelerating = speed && isVehicleDecelerating(direction, newDirection)
   const isTurning = isVehicleTurning(direction, newDirection)
   const isStrafing = isVehicleStrafing(direction, newDirection)
+
   direction !== 'up' && direction !== 'down' && (vehicle.previousDirection = direction)
   vehicle.direction = !isDecelerating && newDirection ? newDirection : direction
   isTurning && (vehicle.speed /= 4)
@@ -23,5 +25,6 @@ export const drive = function (character) {
   vehicle.speed > maxSpeed && (vehicle.speed = maxSpeed)
   vehicle.speed < 0 && (vehicle.speed = 0)
   vehicle.speed < 2 && !isAccelerating && (vehicle.speed = 0)
+
   return state
 }
