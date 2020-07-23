@@ -1,10 +1,20 @@
 import {interpolateProperty} from '../do'
 import {isEntityOffScreen, shouldEntityBeFlipped} from '../question'
+import {getFrameIndex} from '../get'
 
 export const renderEntity = function (entity) {
   const {state, isVehicle} = this
-  const {camera} = state
-  const {id: entityId, drivingId, passengingId, direction, previousDirection} = entity || {}
+  const {camera, tick} = state
+  const {
+    id: entityId,
+    drivingId,
+    passengingId,
+    direction,
+    previousDirection,
+    frameOffset,
+    frames,
+    speed
+  } = entity || {}
   if (!entityId || drivingId || passengingId) return
   const entityX = interpolateProperty('x', entityId, state, isVehicle)
   const entityY = interpolateProperty('y', entityId, state, isVehicle)
@@ -12,7 +22,12 @@ export const renderEntity = function (entity) {
   const yInCamera = Math.round(entityY - camera.y)
   const isOffScreen = isEntityOffScreen({xInCamera, yInCamera, entity, camera})
   if (isOffScreen) return
-  const $entity = document.getElementById(entity.elementId)
+  const frameIndex = frames && speed && getFrameIndex(frameOffset, tick)
+  const id =
+      frames && entityY < 7832 ? `${entity.elementId}-8`
+    : frames && speed ? `${entity.elementId}-${frameIndex}`
+    : entity.elementId
+  const $entity = document.getElementById(id)
   const $camera = document.getElementById(camera.elementId)
   const context = $camera.getContext('2d')
   const shouldFlip = shouldEntityBeFlipped(direction, previousDirection)

@@ -13,6 +13,7 @@ export const createCharacter = state => {
   character.direction = directions[index]
   character.x = Math.random() * (city.width - character.width)
   character.y = city.height - 168
-  character.speed = Math.random() * character.maxSpeed
+  character.speed = Math.random() * (character.maxSpeed - 3) + 3
+  character.frameOffset = Math.floor(Math.random() * 7)
   return character
 }
