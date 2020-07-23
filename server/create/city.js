@@ -52,13 +52,13 @@ const startRow = argumentation => {
 }
 
 const pushBlueprint = argumentation => {
-  const {state, x, layer, variationOptions, sectionIndex, isForeground} = argumentation
+  const {state, x, layer, variationOptions, sectionIndex, isForeground, rowsDrawn} = argumentation
   if (x >= layer.width) return callStartRow(argumentation)
   const float = Math.random() * variationOptions.length
   const index = Math.floor(float)
   const variationChoice = argumentation.variationChoice = variationOptions[index]
   const {variation, index: variationIndex} = variationChoice
-  layer.y && (state.layerY = layer.y)
+  layer.y && !rowsDrawn && (state.layerY = layer.y)
   const blueprint = {sectionIndex, variationIndex, x, y: state.layerY}
   layer.blueprints.push(blueprint)
   isForeground && handleIsForeground(argumentation)

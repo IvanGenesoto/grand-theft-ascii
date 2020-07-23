@@ -26,7 +26,7 @@ export const updateWalkingCharacterLocation = (character, state) => {
   const maxX = city.width - width
   const maxY = 7832
   character.y < 0 && (character.y = 0)
-  character.y < maxY && (character.y += 20)
+  character.y < maxY && (character.y += 30)
   character.y > maxY && (character.y = maxY)
   if (speed <= 0) return state
   character.x = direction === 'left' ? x - speed : x + speed

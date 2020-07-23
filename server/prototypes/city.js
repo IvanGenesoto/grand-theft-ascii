@@ -272,7 +272,7 @@ const foregroundLayers = [
     id: 3,
     blueprints: [],
     x: 0,
-    y: 6800,
+    y: 400,
     width: 32000,
     height: 8000,
     depth: 0.25,
@@ -281,71 +281,71 @@ const foregroundLayers = [
     sections: [
       {
         id: 1,
-        rowCount: 1,
+        rowCount: 5,
         variations: [
           {
             id: 1,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/up-left.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 2,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/up-right.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 3,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/down-left.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 4,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/down-right.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 5,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/left-up.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 6,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/left-down.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 7,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/right-up.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 8,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/right-down.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           }
         ]
       }
@@ -355,7 +355,7 @@ const foregroundLayers = [
     id: 4,
     blueprints: [],
     x: 32000,
-    y: 6800,
+    y: 400,
     width: 32000,
     height: 8000,
     depth: 0.25,
@@ -364,71 +364,71 @@ const foregroundLayers = [
     sections: [
       {
         id: 1,
-        rowCount: 1,
+        rowCount: 5,
         variations: [
           {
             id: 1,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/up-left.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 2,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/up-right.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 3,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/down-left.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 4,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/down-right.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 5,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/left-up.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 6,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/left-down.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 7,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/right-up.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 8,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/right-down.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           }
         ]
       }
@@ -438,7 +438,7 @@ const foregroundLayers = [
     id: 5,
     blueprints: [],
     x: 64000,
-    y: 6800,
+    y: 400,
     width: 32000,
     height: 8000,
     depth: 0.25,
@@ -447,71 +447,71 @@ const foregroundLayers = [
     sections: [
       {
         id: 1,
-        rowCount: 1,
+        rowCount: 5,
         variations: [
           {
             id: 1,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/up-left.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 2,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/up-right.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 3,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/down-left.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 4,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/down-right.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 5,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/left-up.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 6,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/left-down.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 7,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/right-up.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 8,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/right-down.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           }
         ]
       }
@@ -521,7 +521,7 @@ const foregroundLayers = [
     id: 6,
     blueprints: [],
     x: 96000,
-    y: 6800,
+    y: 400,
     width: 32000,
     height: 8000,
     depth: 0.25,
@@ -530,71 +530,71 @@ const foregroundLayers = [
     sections: [
       {
         id: 1,
-        rowCount: 1,
+        rowCount: 5,
         variations: [
           {
             id: 1,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/up-left.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 2,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/up-right.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 3,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/down-left.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 4,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/down-right.png',
-            width: 448,
-            height: 1248
+            width: 1280,
+            height: 1280
           },
           {
             id: 5,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/left-up.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 6,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/left-down.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 7,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/right-up.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           },
           {
             id: 8,
             prevalence: 1,
             tag: 'img',
             src: 'images/foreground/arrow/right-down.png',
-            width: 1248,
-            height: 448
+            width: 1280,
+            height: 1280
           }
         ]
       }
