@@ -10,15 +10,16 @@
     "prune": "npm prune --production",
     "prestart:prod": "run-s bundle prune",
     "start:prod": "node -r esm .",
-    "lint": "eslint --fix .",
     "update": "ncu -u",
-    "clean": "rimraf node_modules server/public/main.js && npm i",
+    "clean": "npm ci && rimraf server/public/main.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
     "check": "depcheck",
-    "stage": "run-s lint update clean check",
+    "test": "mocha -r esm \"server/**/*.test.js\" \"client/**/*.test.js\"",
+    "stage": "run-s update clean lint:fix check test",
     "watch:server": "nodemon -e js,html,css -r esm .",
     "watch:client": "watchify -p esmify client/index.js -o server/public/main.js",
-    "watch": "run-p watch:*",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "watch": "run-p watch:*"
   },
   "dependencies": {
     "express": "^4.17.1",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "browserify": "^16.5.1",
+    "chai": "^4.2.0",
     "depcheck": "^1.0.0",
     "eslint": "^7.5.0",
     "eslint-config-standard": "^14.1.1",
@@ -38,6 +40,8 @@
     "eslint-plugin-standard": "^4.0.1",
     "esmify": "^2.1.1",
     "htmlhint": "^0.14.1",
+    "mocha": "^8.0.1",
+    "mock-require": "^3.0.3",
     "nodemon": "^2.0.4",
     "npm-check-updates": "^7.0.2",
     "npm-run-all": "^4.1.5",

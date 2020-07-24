@@ -10,8 +10,10 @@ export const slowDownVehicle = vehicle => {
 
   vehicle.speed -= vehicle.deceleration * multiplier
 
-  if (vehicle.speed > 0) return
+  if (vehicle.speed > 0) return vehicle
 
   vehicle.speed = 0
   vehicle.isSlowing = false
+
+  return vehicle
 }
