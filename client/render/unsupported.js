@@ -2,9 +2,9 @@ import {renderElement as r} from '.'
 
 export const renderUnsupported = () => {
 
-  const $city = document.getElementById('city')
+  const $unsupported = document.getElementById('unsupported')
 
-  $city.append(
+  $unsupported.append(
     r('div', {class: 'center medium'}, [
       r('p', null, 'Anarch City can only be experienced on the Chrome browser.'),
       r('p', null, [
