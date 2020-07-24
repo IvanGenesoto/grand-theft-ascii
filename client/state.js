@@ -4,8 +4,8 @@ const camera = {
   y: 0,
   tag: 'canvas',
   elementId: 'camera',
-  maxWidth: 1280,
-  maxHeight: 720,
+  maxWidth: 1472,
+  maxHeight: 828,
   style: {}
 }
 

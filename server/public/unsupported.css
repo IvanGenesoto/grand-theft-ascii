@@ -1,0 +1,64 @@
+:root {
+  --pink: #ff009d;
+  --yellow: #d0ff00;
+  --green: #00ff7f;
+  --blue: #00d5ff;
+  --purple: #80f;
+}
+
+body {
+  margin: 0;
+  text-align: center;
+  font-family: "Exo 2", sans-serif;
+  color: var(--green);
+  text-shadow:
+    var(--green) 0 0 0.125em,
+    var(--green) 0 0 0.25em,
+    var(--green) 0 0 0.5em;
+}
+
+.center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+a {
+  color: var(--green);
+  text-shadow:
+    var(--green) 0 0 0.125em,
+    var(--green) 0 0 0.25em,
+    var(--green) 0 0 5em;
+}
+
+a:hover {
+  color: var(--yellow);
+  text-shadow:
+    var(--yellow) 0 0 0.125em,
+    var(--yellow) 0 0 0.25em,
+    var(--yellow) 0 0 5em;
+}
+
+a:active {
+  color: var(--purple);
+  text-shadow:
+    var(--purple) 0 0 0.125em,
+    var(--purple) 0 0 0.25em,
+    var(--purple) 0 0 5em;
+}
+
+@media all and (min-width: 1200px) {
+
+  .medium {
+    margin-top: 142px;
+    font-size: 25px;
+  }
+}
+
+@media all and (max-width: 1199px) {
+
+  .medium {
+    margin-top: 11.84vw;
+    font-size: 2.08vw;
+  }
+}
