@@ -4,6 +4,8 @@ export const control = function ({key}) {
   const {player} = state
   const {input} = player
 
+  if (!input) return
+
   if (key === 'a' || key === 'A' || key === 'ArrowLeft') isDown
     ? input.left = true
     : input.left = false

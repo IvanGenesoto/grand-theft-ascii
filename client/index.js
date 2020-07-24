@@ -1,11 +1,19 @@
 import socketIo from 'socket.io-client'
+import Bowser from 'bowser'
 import {state} from './state'
 import {createElement} from './create'
 import {handlePlayer, handleEntities} from './handle'
 import {adjustCameraSize, control, emitToken, initializeCity} from './do'
+import {renderUnsupported} from './render'
 
 const socket = socketIo()
 const {camera} = state
+const bowser = Bowser.parse(window.navigator.userAgent)
+const {browser, platform} = bowser
+const isSupported = browser.name === 'Chrome' && platform.type === 'desktop'
+
+if (!isSupported) renderUnsupported()
+if (!isSupported) throw new Error('Unsupported browser')
 
 state.socket = socket
 window.addEventListener('resize', adjustCameraSize.bind({state}), false)
