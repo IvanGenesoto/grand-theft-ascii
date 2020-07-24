@@ -4,7 +4,7 @@ import {state} from './state'
 import {createElement} from './create'
 import {handlePlayer, handleEntities} from './handle'
 import {adjustCameraSize, control, emitToken, initializeCity} from './do'
-import {renderUnsupported} from './render'
+import {renderUnsupported, renderLoading} from './render'
 
 const socket = socketIo()
 const {camera} = state
@@ -15,6 +15,7 @@ const isSupported = browser.name === 'Chrome' && platform.type === 'desktop'
 if (!isSupported) renderUnsupported()
 if (!isSupported) throw new Error('Unsupported browser')
 
+renderLoading()
 state.socket = socket
 window.addEventListener('resize', adjustCameraSize.bind({state}), false)
 window.addEventListener('keydown', control.bind({state, isDown: true}))
