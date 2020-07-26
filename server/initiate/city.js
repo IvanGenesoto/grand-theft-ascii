@@ -1,4 +1,4 @@
-import {createCity, createCharacter, createVehicle, createMayor} from '../create'
+import {createCity, createCharacter, createVehicle, createMayor} from '..'
 
 export const initiateCity = state => {
 

@@ -1,5 +1,4 @@
-import {getNearest} from '../get'
-import {isVehicleTouchingCharacter} from '.'
+import {getNearest, isVehicleTouchingCharacter} from '..'
 
 export const isVehicleEnterable = function (vehicle) {
 

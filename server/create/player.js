@@ -1,5 +1,4 @@
-import {createInstance} from '.'
-import {playerPrototype} from '../prototypes'
+import {createInstance, playerPrototype} from '..'
 
 export const createPlayer = (state, socketId) => {
 

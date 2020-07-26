@@ -2,7 +2,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 const {expect} = require('chai')
-const {pipe} = require('./pipe')
+const {pipe} = require('..')
 const increment = number => ++number
 const square = number => number ** 2
 const getAnswer = number => 'Answer is ' + number

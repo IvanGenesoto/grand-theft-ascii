@@ -2,7 +2,7 @@ import {
   updatePlayerCharacterBehavior,
   updatePlayerCharacterLocation,
   updatePredictionBuffer
-} from '../update'
+} from '..'
 
 export const reconcilePlayerCharacter = ({didPredict, index, state}) => {
   const {player, predictionBuffer, oldEntitiesByType, entitiesByType} = state

@@ -1,6 +1,4 @@
-import {interpolateProperty} from '../do'
-import {isEntityOffScreen, shouldEntityBeFlipped} from '../question'
-import {getFrameIndex} from '../get'
+import {interpolateProperty, isEntityOffScreen, shouldEntityBeFlipped, getFrameIndex} from '..'
 
 export const renderEntity = function (entity) {
 

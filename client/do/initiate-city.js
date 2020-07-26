@@ -1,4 +1,4 @@
-import {drawBlueprints, shiftEntitiesBuffer} from '.'
+import {drawBlueprints, shiftEntitiesBuffer} from '..'
 
 export const initiateCity = state => {
 

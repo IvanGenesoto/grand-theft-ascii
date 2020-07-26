@@ -1,15 +1,13 @@
-import {renderElement} from './element'
-import {renderEntity} from './entity'
-import {renderLayer} from './layer'
-import {renderLoading} from './loading'
-import {render} from './render'
-import {renderUnsupported} from './unsupported'
+import {renderLayer, renderEntity} from '..'
 
-export {
-  renderElement,
-  renderEntity,
-  renderLayer,
-  renderLoading,
-  render,
-  renderUnsupported
+export const render = state => {
+
+  const {city, entitiesByType} = state
+  const {characters, vehicles} = entitiesByType
+  const {backgroundLayers, foregroundLayers} = city
+
+  backgroundLayers.forEach(renderLayer, {state})
+  vehicles.forEach(renderEntity, {state, isVehicle: true})
+  characters.forEach(renderEntity, {state})
+  foregroundLayers.forEach(renderLayer, {state})
 }

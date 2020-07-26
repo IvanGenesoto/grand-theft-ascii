@@ -1,4 +1,4 @@
-import {city} from '../prototypes'
+import {city} from '..'
 
 export const createCity = state => {
   const {backgroundLayers, foregroundLayers} = city

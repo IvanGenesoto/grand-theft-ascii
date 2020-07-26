@@ -1,4 +1,4 @@
-import {isVehicleEnterable} from '../is'
+import {isVehicleEnterable} from '..'
 
 export const enterVehicleIfCan = (state, walker) => {
   const {_vehicles} = state

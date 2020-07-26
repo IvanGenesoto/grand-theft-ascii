@@ -1,20 +1,50 @@
-import express, {static as static_} from 'express'
-import {createServer} from 'http'
-import socketIo from 'socket.io'
-import {join} from 'path'
-import {state} from './prototypes'
-import {initiateCity} from './initiate'
-import {handleConnection} from './handle'
-import {refresh} from './do'
+export {createInstance} from './create/instance'
+export {createCity} from './create/city'
+export {createPlayer} from './create/player'
+export {createCharacter} from './create/character'
+export {createVehicle} from './create/vehicle'
+export {createMayor} from './create/mayor'
+export {categorize} from './do/categorize'
+export {compensate} from './do/compensate'
+export {deferRefresh} from './do/defer-refresh'
+export {descendVehicle} from './do/descend-vehicle'
+export {drive} from './do/drive'
+export {enterVehicle, enterVehicleIfCan} from './do/enter-vehicle'
+export {exitVehicle, exitVehicleAsPassenger} from './do/exit-vehicle'
+export {pushAttributes, pushIfActive} from './do/push'
+export {refresh} from './do/refresh'
+export {slowDownVehicle} from './do/slow-down-vehicle'
+export {stopVehicle} from './do/stop-vehicle'
+export {walk} from './do/walk'
+export {getEntitiesByType} from './get/entities-by-type'
+export {getLatencyKits} from './get/latency-kits'
+export {getLatency} from './get/latency'
+export {getNearest} from './get/nearest'
+export {getNewDirection} from './get/new-direction'
+export {handleConnection} from './handle/connection'
+export {handleInput} from './handle/input'
+export {handleQueues} from './handle/queues'
+export {handleTimestamp} from './handle/timestamp'
+export {initiateCity} from './initiate/city'
+export {initiatePlayer} from './initiate/player'
+export {isVehicleDecelerating} from './is/vehicle-decelerating'
+export {isVehicleEnterable} from './is/vehicle-enterable'
+export {isVehicleStrafing} from './is/vehicle-strafing'
+export {isVehicleTouchingCharacter} from './is/vehicle-touching-character'
+export {isVehicleTurning} from './is/vehicle-turning'
+export {state} from './prototypes/state'
+export {city} from './prototypes/city'
+export {playerPrototype} from './prototypes/player'
+export {characterPrototype} from './prototypes/character'
+export {vehiclePrototype} from './prototypes/vehicle'
+export {updateInput} from './update/input'
+export {updateLatencies} from './update/latencies'
+export {updateLatencyBuffer} from './update/latency-buffer'
+export {updateVehicleBehavior} from './update/vehicle-behavior'
+export {updateVehicleLocation} from './update/vehicle-location'
 
-const app = express()
-const server = createServer(app)
-const io = socketIo(server)
-const port = process.env.PORT || 3000
-
-state.io = io
-initiateCity(state)
-io.on('connection', handleConnection.bind({state}))
-app.use(static_(join(__dirname, 'public')))
-server.listen(port, () => console.log('Listening on port ' + port))
-refresh(state)
+export {
+  updateCharacterLocation,
+  updateTravelingCharacterLocation,
+  updateWalkingCharacterLocation
+} from './update/character-location'

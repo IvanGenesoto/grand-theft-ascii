@@ -1,4 +1,4 @@
-import {renderElement as r} from '.'
+import {renderElement as r} from '..'
 
 export const renderUnsupported = () => {
 
