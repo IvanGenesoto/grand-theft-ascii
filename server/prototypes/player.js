@@ -8,7 +8,7 @@ const input = {
 
 export const playerPrototype = {
   id: null,
-  status: 'online',
+  token: null,
   socketId: null,
   characterId: null,
   previousAction: false,

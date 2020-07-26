@@ -7,8 +7,8 @@ export const pushAttributes = (vehicleKit, vehicle) => {
 }
 
 export const pushIfActive = (activeKit, character, index) => {
-  const {_players, actives} = activeKit
-  const player = _players[index]
+  const {players, actives} = activeKit
+  const player = players[index]
   const {input, previousAction} = player
   const {action} = input
   const isActive = action && !previousAction

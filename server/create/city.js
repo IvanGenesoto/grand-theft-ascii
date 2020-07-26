@@ -1,12 +1,12 @@
-import {city} from '..'
+import {cityPrototype} from '..'
 
 export const createCity = state => {
-  const {backgroundLayers, foregroundLayers} = city
+  const {backgroundLayers, foregroundLayers} = cityPrototype
   backgroundLayers.forEach(assignElementIds, {state})
   foregroundLayers.forEach(assignElementIds, {state})
   backgroundLayers.forEach(handleLayer, {state})
   foregroundLayers.forEach(handleLayer, {state, isForeground: true})
-  return city
+  return cityPrototype
 }
 
 const assignElementIds = function (layer) {

@@ -1,11 +1,11 @@
 import {vehiclePrototype, createInstance} from '..'
 
 export const createVehicle = (state, x, y, speed) => {
-  const {_vehicles, city} = state
+  const {vehicles, city} = state
   const vehicle = createInstance(vehiclePrototype)
-  const id = vehicle.id = _vehicles.length
+  const id = vehicle.id = vehicles.length
   vehicle.elementId = 'vehicle-' + id
-  _vehicles.push(vehicle)
+  vehicles.push(vehicle)
   const float = Math.random() * directions.length
   const index = Math.floor(float)
   vehicle.direction = directions[index]

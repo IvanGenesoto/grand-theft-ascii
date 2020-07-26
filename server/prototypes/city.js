@@ -602,7 +602,7 @@ const foregroundLayers = [
   }
 ]
 
-export const city = {
+export const cityPrototype = {
   width: 32000,
   height: 8000,
   backgroundLayers,

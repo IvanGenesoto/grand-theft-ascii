@@ -3,9 +3,9 @@ import {stopVehicle} from '..'
 export const updateVehicleLocation = function (vehicle) {
 
   const {state} = this
-  const {city, _characters} = state
+  const {city, characters} = state
   const {speed, direction, width, height, driverId, x, y} = vehicle
-  const character = driverId && _characters[driverId]
+  const character = driverId && characters[driverId]
   const {playerId} = character || {}
   const distance = Math.sqrt(speed ** 2 * 2)
   const maxX = city.width - width

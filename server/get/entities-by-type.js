@@ -1,7 +1,7 @@
-export const getEntitiesByType = (tick, _characters, _vehicles, now) => {
+export const getEntitiesByType = (tick, characters, vehicles, now) => {
 
-  const entitiesByType = {characters: _characters, vehicles: _vehicles}
-  const [mayor] = _characters
+  const entitiesByType = {characters, vehicles}
+  const [mayor] = characters
 
   mayor.timestamp = now()
   mayor.tick = tick

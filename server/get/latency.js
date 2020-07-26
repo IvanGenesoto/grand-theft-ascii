@@ -1,6 +1,6 @@
-export const getLatency = (id, _players) => {
+export const getLatency = (id, players) => {
 
-  const player = _players[id]
+  const player = players[id]
   const {latencyBuffer} = player
   const {length} = latencyBuffer
   const total = latencyBuffer.reduce((total, latency) => total + latency, 0)
