@@ -1,11 +1,11 @@
 import {isVehicleEnterable} from '..'
 
 export const enterVehicleIfCan = (state, walker) => {
-  const {_vehicles} = state
-  const vehicle = _vehicles.find(isVehicleEnterable, {walker, state})
-  if (!vehicle) return _vehicles
+  const {vehicles} = state
+  const vehicle = vehicles.find(isVehicleEnterable, {walker, state})
+  if (!vehicle) return vehicles
   enterVehicle(vehicle, walker)
-  return _vehicles
+  return vehicles
 }
 
 export const enterVehicle = (vehicle, character) => {

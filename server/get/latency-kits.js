@@ -2,9 +2,9 @@ import {getLatency} from '..'
 
 export const getLatencyKits = function (player) {
 
-  const {_players} = this
+  const {players} = this
   const {status, characterId, id} = player
-  const latency = getLatency(id, _players)
+  const latency = getLatency(id, players)
 
   return status === 'online' && {characterId, latency}
 }

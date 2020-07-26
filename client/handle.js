@@ -1,8 +1,18 @@
 import {createElement} from '.'
 
+export const handleTokenRequested = function () {
+  const {state} = this
+  const {localStorage, socket} = state
+  const token = localStorage.getItem('token')
+  if (token) return socket.emit('token', token)
+  socket.emit('no_token')
+}
+
 export const handlePlayer = function (player) {
   const {state} = this
+  const {token} = player
   state.player = player
+  localStorage.setItem('token', token)
 }
 
 export const handleEntities = function (entitiesByType) {

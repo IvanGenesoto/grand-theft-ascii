@@ -2,13 +2,13 @@ import {createInstance, characterPrototype} from '..'
 
 export const createCharacter = state => {
 
-  const {_characters, city} = state
+  const {characters, city} = state
   const directions = ['left', 'right']
   const character = createInstance(characterPrototype)
-  const id = character.id = _characters.length
+  const id = character.id = characters.length
 
   character.elementId = 'character-' + id
-  _characters.push(character)
+  characters.push(character)
 
   const float = Math.random() * directions.length
   const index = Math.floor(float)

@@ -1,11 +1,11 @@
-export const updateLatencies = (_characters, latencyKit) => {
+export const updateLatencies = (characters, latencyKit) => {
 
   if (!latencyKit) return
 
   const {characterId, latency} = latencyKit
-  const character = _characters[characterId]
+  const character = characters[characterId]
 
   character.latency = latency
 
-  return _characters
+  return characters
 }

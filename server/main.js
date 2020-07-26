@@ -1,17 +1,10 @@
-import express, {static as static_} from 'express'
-import {createServer} from 'http'
-import socketIo from 'socket.io'
-import {join} from 'path'
-import {state, initiateCity, handleConnection, refresh} from '.'
+import Redis from 'ioredis'
+import {getState} from '.'
 
-const app = express()
-const server = createServer(app)
-const io = socketIo(server)
-const port = process.env.PORT || 3000
+const {env: environment} = process
+const url = 'redis://redistogo:aab5bda2bdcd9e6a118a9b9c79042d50@crestfish.redistogo.com:9908/'
+const {NODE_ENV, REDISTOGO_URL = url} = environment
+const redis = new Redis(REDISTOGO_URL)
+const isProduction = NODE_ENV === 'production'
 
-state.io = io
-initiateCity(state)
-io.on('connection', handleConnection.bind({state}))
-app.use(static_(join(__dirname, 'public')))
-server.listen(port, () => console.log('Listening on port ' + port))
-refresh(state)
+getState(redis, isProduction)

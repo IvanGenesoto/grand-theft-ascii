@@ -6,7 +6,10 @@
       "type": "node",
       "request": "launch",
       "preLaunchTask": "npm: watch",
-      "program": "${workspaceFolder}/server/main.js"
+      "program": "${workspaceFolder}/server/main.js",
+      "env": {
+        "REDISTOGO_URL": "redis://redistogo:aab5bda2bdcd9e6a118a9b9c79042d50@crestfish.redistogo.com:9908/"
+      }
     },
     {
       "name": "debug",
@@ -15,19 +18,25 @@
       "skipFiles": ["<node_internals>/**"],
 			"runtimeExecutable": "npm",
       "program": "${workspaceFolder}/server/main.js",
-			"runtimeArgs": ["start"]
+			"runtimeArgs": ["start"],
+      "env": {
+        "REDISTOGO_URL": "redis://redistogo:aab5bda2bdcd9e6a118a9b9c79042d50@crestfish.redistogo.com:9908/"
+      }
     },
     {
       "name": "stage",
       "type": "node",
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
-      "env": {"NODE_ENV": "production"},
 			"runtimeExecutable": "npm",
       "preLaunchTask": "npm: stage",
       "program": "${workspaceFolder}/server/main.js",
 			"runtimeArgs": ["run", "start:prod"],
-      "postDebugTask": "npm: install"
+      "postDebugTask": "npm: install",
+      "env": {
+        "REDISTOGO_URL": "redis://redistogo:411fd82fe18cac1bd12681792c5303cd@barb.redistogo.com:10238/",
+        "NODE_ENV": "production"
+      }
     }
   ]
 }

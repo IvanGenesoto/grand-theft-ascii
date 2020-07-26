@@ -7,9 +7,9 @@ export const updateCharacterLocation = function (character) {
 }
 
 export const updateTravelingCharacterLocation = (character, state) => {
-  const {_vehicles} = state
+  const {vehicles} = state
   const {drivingId, passengingId} = character
-  const vehicle = drivingId ? _vehicles[drivingId] : _vehicles[passengingId]
+  const vehicle = drivingId ? vehicles[drivingId] : vehicles[passengingId]
   const {x, y, width, height, direction} = vehicle
   const leftDirections = ['left', 'up-left', 'down-left']
   const rightDirections = ['right', 'up-right', 'down-right']

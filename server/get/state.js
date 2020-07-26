@@ -1,0 +1,10 @@
+import {initiateServer} from '..'
+
+export const getState = async (redis, isProduction) => {
+
+  const stateJson = await redis.get('state').catch(console.error)
+  const _state = stateJson && JSON.parse(stateJson)
+
+  isProduction || console.log(_state && `${_state.players.length} players`)
+  initiateServer(_state, redis, isProduction)
+}

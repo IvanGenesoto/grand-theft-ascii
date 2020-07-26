@@ -1,8 +1,8 @@
 export const exitVehicle = (state, character) => {
-  const {_vehicles} = state
+  const {vehicles} = state
   const {id: characterId, drivingId, passengingId} = character
   const vehicleId = drivingId || passengingId
-  const vehicle = _vehicles[vehicleId]
+  const vehicle = vehicles[vehicleId]
   character.drivingId = null
   character.passengingId = null
   if (passengingId) return exitVehicleAsPassenger(characterId, vehicle) && state

@@ -18,21 +18,21 @@ import {
 
 export const refresh = state => {
 
-  const {_players, _characters, _vehicles, vehicleKits, now, io} = state
+  const {players, characters, vehicles, vehicleKits, now, io} = state
   const tick = ++state.tick
 
   state.refreshingStartTime = now()
   handleQueues.call({state})
 
-  const latencyKits = _players.map(getLatencyKits, {_players})
-  const vehicleKit = _vehicles.reduce(pushAttributes, {xs: [], ys: [], timestamp: now()})
+  const latencyKits = players.map(getLatencyKits, {players})
+  const vehicleKit = vehicles.reduce(pushAttributes, {xs: [], ys: [], timestamp: now()})
 
-  latencyKits.reduce(updateLatencies, _characters)
+  latencyKits.reduce(updateLatencies, characters)
   vehicleKits.push(vehicleKit)
   vehicleKits.length > 60 && vehicleKits.shift()
 
-  const playerCharacters = _players.map(({characterId}) => _characters[characterId])
-  const {actives} = playerCharacters.reduce(pushIfActive, {_players, actives: []})
+  const playerCharacters = players.map(({characterId}) => characters[characterId])
+  const {actives} = playerCharacters.reduce(pushIfActive, {players, actives: []})
   const activesByCategory = {walkers: [], drivers: [], passengers: []}
   const {walkers, drivers, passengers} = actives.reduce(categorize, activesByCategory)
 
@@ -44,15 +44,15 @@ export const refresh = state => {
   const args = [categorize, charactersByCategory]
   const {walkers: walkers_, drivers: drivers_} = playerCharacters.reduce(...args)
 
-  walkers_.forEach(walk, {_players})
+  walkers_.forEach(walk, {players})
   drivers_.forEach(drive, {state})
-  _characters.forEach(updateCharacterLocation, {state})
-  _vehicles.forEach(updateVehicleBehavior)
-  _vehicles.forEach(updateVehicleLocation, {state})
+  characters.forEach(updateCharacterLocation, {state})
+  vehicles.forEach(updateVehicleBehavior)
+  vehicles.forEach(updateVehicleLocation, {state})
 
   if (tick % 3) return deferRefresh(state)
 
-  const entitiesByType = getEntitiesByType(tick, _characters, _vehicles, now)
+  const entitiesByType = getEntitiesByType(tick, characters, vehicles, now)
 
   io.volatile.emit('entities', entitiesByType)
   deferRefresh(state)

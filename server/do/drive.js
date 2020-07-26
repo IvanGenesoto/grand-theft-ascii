@@ -3,11 +3,11 @@ import {getNewDirection, isVehicleDecelerating, isVehicleTurning, isVehicleStraf
 export const drive = function (character) {
 
   const {state} = this
-  const {_players, _vehicles} = state
+  const {players, vehicles} = state
   const {playerId, drivingId: vehicleId} = character
-  const player = _players[playerId]
+  const player = players[playerId]
   const {input} = player
-  const vehicle = _vehicles[vehicleId]
+  const vehicle = vehicles[vehicleId]
   const {direction, speed, maxSpeed, acceleration, deceleration} = vehicle
   const newDirection = getNewDirection(input)
   const isAccelerating = newDirection === direction

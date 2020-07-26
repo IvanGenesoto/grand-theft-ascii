@@ -12,6 +12,7 @@ const camera = {
 export const state = {
   camera,
   performance,
+  localStorage,
   fps: 30,
   tick: 0,
   imagesTotal: 0,

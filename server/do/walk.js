@@ -1,8 +1,8 @@
 export const walk = function (character) {
 
-  const {_players} = this
+  const {players} = this
   const {playerId, direction, maxSpeed} = character
-  const player = _players[playerId]
+  const player = players[playerId]
   const {input} = player
   const {right, left} = input
 
