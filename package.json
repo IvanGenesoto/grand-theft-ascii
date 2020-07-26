@@ -2,7 +2,7 @@
   "name": "anarch-city",
   "version": "0.1.0",
   "description": "A massively multiplayer persistent online world for people who want to experience a simulated anarchic society.",
-  "main": "server/index.js",
+  "main": "server/main.js",
   "scripts": {
     "start": "node -r esm .",
     "prestart": "run-s bundle",

@@ -6,7 +6,7 @@
       "type": "node",
       "request": "launch",
       "preLaunchTask": "npm: watch",
-      "program": "${workspaceFolder}/server/index.js"
+      "program": "${workspaceFolder}/server/main.js"
     },
     {
       "name": "debug",
@@ -14,7 +14,7 @@
       "request": "launch",
       "skipFiles": ["<node_internals>/**"],
 			"runtimeExecutable": "npm",
-      "program": "${workspaceFolder}/server/index.js",
+      "program": "${workspaceFolder}/server/main.js",
 			"runtimeArgs": ["start"]
     },
     {
@@ -25,7 +25,7 @@
       "env": {"NODE_ENV": "production"},
 			"runtimeExecutable": "npm",
       "preLaunchTask": "npm: stage",
-      "program": "${workspaceFolder}/server/index.js",
+      "program": "${workspaceFolder}/server/main.js",
 			"runtimeArgs": ["run", "start:prod"],
       "postDebugTask": "npm: install"
     }

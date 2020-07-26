@@ -1,4 +1,4 @@
-import {getLatency} from '.'
+import {getLatency} from '..'
 
 export const getLatencyKits = function (player) {
 

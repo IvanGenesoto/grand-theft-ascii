@@ -1,5 +1,4 @@
-import {vehiclePrototype} from '../prototypes'
-import {createInstance} from '.'
+import {vehiclePrototype, createInstance} from '..'
 
 export const createVehicle = (state, x, y, speed) => {
   const {_vehicles, city} = state

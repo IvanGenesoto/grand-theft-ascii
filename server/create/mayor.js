@@ -1,4 +1,4 @@
-import {createPlayer, createCharacter, createVehicle} from '.'
+import {createPlayer, createCharacter, createVehicle} from '..'
 
 export const createMayor = state => {
 

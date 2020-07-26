@@ -1,4 +1,4 @@
-import {stopVehicle} from '../do'
+import {stopVehicle} from '..'
 
 export const updateVehicleLocation = function (vehicle) {
 

@@ -1,4 +1,4 @@
-import {handleTimestamp, handleInput} from '.'
+import {handleTimestamp, handleInput} from '..'
 
 export const handleConnection = function (socket) {
 

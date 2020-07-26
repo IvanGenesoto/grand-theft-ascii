@@ -1,4 +1,4 @@
-import {descendVehicle, slowDownVehicle} from '../do'
+import {descendVehicle, slowDownVehicle} from '..'
 
 export const updateVehicleBehavior = vehicle => {
 

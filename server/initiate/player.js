@@ -1,4 +1,4 @@
-import {createPlayer, createCharacter, createVehicle} from '../create'
+import {createPlayer, createCharacter, createVehicle} from '..'
 
 export const initiatePlayer = function ({socket, wrappedPlayer}) {
   const {state} = this

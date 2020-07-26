@@ -1,5 +1,4 @@
-import {initiatePlayer} from '../initiate'
-import {updateLatencyBuffer, updateInput} from '../update'
+import {initiatePlayer, updateLatencyBuffer, updateInput} from '..'
 
 export const handleQueues = function () {
 

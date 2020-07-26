@@ -1,5 +1,4 @@
-import {createInstance} from '.'
-import {characterPrototype} from '../prototypes'
+import {createInstance, characterPrototype} from '..'
 
 export const createCharacter = state => {
 

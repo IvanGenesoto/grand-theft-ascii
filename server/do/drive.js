@@ -1,5 +1,4 @@
-import {getNewDirection} from '../get'
-import {isVehicleDecelerating, isVehicleTurning, isVehicleStrafing} from '../is'
+import {getNewDirection, isVehicleDecelerating, isVehicleTurning, isVehicleStrafing} from '..'
 
 export const drive = function (character) {
 

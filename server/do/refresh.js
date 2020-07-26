@@ -1,14 +1,11 @@
-import {getLatencyKits, getEntitiesByType} from '../get'
-import {handleQueues} from '../handle'
-
 import {
+  getLatencyKits,
+  getEntitiesByType,
+  handleQueues,
   updateLatencies,
   updateCharacterLocation,
   updateVehicleBehavior,
-  updateVehicleLocation
-} from '../update'
-
-import {
+  updateVehicleLocation,
   pushAttributes,
   pushIfActive,
   categorize,
@@ -17,7 +14,7 @@ import {
   walk,
   drive,
   deferRefresh
-} from '.'
+} from '..'
 
 export const refresh = state => {
 
