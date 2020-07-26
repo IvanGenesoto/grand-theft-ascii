@@ -11,7 +11,8 @@ import {
   handleTokenRequested,
   initializeCity,
   renderUnsupported,
-  renderLoading
+  renderLoading,
+  createStorage
 } from '.'
 
 const socket = socketIo()
@@ -25,6 +26,7 @@ if (!isSupported) throw new Error('Unsupported browser')
 
 renderLoading()
 state.socket = socket
+state.storage = createStorage()
 window.addEventListener('resize', adjustCameraSize.bind({state}), false)
 window.addEventListener('keydown', control.bind({state, isDown: true}))
 window.addEventListener('keyup', control.bind({state}))
