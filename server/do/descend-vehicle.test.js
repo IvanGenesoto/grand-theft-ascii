@@ -2,7 +2,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 
 const {expect} = require('chai')
-const {descendVehicle} = require('..')
+const {descendVehicle} = require('./descend-vehicle')
 
 describe('descendVehicle', () => {
   context('if the passed vehicle\'s y is less than 7839', () => {
