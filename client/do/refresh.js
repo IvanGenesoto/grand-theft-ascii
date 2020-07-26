@@ -1,12 +1,13 @@
-import {shiftEntitiesBuffer, setInterpolationRatio, deferRefresh} from '.'
-import {render} from '../render'
-
 import {
+  shiftEntitiesBuffer,
+  setInterpolationRatio,
+  deferRefresh,
+  render,
   updatePlayerCharacterBehavior,
   updatePlayerCharacterLocation,
   updatePredictionBuffer,
   updateCamera
-} from '../update'
+} from '..'
 
 export const refresh = state => {
 

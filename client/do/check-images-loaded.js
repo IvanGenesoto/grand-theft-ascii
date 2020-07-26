@@ -1,4 +1,4 @@
-import {initiateCity} from '.'
+import {initiateCity} from '..'
 
 export const checkImagesLoaded = function () {
 

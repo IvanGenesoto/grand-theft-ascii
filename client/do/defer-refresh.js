@@ -1,4 +1,4 @@
-import {refresh, compensate} from '.'
+import {refresh, compensate} from '..'
 
 export const deferRefresh = state => {
 

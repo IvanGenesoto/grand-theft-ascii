@@ -1,4 +1,4 @@
-import {doesTickMatch} from './question'
+import {doesTickMatch} from '.'
 
 export const getBufferIndex = (tick, entitiesBuffer) => {
   const {length} = entitiesBuffer

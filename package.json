@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node -r esm .",
     "prestart": "run-s bundle",
-    "bundle": "browserify -p esmify client/index.js -o server/public/main.js",
+    "bundle": "browserify -p esmify client/main.js -o server/public/main.js",
     "start:prod": "node -r esm .",
     "prestart:prod": "run-s bundle prune",
     "prune": "npm prune --production",
@@ -20,7 +20,7 @@
     "update": "ncu -u",
     "watch": "run-p watch:*",
     "watch:server": "nodemon -e js,html,css -r esm .",
-    "watch:client": "watchify -p esmify client/index.js -o server/public/main.js"
+    "watch:client": "watchify -p esmify client/main.js -o server/public/main.js"
   },
   "dependencies": {
     "bowser": "^2.10.0",

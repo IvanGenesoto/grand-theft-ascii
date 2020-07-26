@@ -1,4 +1,4 @@
-import {createElement} from './create'
+import {createElement} from '.'
 
 export const handlePlayer = function (player) {
   const {state} = this

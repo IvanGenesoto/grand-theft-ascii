@@ -1,4 +1,4 @@
-import {interpolateProperty} from '../do'
+import {interpolateProperty} from '..'
 
 export const renderLayer = function (layer) {
 

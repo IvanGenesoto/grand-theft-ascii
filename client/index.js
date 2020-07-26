@@ -1,29 +1,37 @@
-import socketIo from 'socket.io-client'
-import Bowser from 'bowser'
-import {state} from './state'
-import {createElement} from './create'
-import {handlePlayer, handleEntities} from './handle'
-import {adjustCameraSize, control, emitToken, initializeCity} from './do'
-import {renderUnsupported, renderLoading} from './render'
-
-const socket = socketIo()
-const {camera} = state
-const bowser = Bowser.parse(window.navigator.userAgent)
-const {browser, platform} = bowser
-const isSupported = browser.name === 'Chrome' && platform.type === 'desktop'
-
-if (!isSupported) renderUnsupported()
-if (!isSupported) throw new Error('Unsupported browser')
-
-renderLoading()
-state.socket = socket
-window.addEventListener('resize', adjustCameraSize.bind({state}), false)
-window.addEventListener('keydown', control.bind({state, isDown: true}))
-window.addEventListener('keyup', control.bind({state}))
-socket.on('request_token', emitToken.bind({state, socket}))
-socket.on('city', initializeCity.bind({state}))
-socket.on('player', handlePlayer.bind({state}))
-socket.on('entity', createElement.bind({state}))
-socket.on('entities', handleEntities.bind({state}))
-createElement.call({state}, camera)
-adjustCameraSize.call({state})
+export {adjustCameraSize} from './do/adjust-camera-size'
+export {checkImagesLoaded} from './do/check-images-loaded'
+export {comparePrediction} from './do/compare-prediction'
+export {compensate} from './do/compensate'
+export {control} from './do/control'
+export {deferRefresh} from './do/defer-refresh'
+export {drawBlueprints, drawBlueprint} from './do/draw'
+export {emitToken} from './do/emit-token'
+export {interpolateProperty} from './do/interpolate-property'
+export {initializeCity} from './do/initialize-city'
+export {initiateCity} from './do/initiate-city'
+export {pipe} from './do/pipe'
+export {reconcilePlayerCharacter, reconcilePrediction} from './do/reconcile'
+export {refresh} from './do/refresh'
+export {setInterpolationRatio} from './do/set-interpolation-ratio'
+export {shiftEntitiesBuffer} from './do/shift-entities-buffer'
+export {renderElement} from './render/element'
+export {renderEntity} from './render/entity'
+export {render} from './render'
+export {renderLayer} from './render/layer'
+export {renderLoading} from './render/loading'
+export {renderUnsupported} from './render/unsupported'
+export {updateCamera} from './update/camera'
+export {updatePlayerCharacterBehavior} from './update/player-character-behavior'
+export {updatePlayerCharacterLocation} from './update/player-character-location'
+export {updatePredictionBuffer} from './update/prediction-buffer'
+export {createElements} from './create'
+export {createElement} from './create'
+export {getBufferIndex} from './get'
+export {getPredictionIndex} from './get'
+export {getFrameIndex} from './get'
+export {handlePlayer} from './handle'
+export {handleEntities} from './handle'
+export {doesTickMatch} from './question'
+export {isEntityOffScreen} from './question'
+export {shouldEntityBeFlipped} from './question'
+export {state} from './state'

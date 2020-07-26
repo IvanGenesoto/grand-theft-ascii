@@ -1,5 +1,4 @@
-import {createElements} from '../create'
-import {checkImagesLoaded} from '.'
+import {createElements, checkImagesLoaded} from '..'
 
 export const initializeCity = function (city) {
 

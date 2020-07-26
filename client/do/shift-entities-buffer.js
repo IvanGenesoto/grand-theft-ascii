@@ -1,5 +1,11 @@
-import {getBufferIndex, getPredictionIndex} from '../get'
-import {pipe, comparePrediction, reconcilePlayerCharacter, refresh} from '.'
+import {
+  getBufferIndex,
+  getPredictionIndex,
+  pipe,
+  comparePrediction,
+  reconcilePlayerCharacter,
+  refresh
+} from '..'
 
 export const shiftEntitiesBuffer = (state, isInitial) => {
 
