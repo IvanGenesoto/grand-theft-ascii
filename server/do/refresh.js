@@ -43,18 +43,14 @@ export const refresh = state => {
   const charactersByCategory = {walkers: [], drivers: [], passengers: []}
   const args = [categorize, charactersByCategory]
   const {walkers: walkers_, drivers: drivers_} = playerCharacters.reduce(...args)
+  const entitiesByType = getEntitiesByType(tick, characters, vehicles, now)
 
   walkers_.forEach(walk, {players})
   drivers_.forEach(drive, {state})
   characters.forEach(updateCharacterLocation, {state})
   vehicles.forEach(updateVehicleBehavior)
   vehicles.forEach(updateVehicleLocation, {state})
-
-  if (tick % 3) return deferRefresh(state)
-
-  const entitiesByType = getEntitiesByType(tick, characters, vehicles, now)
-
-  io.volatile.emit('entities', entitiesByType)
+  tick % 3 === 0 && io.emit('entities', entitiesByType)
   deferRefresh(state)
 
   return state
