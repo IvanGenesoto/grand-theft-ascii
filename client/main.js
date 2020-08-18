@@ -26,7 +26,7 @@ if (!isSupported) throw new Error('Unsupported browser')
 
 renderLoading()
 state.socket = socket
-state.storage = createStorage()
+state.storage = createStorage('anarch-city')
 window.addEventListener('resize', adjustCameraSize.bind({state}), false)
 window.addEventListener('keydown', control.bind({state, isDown: true}))
 window.addEventListener('keyup', control.bind({state}))

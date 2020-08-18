@@ -1,4 +1,6 @@
-export const createStorage = () => {
+export const createStorage = namespace => {
+
+  const getName = name => namespace ? `${namespace}.${name}` : name
 
   const getIsSupported = () => {
     try {
@@ -7,7 +9,7 @@ export const createStorage = () => {
       localStorage.removeItem(testKey)
       return true
     }
-    catch (unused) { }
+    catch { }
   }
 
   const clear = () => isSupported
@@ -16,14 +18,14 @@ export const createStorage = () => {
 
   const getItem = name => isSupported
     ? getJsonItem(name)
-    : getNullIfUndefined(storage[name])
+    : getNullIfUndefined(storage[getName(name)])
 
   const getJsonItem = name => {
-    const item = storage.getItem(name)
+    const item = storage.getItem(getName(name))
     try {
       return JSON.parse(item)
     }
-    catch (unused) { }
+    catch { }
   }
 
   const getNullIfUndefined = value => value === undefined
@@ -35,16 +37,16 @@ export const createStorage = () => {
     : Object.keys(storage)[index] || null
 
   const removeItem = name => isSupported
-    ? storage.removeItem(name)
-    : delete storage[name]
+    ? storage.removeItem(getName(name))
+    : delete storage[getName(name)]
 
   const setItem = (name, value) => name && typeof name === 'object'
     ? Object.entries(name).forEach(([name, value]) => setItem_(name, value))
     : setItem_(name, value)
 
   const setItem_ = (name, value) => isSupported
-    ? storage.setItem(name, JSON.stringify(value))
-    : storage[name] = JSON.stringify(value)
+    ? storage.setItem(getName(name), JSON.stringify(value))
+    : storage[getName(name)] = JSON.stringify(value)
 
   const getLength = () => isSupported
     ? storage.length
