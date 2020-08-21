@@ -7,16 +7,14 @@ import {statePrototype, initiateCity, pipe, handleSocket, refresh, saveState} fr
 
 export const initiateServer = (_state, redis, isProduction) => {
 
-  const {env: environment} = process
-  const {PORT} = environment
   const app = express()
   const server = createServer(app)
   const io = socketIo(server)
-  const port = PORT || 3000
   const path = join(__dirname, '..', 'public')
   const use = app.use.bind(app)
   const state = _state || statePrototype
-  const callback = () => isProduction || console.log('Listening on port ' + port)
+  const {PORT = 3000} = process.env
+  const log = () => isProduction || console.info('Listening on port ' + PORT)
 
   state.io = io
   state.now = now
@@ -30,7 +28,7 @@ export const initiateServer = (_state, redis, isProduction) => {
   _state || initiateCity(state)
   pipe(path, static_, use)
   io.on('connection', handleSocket.bind({state, isProduction}))
-  server.listen(port, callback)
+  server.listen(PORT, log)
   refresh(state)
   setInterval(saveState, 1000, state, redis)
 }

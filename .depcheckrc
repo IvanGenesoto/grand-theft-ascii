@@ -2,6 +2,7 @@ ignores: [
   "esm",
   "esmify",
   "htmlhint",
+  "mapstraction",
   "stylelint",
   "stylelint-config-standard"
 ]
