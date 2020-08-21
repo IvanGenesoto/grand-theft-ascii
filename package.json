@@ -6,19 +6,19 @@
   "scripts": {
     "start": "node -r esm .",
     "prestart": "run-s bundle",
-    "bundle": "browserify -p esmify client/main.js -o server/public/main.js",
+    "bundle": "browserify -p esmify client/main.js -o server/public/main.js -p mapstraction --debug",
     "start:prod": "node -r esm .",
     "prestart:prod": "run-s bundle prune",
     "prune": "npm prune --production",
     "stage": "run-s update clean lint check test",
-    "update": "ncu -u",
+    "update": "ncu -u && npm i",
     "clean": "npm ci && rimraf server/public/main.js",
     "lint": "eslint .",
     "check": "depcheck",
     "test": "mocha -r esm \"server/**/*.test.js\" \"client/**/*.test.js\"",
     "watch": "run-p watch:*",
     "watch:server": "nodemon -e js,html,css -r esm .",
-    "watch:client": "watchify -p esmify client/main.js -o server/public/main.js"
+    "watch:client": "watchify -p esmify client/main.js -o server/public/main.js -p mapstraction --debug"
   },
   "dependencies": {
     "bowser": "^2.10.0",
@@ -41,6 +41,7 @@
     "eslint-plugin-standard": "^4.0.1",
     "esmify": "^2.1.1",
     "htmlhint": "^0.14.1",
+    "mapstraction": "^1.0.1",
     "mocha": "^8.1.1",
     "nodemon": "^2.0.4",
     "npm-check-updates": "^7.1.1",

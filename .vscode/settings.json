@@ -1,0 +1,5 @@
+{
+  "files.exclude": {
+    "server/public/main.*": true
+  }
+}
