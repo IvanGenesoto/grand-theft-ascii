@@ -5,8 +5,7 @@
       "name": "watch",
       "type": "node",
       "request": "launch",
-      "preLaunchTask": "npm: watch",
-      "program": "${workspaceFolder}/server/main.js"
+      "preLaunchTask": "npm: watch"
     },
     {
       "name": "debug",

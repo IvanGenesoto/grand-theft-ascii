@@ -1,8 +1,7 @@
-/* global describe it */
-/* eslint-disable import/no-extraneous-dependencies */
+import {describe, it} from 'mocha'
+import {expect} from 'chai'
+import {pipe} from './pipe'
 
-const {expect} = require('chai')
-const {pipe} = require('./pipe')
 const increment = number => ++number
 const square = number => number ** 2
 const getAnswer = number => 'Answer is ' + number

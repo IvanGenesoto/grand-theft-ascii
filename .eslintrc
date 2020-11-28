@@ -16,6 +16,7 @@
     }],
     "padded-blocks": "off",
     "curly": "off",
+    "multiline-ternary": "off",
     "brace-style": ["error", "stroustrup", {"allowSingleLine": true}],
     "object-curly-spacing": ["error", "never"],
     "indent": ["error", 2, {
@@ -32,7 +33,7 @@
         "args": "all", "argsIgnorePattern": "^unused", "varsIgnorePattern": "^unused"
     }],
     "standard/no-callback-literal": "off",
-    "import/no-extraneous-dependencies": ["error", {"devDependencies": false}],
+    "import/no-extraneous-dependencies": ["error", {"devDependencies": ["**/*.test.js"]}],
     "import/no-duplicates": "error",
     "no-restricted-globals": [
       "error",

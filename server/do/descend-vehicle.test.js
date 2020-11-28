@@ -1,8 +1,6 @@
-/* global describe it context */
-/* eslint-disable import/no-extraneous-dependencies */
-
-const {expect} = require('chai')
-const {descendVehicle} = require('./descend-vehicle')
+import {describe, describe as context, it} from 'mocha'
+import {expect} from 'chai'
+import {descendVehicle} from './descend-vehicle'
 
 describe('descendVehicle', () => {
   context('if the passed vehicle\'s y is less than 7839', () => {
